@@ -1,0 +1,79 @@
+microblaze:
+    ip_type: processor
+    hsm:
+        config:
+            CONFIG.C_USE_MSR_INSTR:
+                uboot_header: XILINX_USE_MSR_INSTR
+            CONFIG.C_FSL_LINKS:
+                uboot_config: XILINX_FSL_LINKS
+            CONFIG.C_USE_ICACHE:
+                uboot_header: XILINX_USE_ICACHE
+            CONFIG.C_USE_DCACHE:
+                uboot_header: XILINX_USE_DCACHE
+            CONFIG.C_DCACHE_BYTE_SIZE:
+                uboot_header: XILINX_DCACHE_BYTE_SIZE
+            CONFIG.C_PVR:
+                uboot_header: XILINX_PVR
+        define:
+            IP_NAME:
+                uboot_header: MICROBLAZE_V5 CONFIG_CMD_IRQ
+                uboot_config: CONFIG_DM CONFIG_SYS_MALLOC_F CONFIG_SYS_GENERIC_BOARD
+        define_chk_1:
+            CONFIG.C_USE_DCACHE:
+                uboot_header: CONFIG_DCACHE
+            CONFIG.C_USE_ICACHE:
+                uboot_header: CONFIG_ICACHE
+
+# list for uboot config.mk file
+# HW_VER USE_BARREL USE_DIV USE_HW_MUL USE_PCMP_INSTR USE_FPU
+        config_chk_1_str:
+            CONFIG.C_USE_BARREL:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-barrel-shift
+            CONFIG.C_USE_DIV:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-soft-div
+            CONFIG.USE_HW_MUL:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-multiply-high
+            CONFIG.C_USE_PCMP_INSTR:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-pattern-compare
+            CONFIG.C_USE_FPU:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mhard-float
+        config1_chk_1_str:
+            CONFIG.C_USE_HW_MUL:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-soft-mul
+        config_chk_0_str:
+            CONFIG.C_USE_BARREL:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-barrel-shift
+            CONFIG.C_USE_DIV:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-soft-div
+            CONFIG.C_USE_HW_MUL:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-soft-mul
+            CONFIG.C_USE_PCMP_INSTR:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-pattern-compare
+        config_chk_2_str:
+            CONFIG.C_USE_HW_MUL:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-multiply-high
+        config1_chk_2_str:
+            CONFIG.C_USE_HW_MUL:
+                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-soft-mul
+
+ps7_cortexa9:
+    ip_type: processor
+    hsm:
+        config:
+            CONFIG.C_CPU_CLK_FREQ_HZ:
+                uboot_header: CONFIG_CPU_FREQ_HZ
+        define:
+            NAME:
+                uboot_header: CONFIG_CLOCKS CONFIG_ARM_DCC CONFIG_REMAKE_ELF
+                uboot_config: CONFIG_DM CONFIG_SYS_MALLOC_F CONFIG_SYS_GENERIC_BOARD CONFIG_CMD_CACHE CONFIG_SYS_L2CACHE_OFF CONFIG_CMD_CLK
+        custom_define:
+            IP_NAME:
+                uboot_header: CONFIG_SYS_LDSCRIPT	"arch/arm/mach-zynq/u-boot.lds"
+
+psu_cortexa53:
+    ip_type: processor
+    hsm:
+        define:
+            NAME:
+                uboot_header: CONFIG_CPU_ARMV8 CONFIG_CLOCKS CONFIG_REMAKE_ELF CONFIG_BOARD_EARLY_INIT_F CONFIG_ARM_DCC CONFIG_MP
+                uboot_config: CONFIG_DM CONFIG_SYS_MALLOC_F CONFIG_SYS_GENERIC_BOARD CONFIG_CMD_CLK CONFIG_CMD_UNZIP CONFIG_CMD_BOOTI CONFIG_BOARD_EARLY_INIT_R

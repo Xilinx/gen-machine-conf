@@ -1,0 +1,53 @@
+# must be 4 spaces
+# no space after :
+# no space in key
+# it is very pick on the format at time
+
+# currently work as associative array
+
+###############
+# Basic format
+###############
+# IP_TYPE:
+#     ip_type: <type of ip>
+#     var_count: <variable name>
+#     # e.g. processor/memory/flash/ethernet. it also trigger a common setting for different ip cores>
+#     hsm:
+#     # determine the value based on hsi data
+#         rules: # type of rules applies to the system
+#             IP property key:
+#                 config file type: <variable to define>
+#     kconfig:
+#     # determine the value based on kconfig dictionary
+#         rules: # type of rules applies to the system
+#             dictionary key: # separated with ?
+#                 config file type: <variable to define | list of variable name | custom string>
+#
+#################
+# FIXME: some of rules are overlapped in feature, clean it
+# Available rules:
+# - config([0-9]|): define a variable based on the return of dictionary
+#      key or ip property (if return is found) <default>
+# - config([0-9]|)_chk_<desired value>_custom_define: define a variable
+#      based on the <custom string> if the dictionary key
+#      return value matches the desired value
+# - config([0-9]|)_chk_<desired_value>_str: Output the custom string if
+#      the dictionary key return value matches the desired value
+# -  config([0-9]|)_chk_<desired value>: define a variable base on the
+#      return if the dictionary key return value matches the desired value
+# - config([0-9]|)_value_plus_<increment>: define a variable based on the
+#      return value + increment
+# - custom_define([0-9]|)_chk_.*: define variable based on the <custom
+#      string> if the dictionary key return value matches the desired value
+# - custom_define([0-9]|): define variable based on the <custom
+#      string> if the dictionary key returns
+# - undefine([0-9]|): undefine a variable if return founded
+# - define([0-9]|)_chk_not_<desired value>: define variable if the return
+#      does not matche the desired value
+# - define_chk([0-9]|)_<desired value>: define variable if the return
+#      matches the desired value
+# - define([0-9]|)_zero: define a variable with 0
+# - define([0-9]|)_<desired value>: define variable with desired value
+# - define([0-9]|) : define varaibles base on the <variable to define list>
+
+# primary_<rules>: this only applies when the var_count variable is set to 0

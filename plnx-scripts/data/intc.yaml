@@ -1,0 +1,4 @@
+###
+### Interrupt controller
+axi_intc:
+    ip_type: intc

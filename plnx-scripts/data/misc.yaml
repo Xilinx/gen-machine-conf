@@ -1,0 +1,68 @@
+### for arm only
+#ps7_slcr:
+#    ip_type: slcr
+#    hsm:
+#        config:
+#            CONFIG.C_S_AXI_BASEADDR:
+#                uboot_header: XPSS_SYS_CTRL_BASEADDR
+
+#ps7_scuc:
+#    ip_type: scuc
+#    hsm:
+#        config:
+#            CONFIG.C_S_AXI_BASEADDR:
+#                uboot_header: XPSS_SCU_BASEADDR
+
+zynq_ultra_ps_e:
+    hsm:
+        custom_define:
+            IP_NAME:
+                uboot_header: COUNTER_FREQUENCY 100000000
+        define:
+            IP_NAME:
+                uboot_config: CONFIG_FPGA_ZYNQMPPL
+
+psu_acpu_gic:
+    ip_type: intc
+    hsm:
+        config:
+            CONFIG.C_S_AXI_BASEADDR:
+                uboot_header: ACPU_GIC_BASEADDR
+        define_1:
+            IP_NAME:
+                uboot_header: CONFIG_GICV2
+        primary_custom_define:
+            CONFIG.C_S_AXI_BASEADDR:
+                uboot_header: GICD_BASE	(ACPU_GIC_BASEADDR)
+        custom_define:
+            CONFIG.C_S_AXI_BASEADDR:
+                uboot_header: GICC_BASE (ACPU_GIC_BASEADDR + 0x10000)
+
+ps7_dev_cfg:
+    ip_type: devcfg
+    hsm:
+        define:
+            IP_NAME:
+                uboot_header: CONFIG_FPGA_ZYNQPL
+                uboot_config: CONFIG_FPGA_XILINX CONFIG_CMD_FPGA_LOADFS CONFIG_FPGA CONFIG_CMD_FPGA
+
+ps7_scutimer:
+    hsm:
+        config:
+            CONFIG.C_S_AXI_BASEADDR:
+                uboot_header: ZYNQ_SCUTIMER_BASEADDR
+        define:
+            CONFIG.C_S_AXI_BASEADDR:
+                uboot_header: CONFIG_SYS_TIMER_COUNTS_DOWN
+        custom_define:
+            IP_NAME:
+                uboot_header: CONFIG_SYS_TIMERBASE	ZYNQ_SCUTIMER_BASEADDR
+            IP_TYPE:
+                uboot_header: CONFIG_SYS_TIMER_COUNTER	(CONFIG_SYS_TIMERBASE + 0x4)
+
+# chip related
+chip_device:
+    hsm:
+        define_chk_not_zynq:
+            FAMILY:
+                uboot_config: CONFIG_CMD_FPGA CONFIG_FPGA CONFIG_FPGA_XILINX

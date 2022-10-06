@@ -1,0 +1,15 @@
+
+#FIXME: GPIO
+#ps7_gpio:
+#    ip_type: gpio
+#    hsm:
+#        config:
+#            CONFIG.C_S_AXI_BASEADDR:
+#                uboot_header: XILINX_PS7_GPIO_BASEADDR
+
+axi_gpio:
+    ip_type: gpio
+    hsm:
+        primary_define:
+            CONFIG.C_BASEADDR:
+                uboot_config: CONFIG_CMD_GPIO CONFIG_XILINX_GPIO

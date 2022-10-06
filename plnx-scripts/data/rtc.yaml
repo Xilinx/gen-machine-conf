@@ -1,0 +1,2 @@
+psu_rtc:
+    ip_type: rtc

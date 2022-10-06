@@ -1,0 +1,14 @@
+psu_i2c:
+    var_count: i2c_count
+    ip_type: i2c
+    hsm:
+        primary_define:
+            IP_NAME:
+                uboot_config: CONFIG_CMD_I2C CONFIG_DM_I2C CONFIG_SYS_I2C_CADENCE
+ps7_i2c:
+    var_count: i2c_count
+    ip_type: i2c
+    hsm:
+        primary_define:
+            IP_NAME:
+                uboot_config: CONFIG_CMD_I2C CONFIG_DM_I2C CONFIG_SYS_I2C_CADENCE

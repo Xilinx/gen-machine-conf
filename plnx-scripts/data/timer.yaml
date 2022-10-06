@@ -1,0 +1,4 @@
+###
+### Timer
+axi_timer:
+    ip_type: timer

@@ -1,0 +1,70 @@
+### Ethernet
+ethernet:
+    var_count: eth_count
+    hsm:
+        primary_define:
+            IP_NAME:
+                uboot_header: CONFIG_MII CONFIG_NET_MULTI
+                uboot_config: CONFIG_NET CONFIG_PHY_GIGE CONFIG_NETDEVICES CONFIG_CMD_NET CONFIG_DM_ETH CONFIG_CMD_PING CONFIG_CMD_DHCP CONFIG_PHYLIB CONFIG_CMD_TFTPPUT CONFIG_CMD_NFS CONFIG_CMD_MII CONFIG_PHY_MARVELL CONFIG_PHY_REALTEK CONFIG_PHY_NATSEMI
+        primary_define_1:
+            IP_NAME:
+                uboot_header: CONFIG_NETCONSOLE
+    call_once:
+        uboot_header: gen_eth_define
+
+axi_ethernet_buffer:
+    var_count: ethfull_count eth_count
+    ip_type: ethernet
+    hsm:
+        define:
+            CONFIG.C_BASEADDR:
+                uboot_header: CONFIG_XILINX_AXIEMAC
+    call:
+        uboot_header: get_dma_slave
+# get dma core base address XILINX_AXIDMA_BASEADDR
+
+axi_dma:
+    ip_type: dma
+
+axi_ethernet:
+    var_count: ethfull_count eth_count
+    ip_type: ethernet
+    hsm:
+        define:
+            IP_NAME:
+                uboot_config: CONFIG_XILINX_AXIEMAC CONFIG_PHY_XILINX CONFIG_PHY_TI
+    call:
+        uboot_header: get_dma_slave
+
+axi_ethernetlite:
+    var_count: ethlite_count eth_count
+    ip_type: ethernet
+    hsm:
+        define:
+            IP_NAME:
+                uboot_config: CONFIG_XILINX_EMACLITE
+                uboot_header: CONFIG_PHY_XILINX
+        config:
+            CONFIG.C_BASEADDR:
+                uboot_header: XILINX_EMACLITE_BASEADDR
+
+ps7_ethernet:
+    var_count: ps7eth_count eth_count
+    ip_type: ethernet
+    hsm:
+        define:
+            CONFIG.C_S_AXI_BASEADDR:
+                uboot_header: CONFIG_SYS_FAULT_ECHO_LINK_DOWN CONFIG_PHY_XILINX
+                uboot_config: CONFIG_ZYNQ_GEM CONFIG_NET_RANDOM_ETHADDR
+
+psu_ethernet:
+    var_count: eth_count
+    ip_type: ethernet
+    hsm:
+        define:
+            CONFIG.C_S_AXI_BASEADDR:
+                uboot_header: CONFIG_SYS_FAULT_ECHO_LINK_DOWN
+                uboot_config: CONFIG_ZYNQ_GEM CONFIG_NET_RANDOM_ETHADDR CONFIG_PHY_TI CONFIG_PHY_VITESSE CONFIG_PHY_FIXED
+        custom_define:
+            IP_NAME:
+                uboot_header: PHY_ANEG_TIMEOUT 20000

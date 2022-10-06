@@ -1,0 +1,749 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import sys
+from gen_plnxconfig import *
+import subprocess
+
+def update_localconf(args):
+    override_conf_path = os.path.join(args.output,'plnxtool.conf')
+    builddir = ''
+    if 'BUILDDIR' in os.environ.keys():
+        builddir = os.environ['BUILDDIR']
+    if builddir:
+        local_conf = os.path.join(builddir,'conf/local.conf')
+        if not os.path.isfile(local_conf):
+            print('No local.conf file found in %s/conf directory to add .conf file' % builddir)
+        else:
+            file_str = 'include conf/plnxtool.conf'
+            shutil.copy2(override_conf_path, builddir + '/conf/')
+            with open(local_conf, 'r') as local_conf_f:
+                lines = local_conf_f.readlines()
+            local_conf_f.close()
+            str_found = ''
+            for line in lines:
+                if re.search(file_str,line):
+                    str_found = True
+                    break
+            if not str_found:
+                with open(local_conf, 'a') as local_conf_f:
+                    local_conf_f.write(file_str)
+                local_conf_f.close()
+
+def add_remote_sources(component,Kcomponent):
+    is_remote = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_%s_NAME_REMOTE' % Kcomponent, default_cfgfile)
+    conf_prop = {
+            'linux-xlnx': ['KERNELURI','SRCREV','KBRANCH','LIC_FILES_CHKSUM'],
+            'u-boot-xlnx': ['UBOOTURI','SRCREV','UBRANCH','LIC_FILES_CHKSUM'],
+            'arm-trusted-firmware': ['REPO','SRCREV','BRANCH','LIC_FILES_CHKSUM'],
+            'plm-firmware': ['REPO','SRCREV','BRANCH','LIC_FILES_CHKSUM'],
+            'psm-firmware': ['REPO','SRCREV','BRANCH','LIC_FILES_CHKSUM'],
+            }
+    remort_source = ''
+    if is_remote:
+        remort_source += '\n#Remote %s source\n' % component
+        remote_uri = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_%s_NAME_REMOTE_DOWNLOAD_PATH' % Kcomponent, default_cfgfile)
+        remote_rev = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_%s_NAME_REMOTE_REFERENCE' % Kcomponent, default_cfgfile)
+        remote_branch = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_%s_NAME_REMOTE_BRANCH' % Kcomponent, default_cfgfile)
+        remote_checksum = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_%s_LIC_FILES_CHKSUM_REMOTE' % Kcomponent, default_cfgfile)
+        if remote_uri: remort_source += '%s:pn-%s = "%s"\n' % (conf_prop[component][0],component,remote_uri)
+        if remote_rev: remort_source += '%s:pn-%s = "%s"\n' % (conf_prop[component][1],component,remote_rev)
+        if remote_branch: remort_source += '%s:pn-%s = "%s"\n' % (conf_prop[component][2],component,remote_branch)
+        if remote_checksum: remort_source += '%s:pn-%s = "%s"\n' % (conf_prop[component][3],component,remote_checksum)
+    return remort_source
+
+def add_external_sources(component,Kcomponent):
+    is_external = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_%s_NAME_EXT__LOCAL__SRC' % Kcomponent, default_cfgfile)
+    ext_source = ''
+    if is_external:
+        global inherit_ext
+        if not inherit_ext:
+            ext_source += 'INHERIT += "externalsrc"\n'
+            inherit_ext = True
+        ext_source += '\n# External %s source\n' % component
+        ext_path = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_%s_NAME_EXT_LOCAL_SRC_PATH' % Kcomponent, default_cfgfile)
+        ext_checksum = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_%s_LIC_FILES_CHKSUM_LOCAL__SRC' % Kcomponent, default_cfgfile)
+        if ext_source: ext_source += 'EXTERNALSRC:pn-%s = "%s"\n' % (component,ext_path)
+        if ext_checksum: ext_source += 'LIC_FILES_CHKSUM:pn-%s = "%s"\n' % (component,ext_checksum)
+    return ext_source
+
+def generate_kernel_cfg(args):
+    print('INFO: Generating kernel autoconfigs')
+    sysconf_koptions = os.path.join(scripts_dir,'data/sysconf_koptions.yaml')
+    import yaml
+    with open(sysconf_koptions, 'r') as sysconf_koptions_f:
+        sysconf_koptions_data = yaml.safe_load(sysconf_koptions_f)
+    sysconf_koptions_f.close()
+    invalide_props = []
+    # Filter sysconf_koptions.yaml, remove the ip list which are not enabled in design
+    for device in sysconf_koptions_data['selected_device'].keys():
+        is_invalid = ''
+        if 'is_valid_and' in sysconf_koptions_data['selected_device'][device].keys():
+            for is_valid in sysconf_koptions_data['selected_device'][device]['is_valid_and'].keys():
+                value = sysconf_koptions_data['selected_device'][device]['is_valid_and'][is_valid]
+                cfg_value = get_config_value('CONFIG_%s' % is_valid, default_cfgfile)
+
+                if value != 'n':
+                    if cfg_value != value:
+                        if not device in invalide_props:
+                            invalide_props.append(device)
+                else:
+                    if cfg_value == 'n':
+                        if not device in invalide_props:
+                            invalide_props.append(device)
+    # remove the ip's in invalide_props from sysconf_koptions_data
+    for prop in invalide_props:
+        sysconf_koptions_data['selected_device'].pop(prop)
+    kernel_opts = ''
+    # Add linux_kernel_properties from sysconf_koptions.yaml
+    for device in sysconf_koptions_data['selected_device'].keys():
+        if 'linux_kernel_properties' in sysconf_koptions_data['selected_device'][device].keys():
+            for prop in sysconf_koptions_data['selected_device'][device]['linux_kernel_properties'].keys():
+                value = sysconf_koptions_data['selected_device'][device]['linux_kernel_properties'][prop]
+                value = value.replace('bool','').strip()
+                if value == 'y':
+                    kernel_opts += 'CONFIG_%s=y\n' % prop
+                elif value == 'n':
+                    kernel_opts += '# CONFIG_%s is not set\n' % prop
+
+    ipinfo_file = os.path.join(scripts_dir,'data/ipinfo.yaml')
+    plnx_syshw_file = os.path.join(args.output,'plnx_syshw_data')
+    with open(ipinfo_file, 'r') as ipinfo_file_f:
+        ipinfo_data = yaml.safe_load(ipinfo_file_f)
+    ipinfo_file_f.close()
+    with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
+        plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
+    plnx_syshw_file_f.close()
+    processor = get_config_value('CONFIG_SUBSYSTEM_PROCESSOR_',default_cfgfile, 'choice','_SELECT=y')
+    slaves_dict = convert_dictto_lowercase(plnx_syshw_data['processor'][processor]['slaves'])
+    slaves = []
+    # Get the slave ip_name from plnx_syshw_data which are enabled in design
+    for slave in slaves_dict.keys():
+        ipname = slaves_dict[slave]['ip_name']
+        if ipname not in slaves:
+            slaves.append(ipname)
+    # Add linux_kernel_properties from ipinfo.yaml
+    for slave in slaves:
+        if slave in ipinfo_data.keys():
+            if 'linux_kernel_properties' in ipinfo_data[slave].keys():
+                for prop in ipinfo_data[slave]['linux_kernel_properties'].keys():
+                    value = ipinfo_data[slave]['linux_kernel_properties'][prop]
+                    value = value.replace('bool','').strip()
+                    if value == 'y':
+                        kernel_opts += 'CONFIG_%s=y\n' % prop
+                    elif value == 'n':
+                        kernel_opts += '# CONFIG_%s is not set\n' % prop
+    devtypes = []
+    generic_devtype_kdrvs = ''
+    ipdevtype_kdrvs = ''
+    #Add device_type/linux_kernel_properties from ipinfo.yaml
+    for ip in ipinfo_data.keys():
+        if 'device_type' in ipinfo_data[ip].keys():
+            for ip_type in ipinfo_data[ip]['device_type'].keys():
+                if ipinfo_data[ip]['device_type'][ip_type]:
+                    if 'linux_kernel_properties' in ipinfo_data[ip]['device_type'][ip_type].keys():
+                        if ip_type not in devtypes:
+                            devtypes.append(ip_type)
+
+    for devtype in devtypes:
+        devname = get_config_value('CONFIG_SUBSYSTEM_%s_' % devtype.upper(), default_cfgfile, 'choice','_SELECT=y')
+        devipname = get_ipproperty(devname, default_cfgfile)
+        if not devipname: continue
+        # Add devtype linux_kernel_properties from sysconfig_kernel.yaml
+        if devtype in sysconf_koptions_data['selected_device'].keys():
+            if 'linux_kernel_properties' in sysconf_koptions_data['selected_device'][devtype].keys():
+                for prop in sysconf_koptions_data['selected_device'][devtype]['linux_kernel_properties'].keys():
+                    value = sysconf_koptions_data['selected_device'][devtype]['linux_kernel_properties'][prop]
+                    value = value.replace('bool','').strip()
+                    if value == 'y':
+                        generic_devtype_kdrvs += 'CONFIG_%s=y\n' % prop
+                    elif value == 'n':
+                        generic_devtype_kdrvs += '# CONFIG_%s is not set\n' % prop
+        # Add devtype linux_kernel_properties from ipinfo.yaml
+        if devipname in ipinfo_data.keys():
+            if devtype in ipinfo_data[devipname]['device_type'].keys():
+                if 'linux_kernel_properties' in ipinfo_data[devipname]['device_type'][devtype].keys():
+                    for prop in ipinfo_data[devipname]['device_type'][devtype]['linux_kernel_properties'].keys():
+                        value = ipinfo_data[devipname]['device_type'][devtype]['linux_kernel_properties'][prop]
+                        value = value.replace('bool','').strip()
+                        if value == 'y':
+                            ipdevtype_kdrvs += 'CONFIG_%s=y\n' % prop
+                        elif value == 'n':
+                            ipdevtype_kdrvs += '# CONFIG_%s is not set\n' % prop
+    if args.soc_family == 'microblaze': ipdevtype_kdrvs += 'CONFIG_EARLY_PRINTK=y\n'
+
+    # Add processor related linux_kernel_properties from plnx_syshw_data
+    if 'linux_kernel_properties' in plnx_syshw_data['processor'][processor].keys():
+        for prop in plnx_syshw_data['processor'][processor]['linux_kernel_properties'].keys():
+            valstr = plnx_syshw_data['processor'][processor]['linux_kernel_properties'][prop]
+            val = valstr.split()[0]
+            valtype = valstr.split()[1]
+            if valtype == 'string':
+                kernel_opts += 'CONFIG_%s="%s"\n' % (prop,val)
+            else:
+                kernel_opts += 'CONFIG_%s=%s\n' % (prop, val)
+    memory = get_config_value('CONFIG_SUBSYSTEM_MEMORY_',default_cfgfile, 'choice','_SELECT=y')
+    memory_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_%s_BASEADDR' % memory,default_cfgfile)
+    kernel_opts += 'CONFIG_KERNEL_BASE_ADDR=%s\n' % memory_baseaddr
+    kernel_opts += 'CONFIG_BLK_DEV_INITRD=y\n'
+    kernel_opts += '# CONFIG_CMDLINE_FORCE is not set\n'
+
+    if generic_devtype_kdrvs: kernel_opts += generic_devtype_kdrvs
+    if ipdevtype_kdrvs: kernel_opts += ipdevtype_kdrvs
+
+    # Create and add kernel configs into plnx_kernel.cfg
+    auto_linux_file = os.path.join(args.output,'linux-xlnx/plnx_kernel.cfg')
+    if not os.path.isdir(os.path.dirname(auto_linux_file)):
+        os.makedirs(os.path.dirname(auto_linux_file))
+    with open(auto_linux_file, 'w') as auto_linux_file_f:
+        auto_linux_file_f.write(kernel_opts)
+    auto_linux_file_f.close()
+
+def generate_override_conf(args):
+    arch = get_config_value('CONFIG_SUBSYSTEM_ARCH_',default_cfgfile, 'choice','=y').lower()
+    soc_family = args.soc_family
+    override_conf_path = os.path.join(args.output,'plnxtool.conf')
+    override_string = ''
+    tmp_dir = get_config_value('CONFIG_TMP_DIR_LOCATION',default_cfgfile)
+    override_string += '#PetaLinux Auto generated file\n'
+    override_string += '#Generic variables\n'
+    if tmp_dir:
+       override_string += 'TMPDIR = "%s"\n' % tmp_dir
+    bb_no_network = get_config_value('CONFIG_YOCTO_BB_NO_NETWORK',default_cfgfile)
+    if bb_no_network:
+        override_string += 'BB_NO_NETWORK = "1"\n'
+    bb_num_threads = get_config_value('CONFIG_YOCTO_BB_NUMBER_THREADS',default_cfgfile)
+    if bb_num_threads:
+        override_string += 'BB_NUMBER_THREADS = "%s"\n' % bb_num_threads
+    parallel_make = get_config_value('CONFIG_YOCTO_PARALLEL_MAKE', default_cfgfile)
+    if parallel_make:
+        override_string += 'PARALLEL_MAKE = "-j %s"\n' % parallel_make
+
+    if soc_family == "zynqmp":
+        override_string += 'LICENSE_FLAGS_WHITELIST:append = " xilinx_pmu-rom-native"\n'
+
+    machine_name = get_config_value('CONFIG_YOCTO_MACHINE_NAME', default_cfgfile)
+    override_param = machine_name
+    override_string += 'MACHINE = "%s"\n' % machine_name
+    override_string += 'PACKAGE_CLASSES = "package_rpm"\n'
+    override_string += 'DL_DIR = "${TOPDIR}/downloads"\n'
+
+    host_name = get_config_value('CONFIG_SUBSYSTEM_HOSTNAME', default_cfgfile)
+    product_name = get_config_value('CONFIG_SUBSYSTEM_PRODUCT', default_cfgfile)
+    firmware_version = get_config_value('CONFIG_SUBSYSTEM_FW_VERSION', default_cfgfile)
+
+    override_string += 'SSTATE_DIR = "${TOPDIR}/sstate-cache"\n'
+    override_string += 'hostname:pn-base-files = "%s"\n' % host_name
+    override_string += 'PETALINUX_PRODUCT:pn-base-files-plnx = "%s"\n' % product_name
+    override_string += 'DISTRO_VERSION:pn-base-files-plnx = "%s"\n' % firmware_version
+
+    if args.sdk_toolchain:
+        override_string += '\n# SDK path variables\n'
+        override_string += 'XILINX_SDK_TOOLCHAIN = "%s"\n' % args.sdk_toolchain
+        override_string += 'USE_XSCT_TARBALL = "0"\n'
+
+    override_string += '\n# Add system XSA\n'
+    override_string += 'HDF_EXT = "xsa"\n'
+    override_string += 'HDF_BASE = "file://"\n'
+    override_string += 'HDF_PATH = "%s"\n' % os.path.abspath(args.hw_description)
+
+    override_string += '\n# linux-xlnx variables\n'
+    override_string += add_remote_sources('linux-xlnx', 'LINUX__KERNEL')
+    override_string += add_external_sources('linux-xlnx', 'LINUX__KERNEL')
+    override_string += 'RDEPENDS:${KERNEL_PACKAGE_NAME}-base = ""\n'
+    kernel_config = get_config_value('CONFIG_SUBSYSTEM_LINUX_CONFIG_TARGET', default_cfgfile)
+    if kernel_config and kernel_config.lower() != 'auto':
+        override_string += 'KBUILD_DEFCONFIG:%s = "%s"\n' % (machine_name, kernel_config)
+    kernel_autoconfig = get_config_value('CONFIG_SUBSYSTEM_AUTOCONFIG_KERNEL', default_cfgfile)
+    if soc_family == 'microblaze':
+        if kernel_autoconfig:
+            override_string += 'KERNEL_AUTO_CONFIG:pn-linux-xlnx = "1"\n'
+            generate_kernel_cfg(args)
+
+    override_string += '\n# device-tree variables\n'
+    autoconfig_dt = get_config_value('CONFIG_SUBSYSTEM_AUTOCONFIG_DEVICE__TREE', default_cfgfile)
+    if not autoconfig_dt:
+        override_string += 'CONFIG_DISABLE:pn-device-tree = "1"\n'
+    serial_manual = get_config_value('CONFIG_SUBSYSTEM_SERIAL_MANUAL_SELECT', default_cfgfile)
+    serial_ipname = get_config_value('CONFIG_SUBSYSTEM_SERIAL_IP_NAME', default_cfgfile)
+    if not serial_manual:
+        override_string += 'YAML_CONSOLE_DEVICE_CONFIG:%s:pn-device-tree = "%s"\n' % (machine_name, serial_ipname)
+    memory_manual = get_config_value('CONFIG_SUBSYSTEM_MEMORY_MANUAL_SELECT', default_cfgfile)
+    memory_ipname = get_config_value('CONFIG_SUBSYSTEM_MEMORY_IP_NAME', default_cfgfile)
+    if not memory_manual:
+        override_string += 'YAML_MAIN_MEMORY_CONFIG:%s:pn-device-tree = "%s"\n' % (machine_name, memory_ipname)
+    dt_overlay = get_config_value('CONFIG_SUBSYSTEM_DTB_OVERLAY', default_cfgfile)
+    if dt_overlay:
+        override_string += 'YAML_ENABLE_DT_OVERLAY:pn-device-tree = "1"\n'
+    dt_no_alias = get_config_value('CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', default_cfgfile)
+    if dt_no_alias:
+        override_string += 'YAML_ENABLE_NO_ALIAS = "1"\n'
+    dt_verbose = get_config_value('CONFIG_SUBSYSTEM_ENABLE_DT_VERBOSE', default_cfgfile)
+    if dt_verbose:
+        override_string += 'YAML_ENABLE_DT_VERBOSE = "1"\n'
+    extra_dt_files = get_config_value('CONFIG_SUBSYSTEM_EXTRA_DT_FILES', default_cfgfile)
+    if autoconfig_dt:
+        override_string += 'EXTRA_DT_FILES = "%s"\n' % extra_dt_files
+    dt_remove_pl = get_config_value('CONFIG_SUBSYSTEM_REMOVE_PL_DTB', default_cfgfile)
+    if dt_remove_pl:
+        override_string += 'YAML_REMOVE_PL_DT:pn-device-tree = "1"\n'
+    dt_padding_size = get_config_value('CONFIG_SUBSYSTEM_DTB_PADDING_SIZE', default_cfgfile)
+    override_string += 'DT_PADDING_SIZE:pn-device-tree = "%s"\n' % dt_padding_size
+    dt_compiler_flags = get_config_value('CONFIG_SUBSYSTEM_DEVICETREE_COMPILER_FLAGS', default_cfgfile)
+    override_string += 'DTC_FLAGS:pn-device-tree = "%s"\n' % dt_compiler_flags
+    dt_include_dir = get_config_value('CONFIG_SUBSYSTEM_DEVICE_TREE_INCLUDE_DIR', default_cfgfile)
+    dt_manual_include = get_config_value('CONFIG_SUBSYSTEM_DEVICE_TREE_MANUAL_INCLUDE', default_cfgfile)
+    if dt_manual_include:
+        override_string += 'KERNEL_INCLUDE:append:pn-device-tree = " %s"\n' % dt_include_dir
+
+    processor_ipname = get_config_value('CONFIG_SUBSYSTEM_PROCESSOR0_IP_NAME', default_cfgfile)
+    if soc_family == 'microblaze':
+        override_string += 'XSCTH_PROC:microblaze:pn-device-tree = "%s"\n' % processor_ipname
+    dtg_machine = get_config_value('CONFIG_SUBSYSTEM_MACHINE_NAME', default_cfgfile)
+    if dtg_machine and dtg_machine.lower() != 'auto':
+        override_string += 'YAML_DT_BOARD_FLAGS:%s = "{BOARD %s}"\n' % (override_param, dtg_machine)
+
+    override_string += '\n#U-boot variables\n'
+    override_string += add_remote_sources('u-boot-xlnx', 'U__BOOT')
+    override_string += add_external_sources('u-boot-xlnx', 'U__BOOT')
+    uboot_config = get_config_value('CONFIG_SUBSYSTEM_UBOOT_CONFIG_TARGET', default_cfgfile)
+    if uboot_config and uboot_config.lower() != 'auto':
+        override_string += 'UBOOT_MACHINE = "%s"\n' % uboot_config
+        override_string += 'HAS_PLATFORM_INIT:append = " %s"\n' % uboot_config
+    uboot_autoconfig = get_config_value('CONFIG_SUBSYSTEM_AUTOCONFIG_U__BOOT', default_cfgfile)
+    if soc_family == 'microblaze':
+        if uboot_autoconfig:
+            override_string += 'U_BOOT_AUTO_CONFIG:pn-u-boot-xlnx = "1"\n'
+            auto_uboot_dir = os.path.join(args.output,'u-boot-xlnx')
+            if not os.path.isdir(auto_uboot_dir): os.makedirs(auto_uboot_dir)
+            print('INFO: Generating u-boot autoconfigs')
+            cmd = 'xsct -sdx -nodisp %s/petalinux_hsm_bridge.tcl -c %s -a u-boot_bsp -hdf %s -o %s -data %s' % \
+                    (scripts_dir, default_cfgfile, os.path.abspath(args.hw_description), \
+                    auto_uboot_dir,os.path.join(scripts_dir,'data'))
+            print('Running CMD: %s' % cmd)
+            subprocess.check_call(cmd.split(),cwd=args.output)
+
+    if arch == 'aarch64':
+        override_string += '\n#Arm-trusted-firmware variables\n'
+        override_string += add_remote_sources('arm-trusted-firmware', 'ARM__TRUSTED__FIRMWARE')
+        override_string += add_external_sources('arm-trusted-firmware', 'ARM__TRUSTED__FIRMWARE')
+        atf_serial_ip_name = get_config_value('CONFIG_SUBSYSTEM_SERIAL_ATF_IP_NAME', default_cfgfile)
+        atf_serial_manual = get_config_value('CONFIG_SUBSYSTEM_ATF_SERIAL_MANUAL_SELECT', default_cfgfile)
+        if not atf_serial_manual:
+            override_string += 'ATF_CONSOLE:%s = "%s"\n' % (machine_name, atf_serial_ip_name)
+        atf_mem_settings = get_config_value('CONFIG_SUBSYSTEM_ATF_MEMORY_SETTINGS', default_cfgfile)
+        atf_mem_base = get_config_value('CONFIG_SUBSYSTEM_ATF_MEM_BASE', default_cfgfile)
+        atf_mem_size = get_config_value('CONFIG_SUBSYSTEM_ATF_MEM_SIZE', default_cfgfile)
+        if atf_mem_settings:
+            override_string += 'ATF_MEM_BASE:%s = "%s"\n' % (machine_name, atf_mem_base)
+            override_string += 'ATF_MEM_SIZE:%s = "%s"\n' % (macihne_name, atf_mem_size)
+        atf_extra_settings = get_config_value('CONFIG_SUBSYSTEM_ATF_EXTRA_COMPILER_FLAGS', default_cfgfile)
+        atf_bl33_load = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE', default_cfgfile)
+        override_string += 'EXTRA_OEMAKE:append:pn-arm-trusted-firmware = " %s PRELOADED_BL33_BASE=%s"\n' % (atf_extra_settings, atf_bl33_load)
+        atf_debug = get_config_value('CONFIG_SUBSYSTEM_ATF_DEBUG', default_cfgfile)
+        if atf_debug:
+            override_string += 'DEBUG_ATF = "1"\n'
+
+    if soc_family == 'versal':
+        override_string += '\n#PLM variables\n'
+        override_string += add_remote_sources('plm-firmware', 'PLM')
+        override_string += add_external_sources('plm-firmware', 'PLM')
+        override_string += add_remote_sources('psm-firmware', 'PSM__FIRMWARE')
+        override_string += add_external_sources('psm-firmware', 'PSM__FIRMWARE')
+        plm_serial_ip_name = get_config_value('CONFIG_SUBSYSTEM_SERIAL_PLM_IP_NAME', default_cfgfile)
+        plm_serial_manual = get_config_value('CONFIG_SUBSYSTEM_PLM_SERIAL_MANUAL_SELECT', default_cfgfile)
+        if not plm_serial_manual:
+            override_string += 'YAML_SERIAL_CONSOLE_STDIN:%s:pn-plm-firmware = "%s"\n' % (machine_name, plm_serial_ip_name)
+            override_string += 'YAML_SERIAL_CONSOLE_STDOUT:%s:pn-plm-firmware = "%s"\n' % (machine_name, plm_serial_ip_name)
+
+    if soc_family == 'zynqmp':
+        override_string += '\n#PMUFW variables\n'
+        pmufw_extraflags = get_config_value('CONFIG_SUBSYSTEM_PMUFW_COMPILER_EXTRA_FLAGS', default_cfgfile)
+        override_string += 'YAML_COMPILER_FLAGS:append:pn-pmu-firmware = " %s"\n' % pmufw_extraflags
+        pmufw_serial_manual = get_config_value('CONFIG_SUBSYSTEM_PMUFW_SERIAL_MANUAL_SELECT', default_cfgfile)
+        pmufw_serial_ipname = get_config_value('CONFIG_SUBSYSTEM_SERIAL_PMUFW_IP_NAME', default_cfgfile)
+        if not pmufw_serial_manual:
+            override_string += 'YAML_SERIAL_CONSOLE_STDIN:%s:pn-pmu-firmware = "%s"\n' % (machine_name, pmufw_serial_ipname)
+            override_string += 'YAML_SERIAL_CONSOLE_STDOUT:%s:pn-pmu-firmware = "%s"\n' % (machine_name, pmufw_serial_ipname)
+
+    if soc_family in ['zynqmp', 'zynq']:
+        fsbl_bspcompiler_flags = get_config_value('CONFIG_SUBSYSTEM_FSBL_BSPCOMPILER_FLAGS', default_cfgfile)
+        fsbl_bspcompiler_flagset = get_config_value('CONFIG_SUBSYSTEM_FSBL_BSPCOMPILER_FLAGSSET', default_cfgfile)
+        override_string += '\n#FSBL variables\n'
+        if fsbl_bspcompiler_flagset:
+            override_string += 'YAML_BSP_COMPILER_FLAGS:append:pn-fsbl-firmware = " %s"' % fsbl_bspcompiler_flags
+        fsbl_serial_manual = get_config_value('CONFIG_SUBSYSTEM_FSBL_SERIAL_MANUAL_SELECT', default_cfgfile)
+        fsbl_serial_ipname = get_config_value('CONFIG_SUBSYSTEM_SERIAL_FSBL_IP_NAME', default_cfgfile)
+        if not fsbl_serial_manual:
+            override_string += 'YAML_SERIAL_CONSOLE_STDIN:%s:pn-fsbl-firmware = "%s"\n' % (machine_name, fsbl_serial_ipname)
+            override_string += 'YAML_SERIAL_CONSOLE_STDOUT:%s:pn-fsbl-firmware = "%s"\n' % (machine_name, fsbl_serial_ipname)
+        fsbl_compiler_extra_flags = get_config_value('CONFIG_SUBSYSTEM_FSBL_COMPILER_EXTRA_FLAGS', default_cfgfile)
+        override_string += 'YAML_COMPILER_FLAGS:append:pn-fsbl-firmware = " %s"\n' % fsbl_compiler_extra_flags
+
+    if soc_family == 'microblaze':
+        override_string += '\n#Fs-boot variables\n'
+        fsboot_serial_ipname = get_config_value('CONFIG_SUBSYSTEM_SERIAL_FSBOOT_IP_NAME', default_cfgfile)
+        fsboot_serial_manual = get_config_value('CONFIG_SUBSYSTEM_FSBOOT_SERIAL_MANUAL_SELECT', default_cfgfile)
+        if not fsboot_serial_manual:
+            override_string += 'YAML_SERIAL_CONSOLE_STDIN:%s:pn-fs-boot = "%s"\n' % (machine_name, fsboot_serial_ipname)
+            override_string += 'YAML_SERIAL_CONSOLE_STDOUT:%s:pn-fs-boot = "%s"\n' % (machine_name, fsboot_serial_ipname)
+        fsboot_memory_manual = get_config_value('CONFIG_SUBSYSTEM_MEMORY_MANUAL_SELECT', default_cfgfile)
+        fsboot_memory_ipname = get_config_value('CONFIG_SUBSYSTEM_MEMORY_IP_NAME', default_cfgfile)
+        fsboot_flash_ipname = get_config_value('CONFIG_SUBSYSTEM_FLASH_IP_NAME', default_cfgfile)
+        if not fsboot_memory_manual:
+            override_string += 'YAML_MAIN_MEMORY_CONFIG:%s:pn-fs-boot = "%s"\n' % (machine_name, fsboot_memory_ipname)
+            override_string += 'YAML_FLASH_MEMORY_CONFIG:%s:pn-fs-boot = "%s"\n' % (machine_name, fsboot_flash_ipname)
+        processor_ip_name = get_config_value('CONFIG_SUBSYSTEM_PROCESSOR0_IP_NAME', default_cfgfile)
+        override_string += 'XSCTH_PROC:microblaze:pn-fs-boot = "%s"\n' % processor_ip_name
+
+    is_fpga_manager = get_config_value('CONFIG_SUBSYSTEM_FPGA_MANAGER', default_cfgfile)
+    if is_fpga_manager == 'y':
+        override_string += '\n#FPGA manager Variables\n'
+        if soc_family == 'versal':
+            override_string += 'MACHINE_FEATURES += "fpga-overlay"\n'
+        else:
+            override_string += 'IMAGE_FEATURES += " fpga-manager"\n'
+            override_string += 'MACHINE_FEATURES += "fpga-overlay"\n'
+            extra_hdf = get_config_value('CONFIG_FPGA_HW_PATH', default_cfgfile)
+            override_string += 'EXTRA_HDF = "%s"\n' % extra_hdf
+    is_uboot_dtb = get_config_value('CONFIG_SUBSYSTEM_UBOOT_EXT_DTB', default_cfgfile)
+    ubootdtb_dts_path = get_config_value('CONFIG_UBOOT_EXT_DTB_FROM_DTS', default_cfgfile)
+    ubootdtb_packagename = get_config_value('CONFIG_UBOOT_DTB_PACKAGE_NAME', default_cfgfile)
+    if is_uboot_dtb == 'y':
+        override_string += 'PACKAGE_UBOOT_DTB_NAME = "%s"\n' % ubootdtb_packagename
+        override_string += 'PACKAGES_LIST:append = " uboot-device-tree"'
+        if ubootdtb_dts_path: override_string += 'UBOOT_DTS = "%s"\n' % ubootdtb_dts_path
+
+    if soc_family == 'microblaze':
+        kernel_loadaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_',default_cfgfile,'asterisk','_BASEADDR=')
+    else:
+        kernel_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_',default_cfgfile,'asterisk','_KERNEL_BASEADDR=')
+        if not kernel_baseaddr: kernel_baseaddr = '0x0'
+        kernel_offset = '0x200000'
+        kernel_loadaddr = hex(int(kernel_baseaddr, 16) + int(kernel_offset, 16))
+        kernel_loadaddr = '0x%s' % kernel_loadaddr[2:].upper()
+    if kernel_loadaddr and int(kernel_loadaddr, 16) >> 32:
+        MSB = '0x%s' % hex(int(kernel_loadaddr, 16) >> 32)[2:].upper()
+        LSB = '0x%s' % hex(int(kernel_loadaddr, 16) & 0x0ffffffff)[2:].upper()
+        loadaddr = '%s %s' % (MSB, LSB)
+    else:
+        loadaddr = kernel_loadaddr
+
+    kernel_images = 'fitImage vmlinux'
+    kernel_image = ''
+    kernel_alt_image = ''
+    if arch == 'arm':
+        kernel_image = 'zImage'
+        kernel_alt_image = 'uImage'
+    elif arch == 'microblaze':
+        kernel_image = 'linux.bin.ub'
+        kernel_images += ' simpleImage.mb'
+    elif arch == 'aarch64':
+        kernel_images += ' Image.gz'
+    if kernel_image:
+        override_string += 'KERNEL_IMAGETYPE = "%s"\n' % kernel_image
+        override_string += 'KERNEL_EXTRA_ARGS:append = " UIMAGE_LOADADDR=%s"\n' % loadaddr
+    if kernel_alt_image: override_string += 'KERNEL_ALT_IMAGETYPE = "uImage"\n'
+
+    override_string += '\n#Add FIT Variables\n'
+    override_string += 'KERNEL_CLASSES:append = " kernel-fitimage"\n'
+    override_string += 'KERNEL_IMAGETYPES:append = " %s"\n' % kernel_images
+    override_string += 'UBOOT_ENTRYPOINT  = "%s"\n' % loadaddr
+    override_string += 'UBOOT_LOADADDRESS = "%s"\n' % loadaddr
+
+    ddr_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_',default_cfgfile,'asterisk','_BASEADDR=')
+    if not ddr_baseaddr: ddr_baseaddr = '0x0'
+    override_string += '\n#Add u-boot-zynq-scr Variables\n'
+    override_string += 'DDR_BASEADDR = "%s"\n' % ddr_baseaddr
+    skip_append_baseaddr = get_config_value('CONFIG_SUBSYSTEM_UBOOT_APPEND_BASEADDR',default_cfgfile)
+    if skip_append_baseaddr:
+        override_string += 'SKIP_APPEND_BASEADDR = "0"\n'
+    else:
+        override_string += 'SKIP_APPEND_BASEADDR = "1"\n'
+
+    override_string += 'KERNEL_IMAGE:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_KERNEL_IMAGE', default_cfgfile))
+    override_string += 'DEVICETREE_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_DEVICETREE_OFFSET', default_cfgfile))
+    override_string += 'KERNEL_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_KERNEL_OFFSET', default_cfgfile))
+    override_string += 'RAMDISK_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_RAMDISK_IMAGE_OFFSET', default_cfgfile))
+    override_string += 'QSPI_KERNEL_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_KERNEL_OFFSET', default_cfgfile))
+    override_string += 'QSPI_KERNEL_SIZE:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_KERNEL_SIZE', default_cfgfile))
+    override_string += 'QSPI_RAMDISK_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_RAMDISK_OFFSET', default_cfgfile))
+    override_string += 'QSPI_RAMDISK_SIZE:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_RAMDISK_SIZE', default_cfgfile))
+    override_string += 'QSPI_FIT_IMAGE_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_FIT_IMAGE_OFFSET', default_cfgfile))
+    override_string += 'QSPI_FIT_IMAGE_SIZE:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_FIT_IMAGE_SIZE', default_cfgfile))
+    override_string += 'NAND_KERNEL_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_KERNEL_OFFSET', default_cfgfile))
+    override_string += 'NAND_KERNEL_SIZE:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_KERNEL_SIZE', default_cfgfile))
+    override_string += 'NAND_RAMDISK_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_RAMDISK_OFFSET', default_cfgfile))
+    override_string += 'NAND_RAMDISK_SIZE:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_RAMDISK_SIZE', default_cfgfile))
+    override_string += 'NAND_FIT_IMAGE_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_FIT_IMAGE_OFFSET', default_cfgfile))
+    override_string += 'NAND_FIT_IMAGE_SIZE:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_FIT_IMAGE_SIZE', default_cfgfile))
+    override_string += 'FIT_IMAGE:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_FIT_IMAGE', default_cfgfile))
+    override_string += 'FIT_IMAGE_OFFSET:%s = "%s"\n' \
+            % (machine_name, get_config_value('CONFIG_SUBSYSTEM_UBOOT_FIT_IMAGE_OFFSET', default_cfgfile))
+    override_string += 'PRE_BOOTENV = "%s"\n' \
+            % get_config_value('CONFIG_SUBSYSTEM_UBOOT_PRE_BOOTENV', default_cfgfile)
+
+    rootfs_jffs2 = get_config_value('CONFIG_SUBSYSTEM_ROOTFS_JFFS2', default_cfgfile)
+    if rootfs_jffs2:
+        jffs2_size = get_config_value('CONFIG_SUBSYSTEM_JFFS2_ERASE_SIZE_',default_cfgfile,'choice')
+        jffs2_size = hex(int(jffs2_size) * 1024)
+        override_string += '\n#jffs2 variables\n'
+        override_string += 'JFFS2_ERASEBLOCK = "%s"\n' % jffs2_size
+
+    rootfs_ubifs = get_config_value('CONFIG_SUBSYSTEM_ROOTFS_UBIFS', default_cfgfile)
+    if rootfs_ubifs:
+        override_string += '\n#ubi/ubifs variables\n'
+        ubi_mubifs_args = get_config_value('CONFIG_SUBSYSTEM_UBI_MKUBIFS_ARGS', default_cfgfile)
+        ubi_ubinize_args = get_config_value('CONFIG_SUBSYSTEM_UBI_UBINIZE_ARGS', default_cfgfile)
+        ubi_part_name =  get_config_value('CONFIG_SUBSYSTEM_UBI_PART_NAME', default_cfgfile)
+        override_string += 'MKUBIFS_ARGS = "%s\n"' % ubi_mubifs_args
+        override_string += 'UBINIZE_ARGS = "%s\n"' % ubi_ubinize_args
+        override_string += 'UBI_VOLNAME = "%s\n"' % ubi_part_name
+
+    provides_name = get_config_value('CONFIG_SUBSYSTEM_INITRAMFS_IMAGE_NAME', default_cfgfile)
+    rootfs_initrd = get_config_value('CONFIG_SUBSYSTEM_ROOTFS_INITRD', default_cfgfile)
+    if rootfs_initrd:
+        override_string += '\nINITRAMFS_IMAGE = "%s"\n' % provides_name
+
+    rootfs_initramfs = get_config_value('CONFIG_SUBSYSTEM_ROOTFS_INITRAMFS', default_cfgfile)
+    if rootfs_initramfs:
+        override_string += '\nINITRAMFS_IMAGE_BUNDLE = "1"\n'
+        override_string += 'INITRAMFS_IMAGE = "%s"\n' % provides_name
+        override_string += 'INITRAMFS_MAXSIZE = "524288"\n'
+
+    rootfs_types = get_config_value('CONFIG_SUBSYSTEM_RFS_FORMATS', default_cfgfile)
+    if rootfs_types:
+        override_string += 'IMAGE_FSTYPES = "%s"\n' % (rootfs_types)
+
+    if re.search('initramfs', provides_name):
+        override_string += 'INITRAMFS_FSTYPES = "cpio.gz cpio.gz.u-boot tar.gz"\n'
+        override_string += 'IMAGE_FSTYPES:pn-%s:%s = "${INITRAMFS_FSTYPES}"\n' % (provides_name, soc_family)
+
+    override_string += '\n#Add EXTRA_IMAGEDEPENDS\n'
+    imagedepends = {
+            'microblaze': ['virtual/bootloader', 'virtual/fsboot', 'virtual/elfrealloc', 'u-boot-zynq-scr'],
+            'zynq': ['virtual/bootloader', 'virtual/fsbl', 'u-boot-zynq-scr'],
+            'zynqmp': ['virtual/bootloader', 'virtual/fsbl', 'virtual/pmu-firmware', \
+                    'arm-trusted-firmware', 'qemu-devicetrees', 'pmu-rom-native', 'u-boot-zynq-scr'],
+            'versal': ['virtual/bootloader', 'virtual/psm-firmware', 'virtual/plm', \
+                    'arm-trusted-firmware', 'u-boot-zynq-scr', 'qemu-devicetrees', 'extract-cdo'],
+        }
+    is_imgsel = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_IMG_SEL', default_cfgfile)
+    is_uboot_dtb = get_config_value('CONFIG_SUBSYSTEM_UBOOT_EXT_DTB', default_cfgfile)
+    if is_imgsel: imagedepends[soc_family].append('virtual/imgsel')
+    if is_uboot_dtb: imagedepends[soc_family].append('virtual/uboot-dtb')
+
+    is_fsboot = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_BOOTLOADER_NAME_FS__BOOT', default_cfgfile)
+    if not is_fsboot and 'virtual/fsboot' in imagedepends[soc_family]:
+        imagedepends[soc_family].remove('virtual/fsboot')
+    if not is_fsboot and 'virtual/elfrealloc' in imagedepends[soc_family]:
+        imagedepends[soc_family].remove('virtual/elfrealloc')
+    is_fsbl = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_BOOTLOADER_AUTO_FSBL', default_cfgfile)
+    if not is_fsbl and 'virtual/fsbl' in imagedepends[soc_family]:
+        imagedepends[soc_family].remove('virtual/fsbl')
+    is_pmufw = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_PMU_FIRMWARE', default_cfgfile)
+    if not is_pmufw and 'virtual/pmu-firmware' in imagedepends[soc_family]:
+        imagedepends[soc_family].remove('virtual/pmu-firmware')
+    is_plm = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_PLM', default_cfgfile)
+    if not is_plm and 'virtual/plm' in imagedepends[soc_family]:
+        imagedepends[soc_family].remove('virtual/plm')
+    is_psmfw = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_PSM_FIRMWARE', default_cfgfile)
+    if not is_psmfw and 'virtual/psm-firmware' in imagedepends[soc_family]:
+        imagedepends[soc_family].remove('virtual/psm-firmware')
+    override_string += 'EXTRA_IMAGEDEPENDS:append = " %s"\n' % ' '.join(imagedepends[soc_family])
+    override_string += 'SPL_BINARY = ""\n'
+    if is_imgsel: override_string += 'PACKAGES_LIST:append = " imgsel"'
+
+    pdi_name = get_config_value('CONFIG_SUBSYSTEM_PDI_FILENAME', default_cfgfile)
+    if pdi_name:
+        override_string += 'BASE_PDI_NAME = "%s"\n' % pdi_name
+
+    serialname = get_config_value('CONFIG_SUBSYSTEM_SERIAL_',default_cfgfile,'choice','_SELECT=y')
+    if serialname != 'MANUAL':
+        serialipname = get_ipproperty(serialname, default_cfgfile)
+        baudrate = get_config_value('CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_' % serialname, default_cfgfile,'choice','=y')
+        if serialipname == 'axi_uartlite' and serialipname == 'mdm':
+            serial_console = '%s;ttyUL0' % baudrate
+        elif serialipname == 'axi_uart16550':
+            serial_console = '%s;ttyS0' % baudrate
+        elif serialipname == 'psv_sbsauart':
+            serial_console = '%s;ttyAMA0' % baudrate
+        else:
+            serial_console = '%s;ttyPS0' % baudrate
+
+        # parse the selected serial IP if no_alias selected to get the serial no.
+        # serial no. will be suffix to the serial ip name Ex:psu_uart_1 -> serial no. is 1.
+        no_alias = get_config_value('CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS',default_cfgfile)
+        serial_no = ''
+        if no_alias == 'y':
+            serial_no = serialname.lower().split(serialipname + '_')[1]
+            serial_console = serial_console[:-1]
+            serial_console = serial_console + serial_no
+        override_string += 'SERIAL_CONSOLES = "%s"\n' % serial_console
+        override_string += 'SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"\n'
+        override_string += 'YAML_SERIAL_CONSOLE_BAUDRATE = "%s"\n' % baudrate
+
+    if soc_family == 'microblaze':
+        hw_ver = get_mb_hwversion(default_cfgfile)
+        if not hw_ver: hw_ver = '10.0'
+        tune_settings = 'microblaze v%s barrel-shift pattern-compare reorder divide-hard multiply-high' % hw_ver
+        override_string += 'TUNE_FEATURES:tune-microblaze:microblaze = "%s"\n' % tune_settings
+
+    override_string += '\n#SDK variables\n'
+    override_string += 'SDK_EXT_TYPE = "minimal"\n'
+    override_string += 'SDK_INCLUDE_BUILDTOOLS = "0"\n'
+
+    override_string += '\n# deploy class variables\n'
+    override_string += 'INHERIT += "plnx-deploy"\n'
+    override_string += 'PLNX_DEPLOY_DIR = "${TOPDIR}/images/linux"\n'
+    dtb_deployname = get_config_value('CONFIG_SUBSYSTEM_IMAGES_ADVANCED_AUTOCONFIG_DTB_IMAGE_NAME', default_cfgfile)
+    override_string += 'PACKAGE_DTB_NAME = "%s"\n' % dtb_deployname
+    fit_deployname = get_config_value('CONFIG_SUBSYSTEM_UIMAGE_NAME', default_cfgfile)
+    override_string += 'PACKAGE_FITIMG_NAME = "%s"\n' % fit_deployname
+    override_string += 'EXTRA_FILESLIST:append = " %s:config"\n' % os.path.join(args.output,'config')
+
+    soc_variant = get_config_value('CONFIG_SUBSYSTEM_VARIANT_%s' % soc_family.upper(), default_cfgfile, 'choice').lower()
+    if soc_variant == 'ev' and soc_family == 'zynqmp':
+        override_string += 'MACHINE_HWCODECS = "libomxil-xlnx"\n'
+        override_string += 'IMAGE_FEATURES += "hwcodecs"\n'
+    if soc_variant:
+        override_string += 'SOC_VARIANT = "%s"\n' % soc_variant
+
+    override_string += '\n#Below variables helps to add bbappend changes when this file included\n'
+    override_string += 'WITHIN_PLNX_FLOW = "1"\n'
+    override_string += 'SYSCONFIG_DIR = "%s"\n' % args.output
+
+    with open(override_conf_path, 'w') as override_conf_f:
+        override_conf_f.write(override_string)
+    override_conf_f.close()
+
+global inherit_ext
+inherit_ext = ''
+def main():
+    parser = argparse.ArgumentParser(description = 'Generate the PetaLinux Configuration',  \
+                                        usage = '%(prog)s --hw-description [GET_HW_DESCRIPTION] --soc-family [SOC_FAMILY] [options]')
+    optional_args = parser._action_groups.pop()
+    required_args = parser.add_argument_group('required arguments')
+    required_args.add_argument('--hw-description', required=True, help='Specify hardware file')
+    required_args.add_argument('--soc-family', required=True, help='Specify SOC family type Ex: microblaze,zynq,zynqmp,versal')
+    optional_args.add_argument('--output', help='Output directory name',default=os.path.join(os.getcwd(),'output'))
+    optional_args.add_argument('--sdk-toolchain', help='Xilinx sdk tool chain path to use xsct commands')
+    optional_args.add_argument('--native-sysroot', help='native sysroot path to use the mconf/conf commands')
+    optional_args.add_argument('--silentoldconfig', help='Update a configuration using a default config as base additionally update deps',action='store_true')
+    parser._action_groups.append(optional_args)
+    args = parser.parse_args()
+
+    args.output = os.path.join(args.output,args.soc_family)
+    # Check SDK toolchain path
+    if args.sdk_toolchain:
+        if not os.path.isdir(args.sdk_toolchain):
+            print('ERROR: SDK_TOOLCHAIN path doesnot exists: %s' % args.sdk_toolchain)
+            sys.exit(255)
+        else:
+            os.environ["PATH"] += os.pathsep + args.sdk_toolchain + '/bin'
+    else:
+        print('INFO: Running CMD: bitbake -e')
+        process = subprocess.Popen(['bitbake','-e'],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        xilinx_sdk_toolchain = ''
+        for line in stdout.splitlines():
+            if line.decode('utf-8').startswith('XILINX_SDK_TOOLCHAIN'):
+                xilinx_sdk_toolchain = line.decode('utf-8').split('=')[1].replace('"','')
+        if xilinx_sdk_toolchain and not os.path.isdir(xilinx_sdk_toolchain):
+            print('ERROR: XILINX_SDK_TOOLCHAIN set to "%s" is doesnot exists please set a valid one, or' % xilinx_sdk_toolchain)
+            print('Use --sdk-toolchain option to specify the SDK_TOOLCHAIN path')
+            sys.exit(255)
+        elif xilinx_sdk_toolchain:
+            os.environ["PATH"] += os.pathsep + xilinx_sdk_toolchain + '/bin'
+
+    xsct_exe = shutil.which('xsct')
+    if not xsct_exe:
+        print('ERROR: xsct command not found')
+        sys.exit(255)
+    else:
+        print('INFO: Using xsct from : %s' % xsct_exe)
+
+    # Check mconf utilities
+    if args.native_sysroot:
+        if not os.path.isdir(args.native_sysroot):
+            print('ERROR: Native sysroot path doesnot exists: %s' % args.native_sysroot)
+            sys.exit(255)
+        else:
+            os.environ["PATH"] += os.pathsep + args.native_sysroot + '/usr/bin'
+    else:
+        mconf_provides = "kconfig-frontends-native"
+        print('INFO: Getting kconfig-frontends sysroot path')
+        process = subprocess.Popen(['bitbake','-e',mconf_provides],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        sysroot_path = ''
+        sysroot_destdir = ''
+        staging_bindir_native = ''
+        native_package_path_suffix = ''
+        for line in stdout.splitlines():
+            if line.decode('utf-8').startswith('SYSROOT_DESTDIR'):
+                sysroot_destdir = line.decode('utf-8').split('=')[1].replace('"','')
+            elif line.decode('utf-8').startswith('STAGING_BINDIR_NATIVE'):
+                staging_bindir_native = line.decode('utf-8').split('=')[1].replace('"','')
+            elif line.decode('utf-8').startswith('NATIVE_PACKAGE_PATH_SUFFIX'):
+                native_package_path_suffix = line.decode('utf-8').split('=')[1].replace('"','')
+        sysroot_path = '%s%s%s' % (sysroot_destdir,staging_bindir_native,native_package_path_suffix)
+        scripts = ['mconf', 'conf']
+        not_found = False
+        for script in scripts:
+            if not os.path.isfile(os.path.join(sysroot_path,script)):
+                not_found = True
+            elif os.path.isfile(os.path.join(sysroot_path,script)) and not os.access(os.path.join(sysroot_path,script), os.X_OK):
+                not_found = True
+        if not_found:
+            print('INFO: Running CMD: bitbake %s' % mconf_provides)
+            subprocess.check_call(["bitbake", mconf_provides])
+        os.environ["PATH"] += os.pathsep + sysroot_path
+
+    conf_exe = shutil.which('mconf')
+    if not conf_exe:
+        print('ERROR: mconf/conf command not found')
+        sys.exit(255)
+    else:
+        print('INFO: Using conf/mconf from : %s' % conf_exe)
+
+    if args.hw_description:
+        get_hw_description(args)
+
+    global default_cfgfile
+    default_cfgfile = os.path.join(args.output,'config')
+    if not os.path.isfile(default_cfgfile):
+        print('ERROR: Failed to generate .conf file, Unable to find config file at: %s' % args.output)
+        sys.exit(255)
+    generate_override_conf(args)
+    update_localconf(args)
+
+if __name__ == "__main__":
+    try:
+        ret = main()
+    except Exception:
+        ret = 1
+        import traceback
+        traceback.print_exc()
+    sys.exit(ret)

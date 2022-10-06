@@ -1,0 +1,86 @@
+#!/bin/bash
+# petalinux-allow-no-license
+
+MYCMD=$(basename $0)
+
+function usage {
+	echo "This command is used to determine IP addresses of host interfaces"
+	echo ""
+	echo "Usage:"
+	echo "  petalinux-find-ipaddr  <IFSPEC>"
+	echo ""
+	echo "Options:"
+	echo "  -h|--help  Show this message"
+	echo "  IFSPEC     AUTO | AUTO:ethN   etc"
+}
+
+function parse_args {
+
+	args=$(getopt -o "h" --long "help" -- "$@")
+
+	[ $? -ne 0 ] && usage && exit -1
+
+	eval set -- "${args}"
+
+	while true ; do
+		case $1 in
+			-h|--help) usage; exit 0 ;;
+			--) shift; break; ;;
+			*) usage; exit -1; ;;
+		esac
+	done
+
+	ifspec=$1; shift
+
+	[ -z "${ifspec}" ] && ifspec="AUTO"
+
+	[ ! -z "$@" ] && echo "Extra arguments provided: $@" && usage && exit -1
+}
+
+parse_args "$@"
+
+IFCONFIG=$(which ifconfig)
+intfs_path="/sys/class/net/"
+
+if [ "${ifspec:0:4}" == "AUTO" ]  || [ "${ifspec:0:4}" == "auto" ]; then
+        # AUTO:<interface> will grab the IP of that interface, if possible
+        intf_list=${ifspec:5}
+        # Was a specific interface given?  IF so, make sure it exists
+        if [ -n "${intf_list}" ]; then
+                if ! ${IFCONFIG} ${intf_list} > /dev/null 2>&1 ; then
+                        echo "WARNING: Specified interface ${intf_list} does not exist, using default" 1>&2
+                        intf_list=
+                fi
+	fi
+
+	if [ -z "${intf_list}" ]; then
+                # Otherwise, find all available interfaces
+		temp_intf_list=$(ls "${intfs_path}")
+		for intf in ${temp_intf_list}
+		do
+			if [ -d "${intfs_path}/${intf}/" ] ; then
+				if grep -q "up" "${intfs_path}/${intf}/operstate" ; then
+					# Grab the IP address of the first valid interface in the list
+					if ${IFCONFIG} $intf | grep -q "inet addr"; then
+						#delimiter is ':'
+						ipaddr="$(${IFCONFIG} $intf 2>/dev/null | egrep -o "inet addr:[0-9]+.[0-9]+.[0-9]+.[0-9]+" | cut -d ':' -f 2)"
+					elif $(${IFCONFIG} $intf | grep -q "inet "); then
+						#delimiter is 'space'
+						ipaddr="$(${IFCONFIG} $intf 2>/dev/null | egrep -o "inet [0-9]+.[0-9]+.[0-9]+.[0-9]+" | cut -d ' ' -f 2)"
+					fi
+					if [ ! -z "${ipaddr}" ] && [ ! "${ipaddr}" = "127.0.0.1" ]; then
+						break;
+					fi
+				fi
+			fi
+		done
+        fi
+else
+        intf_list=
+fi
+
+if [ -z ${ipaddr} ]; then
+	echo "${ifspec}"
+else
+	echo "${ipaddr}"
+fi

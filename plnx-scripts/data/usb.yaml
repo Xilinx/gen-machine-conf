@@ -1,0 +1,42 @@
+psu_usb:
+    var_count: usb_count
+    ip_type: usb
+    hsm:
+        primary_define:
+            IP_NAME:
+                uboot_config: CONFIG_ZYNQMP_USB CONFIG_USB CONFIG_CMD_USB CONFIG_CMD_DFU CONFIG_CMD_THOR_DOWNLOAD CONFIG_USB_XHCI_HCD CONFIG_USB_XHCI_DWC3 CONFIG_USB_STORAGE CONFIG_USB_GADGET CONFIG_USB_GADGET_DOWNLOAD CONFIG_USB_XHCI_ZYNQMP CONFIG_USB_DWC3 CONFIG_USB_DWC3_GADGET CONFIG_USB_DWC3_GENERIC CONFIG_USB_ULPI_VIEWPORT CONFIG_USB_ULPI CONFIG_CMD_EXT2 CONFIG_CMD_EXT4 CONFIG_CMD_EXT4_WRITE CONFIG_CMD_FAT CONFIG_DFU_RAM CONFIG_USB_FUNCTION_THOR
+                uboot_header: CONFIG_THOR_RESET_OFF
+        primary_custom_define:
+            IP_NAME:
+                uboot_header: CONFIG_SYS_DFU_DATA_BUF_SIZE 0x1800000
+            NAME:
+                uboot_header: DFU_DEFAULT_POLL_TIMEOUT 300
+        custom_define:
+            IP_NAME:
+                uboot_config: CONFIG_USB_GADGET_MANUFACTURER=\"Xilinx\"
+            NAME:
+                uboot_config: CONFIG_USB_GADGET_VENDOR_NUM=0x03FD
+        custom_define:
+            IP_TYPE:
+                uboot_config: CONFIG_USB_GADGET_PRODUCT_NUM=0x0300
+ps7_usb:
+    var_count: usb_count
+    ip_type: usb
+    hsm:
+        primary_define:
+            IP_NAME:
+                uboot_config: CONFIG_USB CONFIG_CMD_USB CONFIG_USB_EHCI_HCD CONFIG_USB_ULPI_VIEWPORT CONFIG_USB_ULPI CONFIG_USB_STORAGE CONFIG_USB_GADGET CONFIG_USB_GADGET_DOWNLOAD CONFIG_CMD_THOR_DOWNLOAD CONFIG_CMD_DFU CONFIG_CMD_EXT2 CONFIG_CMD_EXT4 CONFIG_CMD_EXT4_WRITE CONFIG_CMD_FAT CONFIG_DFU_RAM CONFIG_USB_FUNCTION_THOR
+                uboot_header: CONFIG_EHCI_IS_TDI CONFIG_THOR_RESET_OFF
+        primary_custom_define:
+            IP_NAME:
+                uboot_header: CONFIG_SYS_DFU_DATA_BUF_SIZE 0x600000
+            NAME:
+                uboot_header: DFU_DEFAULT_POLL_TIMEOUT 300
+        custom_define:
+            IP_NAME:
+                uboot_config: CONFIG_USB_GADGET_MANUFACTURER=\"Xilinx\"
+            NAME:
+                uboot_config: CONFIG_USB_GADGET_VENDOR_NUM=0x03FD
+        custom_define:
+            IP_TYPE:
+                uboot_config: CONFIG_USB_GADGET_PRODUCT_NUM=0x0300

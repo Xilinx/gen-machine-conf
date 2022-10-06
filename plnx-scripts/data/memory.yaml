@@ -1,0 +1,30 @@
+ddr4:
+    ip_type: main_memory
+
+ddr3:
+    ip_type: main_memory
+
+mig:
+    ip_type: main_memory
+
+mig_7series:
+    ip_type: main_memory
+
+#FIXME: support multi-bank
+axi_s6_ddrx:
+    ip_type: main_memory_multibank
+
+axi_v6_ddrx:
+    ip_type: main_memory
+
+axi_7series_ddrx:
+    ip_type: main_memory
+
+ps7_ddr:
+    ip_type: main_memory
+
+psu_ddr:
+    ip_type: main_memory
+
+simple:
+    ip_type: main_memory

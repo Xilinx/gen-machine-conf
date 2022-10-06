@@ -1,0 +1,449 @@
+ps7_cortexa9:
+    device_type:
+        processor:
+            arch: arm
+
+psu_cortexa53:
+    device_type:
+        processor:
+            arch: aarch64
+psv_cortexa72:
+    device_type:
+        processor:
+            arch: aarch64
+microblaze:
+    device_type:
+        processor:
+            arch: microblaze
+    linux_kernel_properties:
+        XILINX_MICROBLAZE0_FAMILY: CONFIG.C_FAMILY string
+        XILINX_MICROBLAZE0_USE_MSR_INSTR: CONFIG.C_USE_MSR_INSTR int
+        XILINX_MICROBLAZE0_USE_PCMP_INSTR: CONFIG.C_USE_PCMP_INSTR int
+        XILINX_MICROBLAZE0_USE_BARREL: CONFIG.C_USE_BARREL int
+        XILINX_MICROBLAZE0_USE_DIV: CONFIG.C_USE_DIV int
+        XILINX_MICROBLAZE0_USE_HW_MUL: CONFIG.C_USE_HW_MUL int
+        XILINX_MICROBLAZE0_USE_FPU: CONFIG.C_USE_FPU int
+        XILINX_MICROBLAZE0_HW_VER: VLNV string
+ps7_ddr:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_S_AXI_BASEADDR
+            highaddr: CONFIG.C_S_AXI_HIGHADDR
+psu_ddr:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_S_AXI_BASEADDR
+            highaddr: CONFIG.C_S_AXI_HIGHADDR
+
+axi_emc:
+    device_type:
+        memory:
+            has_bank: y
+            number_of_banks: CONFIG.C_NUM_BANKS_MEM
+            bank_property:
+                bankid_replacement_str: <PLNXNUM>
+                bank_type: CONFIG.C_MEM<PLNXNUM>_TYPE
+                valid_bank_type_value: 0 1 4
+                bank_baseaddr: CONFIG.C_S_AXI_MEM<PLNXNUM>_BASEADDR
+                bank_highaddr: CONFIG.C_S_AXI_MEM<PLNXNUM>_HIGHADDR
+        flash:
+            flash_type: parallel
+            has_bank: y
+            number_of_banks: CONFIG.C_NUM_BANKS_MEM
+            bank_property:
+                bank_width: CONFIG.C_MEM<PLNXNUM>_WIDTH
+                bankid_replacement_str: <PLNXNUM>
+                bank_type: CONFIG.C_MEM<PLNXNUM>_TYPE
+                valid_bank_type_value: 2 3
+                bank_baseaddr: CONFIG.C_S_AXI_MEM<PLNXNUM>_BASEADDR
+                bank_highaddr: CONFIG.C_S_AXI_MEM<PLNXNUM>_HIGHADDR
+            linux_kernel_properties:
+                MTD_CFI: bool y
+                MTD_PHYSMAP_OF: bool y
+                MTD_PHYSMAP: bool y
+ddr4:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_BASEADDR
+            highaddr: CONFIG.C_HIGHADDR
+
+ddr3:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_BASEADDR
+            highaddr: CONFIG.C_HIGHADDR
+
+mig:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_BASEADDR
+            highaddr: CONFIG.C_HIGHADDR
+mig_7series:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_BASEADDR
+            highaddr: CONFIG.C_HIGHADDR
+axi_7series_ddrx:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_S_AXI_BASEADDR
+            highaddr: CONFIG.C_S_AXI_HIGHADDR
+axi_v6_ddrx:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_S_AXI_BASEADDR
+            highaddr: CONFIG.C_S_AXI_HIGHADDR
+axi_s6_ddrx:
+    device_type:
+        memory:
+            has_bank: y
+            bank_property:
+                bankid_replacement_str: <PLNXNUM>
+                bank_enabled: CONFIG.C_S<PLNXNUM>_AXI_ENABLE
+                bank_baseaddr: CONFIG.C_S<PLNXNUM>_AXI_BASEADDR
+                bank_highaddr: CONFIG.C_S<PLNXNUM>_AXI_HIGHADDR
+
+psv_sbsauart:
+    device_type:
+        serial:
+            baudrate_editable: y
+            baseaddr: CONFIG.C_S_AXI_BASEADDR
+            highaddr: CONFIG.C_S_AXI_HIGHADDR
+            linux_kernel_properties:
+                SERIAL_XILINX_PS_UART_CONSOLE: bool y
+            linux_console_file_name: ttyAMA0
+            linux_earlycon_str: cdns,mmio
+    linux_kernel_properties:
+        SERIAL_XILINX_PS_UART: bool y
+psu_uart:
+    device_type:
+        serial:
+            baudrate_editable: y
+            baseaddr: CONFIG.C_S_AXI_BASEADDR
+            highaddr: CONFIG.C_S_AXI_HIGHADDR
+            linux_kernel_properties:
+                SERIAL_XILINX_PS_UART_CONSOLE: bool y
+            linux_console_file_name: ttyPS0
+            linux_earlycon_str: cdns,mmio
+    linux_kernel_properties:
+        SERIAL_XILINX_PS_UART: bool y
+ps7_uart:
+    device_type:
+        serial:
+            baudrate_editable: y
+            linux_kernel_properties:
+                SERIAL_XILINX_PS_UART_CONSOLE: bool y
+            linux_console_file_name: ttyPS0
+    linux_kernel_properties:
+        SERIAL_XILINX_PS_UART: bool y
+
+axi_uart16550:
+    device_type:
+        serial:
+            interrupt_required: y
+            baudrate_editable: y
+            linux_kernel_properties:
+                SERIAL_8250_CONSOLE: bool y
+            linux_console_file_name: ttyS0
+    linux_kernel_properties:
+        SERIAL_8250: bool y
+axi_uartlite:
+    device_type:
+        serial:
+            interrupt_required: y
+            baudrate_editable: n
+            default_baudrate: CONFIG.C_BAUDRATE
+            linux_kernel_properties:
+                SERIAL_UARTLITE_CONSOLE: bool y
+            linux_console_file_name: ttyUL0
+    linux_kernel_properties:
+        SERIAL_UARTLITE: bool y
+mdm:
+    device_type:
+        serial:
+            interrupt_required: y
+            baudrate_editable: n
+            is_serial_property: CONFIG.C_USE_UART
+            default_baudrate_value: 115200
+            linux_kernel_properties:
+                SERIAL_UARTLITE_CONSOLE: bool y
+            linux_console_file_name: ttyUL0
+    linux_kernel_properties:
+        SERIAL_UARTLITE: bool y
+
+psu_ethernet:
+    device_type:
+        ethernet:
+    linux_kernel_properties:
+        NET_CORE: bool y
+psv_ethernet:
+    device_type:
+        ethernet:
+ps7_ethernet:
+    device_type:
+        ethernet:
+            interrupt_required: n
+    linux_kernel_properties:
+        NET_CORE: bool y
+        XILINX_PS_EMAC: bool y
+axi_ethernetlite:
+    device_type:
+        ethernet:
+            interrupt_required: y
+    linux_kernel_properties:
+        NET_CORE: bool y
+        XILINX_EMACLITE: bool y
+        XILINX_PHY: bool y
+        DP83867_PHY: bool y
+axi_ethernet:
+    device_type:
+        ethernet:
+            interrupt_required: y
+    linux_kernel_properties:
+        NET_CORE: bool y
+        XILINX_AXI_EMAC: bool y
+        XILINX_PHY: bool y
+        DP83867_PHY: bool y
+axi_ethernet_buffer:
+    device_type:
+        ethernet:
+            interrupt_required: y
+    linux_kernel_properties:
+        NET_CORE: bool y
+        XILINX_AXI_EMAC: bool y
+
+psu_qspi:
+    device_type:
+        flash:
+            flash_type: spi
+            flash_prefix: qspi
+            linux_kernel_properties:
+                MTD_M25P80: bool y
+psv_pmc_qspi:
+    device_type:
+        flash:
+            flash_type: spi
+            flash_prefix: qspi
+
+psv_pmc_qspi_ospi:
+    device_type:
+        flash:
+            flash_type: spi
+            flash_prefix: spi0
+
+ps7_qspi:
+    device_type:
+        flash:
+            flash_type: spi
+            flash_prefix: qspi
+            linux_kernel_properties:
+                MTD_SPI_NOR: bool y
+                MTD_M25P80: bool y
+    linux_kernel_properties:
+        SPI: bool y
+        SPI_XILINX_PS_QSPI: bool y
+axi_quad_spi:
+    device_type:
+        flash:
+            interrupt_required: y
+            flash_type: spi
+            flash_prefix: spi0
+            number_cs: CONFIG.C_NUM_SS_BITS
+            linux_kernel_properties:
+                MTD_SPI_NOR: bool y
+                MTD_M25P80: bool y
+    linux_kernel_properties:
+        SPI: bool y
+        SPI_XILINX: bool y
+axi_spi:
+    device_type:
+        flash:
+            interrupt_required: y
+            flash_type: spi
+            flash_prefix: spi0
+            number_cs: CONFIG.C_NUM_SS_BITS
+            linux_kernel_properties:
+                MTD_SPI_NOR: bool y
+                MTD_M25P80: bool y
+    linux_kernel_properties:
+        SPI: bool y
+        SPI_XILINX: bool y
+ps7_nand:
+    device_type:
+        flash:
+            flash_type: nand
+            flash_prefix: nand
+    linux_kernel_properties:
+        MTD_NAND: bool y
+        MTD_NAND_XILINX_PS: bool y
+psu_nand:
+    device_type:
+        flash:
+            flash_type: nand
+            flash_prefix: nand
+    linux_kernel_properties:
+        MTD_NAND: bool y
+        MTD_NAND_ECC: bool y
+        MTD_NAND_IDS: bool y
+        MTD_NAND_ARASAN: bool y
+ps7_sram:
+    device_type:
+        flash:
+            flash_type: nor
+            flash_prefix: nor
+    linux_kernel_properties:
+        MTD_CFI: bool y
+        MTD_PHYSMAP_OF: bool y
+ps7_sdio:
+    device_type:
+        sd:
+            processor_ip: ps7_cortexa9
+    linux_kernel_properties:
+        MMC: bool y
+        MMC_BLOCK: bool y
+        MMC_SDHCI: bool y
+        MMC_SDHCI_PLTFM: bool y
+        MMC_SDHCI_OF_XILINX_PS: bool y
+psu_sd:
+    device_type:
+        sd:
+            processor_ip: psu_cortexa53
+    linux_kernel_properties:
+        MMC: bool y
+        MMC_BLOCK: bool y
+        MMC_SDHCI: bool y
+        MMC_SDHCI_PLTFM: bool y
+        MMC_SDHCI_OF_XILINX_PS: bool y
+
+psu_rtc:
+    device_type:
+        rtc:
+            processor_ip: psu_cortexa53
+    linux_kernel_properties:
+        RTC_CLASS: bool y
+
+axi_timer:
+    device_type:
+        timer:
+            interrupt_required: y
+            processor_ip: microblaze
+axi_gpio:
+    device_type:
+        reset_gpio:
+            processor_ip: microblaze
+            is_dual: CONFIG.C_IS_DUAL
+            instanceip_replacement_str: <PLNXNUM>
+            gpio_property:
+                is_all_input: CONFIG.C_ALL<PLNXNUM>_INPUTS
+                gpio_width: CONFIG.C_GPIO<PLNXNUM>_WIDTH
+    linux_kernel_properties:
+        GPIOLIB: bool y
+        GPIO_XILINX: bool y
+ps7_spi:
+    linux_kernel_properties:
+        SPI: bool y
+        SPI_CADENCE: bool y
+psu_spi:
+    linux_kernel_properties:
+        SPI: bool y
+        SPI_CADENCE: bool y
+
+ps7_usb:
+    device_type:
+        usb:
+           processor_ip: ps7_cortexa9
+    linux_kernel_properties:
+        USB: bool y
+        USB_SUPPORT: bool y
+        USB_EHCI_HCD: bool y
+        USB_EHCI_XUSBPS: bool y
+        USB_XUSBP: bool y
+        USB_XUSBPS_DR_OF: bool y
+        USB_XUSBPS_OTG: bool y
+        USB_GADGET_XUSBPS: bool y
+        USB_OTG: bool y
+psu_usb:
+    device_type:
+        usb:
+            processor_ip: psu_cortexa53
+    linux_kernel_properties:
+        USB: bool y
+        USB_SUPPORT: bool y
+        USB_EHCI_HCD: bool y
+        USB_EHCI_XUSBPS: bool y
+        USB_XUSBP: bool y
+        USB_XUSBPS_DR_OF: bool y
+        USB_XUSBPS_OTG: bool y
+        USB_GADGET_XUSBPS: bool y
+        USB_OTG: bool y
+
+ps7_wdt:
+    linux_kernel_properties:
+        WATCHDOG: bool y
+        XILINX_PS_WATCHDOG: bool y
+psu_wdt:
+    linux_kernel_properties:
+        WATCHDOG: bool y
+        XILINX_PS_WATCHDOG: bool y
+
+ps7_i2c:
+    device_type:
+        i2c:
+            processor_ip: ps7_cortexa9
+    linux_kernel_properties:
+        I2C: bool y
+        I2C_CADENCE: bool y
+psu_i2c:
+    device_type:
+        i2c:
+            processor_ip: psu_cortexa53
+    linux_kernel_properties:
+        I2C: bool y
+        I2C_CADENCE: bool y
+ps7_dev_cfg:
+    linux_kernel_properties:
+        XILINX_DEVCFG: bool y
+psu_dev_cfg:
+    linux_kernel_properties:
+        XILINX_DEVCFG: bool y
+ps7_gpio:
+    linux_kernel_properties:
+        GPIOLIB: bool y
+        GPIO_XILINX: bool y
+        GPIO_ZYNQ: bool y
+psu_gpio:
+    linux_kernel_properties:
+        GPIOLIB: bool y
+        GPIO_XILINX: bool y
+        GPIO_ZYNQ: bool y
+ps7_xadc:
+    linux_kernel_properties:
+        HWMON: bool y
+        XILINX_XADC: bool y
+psu_pcie:
+    linux_kernel_properties:
+        PCIE_XILINX_NWL: bool y
+        PCI_MSI: bool y
+        PCI: bool y
+psu_sata:
+    device_type:
+        sata:
+            processor_ip: psu_cortexa53
+psu_dp:
+    device_type:
+        dp:
+            processor_ip: psu_cortexa53
+vcu:
+    device_type:
+        vcu:
+            processor_ip: psu_cortexa53
+    linux_kernel_properties:
+        CMA_SIZE_MBYTES: 1000
