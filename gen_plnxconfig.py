@@ -188,6 +188,8 @@ def get_soc_variant(soc_family, output):
             soc_variant = 'prime'
         elif device_id.startswith('xcvc'):
             soc_variant = 'ai-core'
+        elif device_id.startswith('xcvn'):
+            soc_variant = 'net'
     return soc_variant
 
 def post_sys_conf(args,default_cfgfile):
@@ -284,7 +286,7 @@ def get_hw_description(args):
     hw_description = os.path.abspath(args.hw_description)
     output = os.path.abspath(args.output)
     soc_family = args.soc_family
-    silentoldconfig = args.silentoldconfig
+    menuconfig = args.menuconfig
 
     if not os.path.exists(output):
         os.makedirs(output)
@@ -348,7 +350,7 @@ def get_hw_description(args):
     with open(Kconfig,'w') as kconfig_f:
         kconfig_f.write(Kconfig_str)
     kconfig_f.close()
-    if silentoldconfig:
+    if not menuconfig:
         cmd = 'yes "" | env KCONFIG_CONFIG=%s conf %s' % (default_cfgfile,Kconfig)
         print('Running CMD: %s' % cmd)
         os.system(cmd)
