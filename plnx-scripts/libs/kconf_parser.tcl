@@ -1,3 +1,7 @@
+# Copyright (C) 2014-2022, Xilinx, Inc.  All rights reserved.
+# Copyright (C) 2022, Advanced Micro Devices, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
 
 proc partition_info_lookup {kconfig_dict media part_name key} {
 	set part_no 0

@@ -1,3 +1,8 @@
+# Copyright (C) 2014-2022, Xilinx, Inc.  All rights reserved.
+# Copyright (C) 2022, Advanced Micro Devices, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
 proc generate_system_dtsi {system_dtsi machine_dtsi} {
 	global out_dir kconfig_dict target_cpu
 	set fid [open $system_dtsi w+]
