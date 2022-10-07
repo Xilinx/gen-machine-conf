@@ -470,7 +470,7 @@ menu "Kernel Bootargs"
 config SUBSYSTEM_BOOTARGS_AUTO
 	bool "generate boot args automatically"
 	default y
-	depends on !SUBSYSTEM_SERIAL_MANUAL_SELECT || SYSTEM_VERSAL
+	depends on !SUBSYSTEM_SERIAL_MANUAL_SELECT
 	help
 	  Generates the default bootargs.
 
@@ -1164,6 +1164,7 @@ menu "Yocto Settings"
 
 config YOCTO_MACHINE_NAME
        string "YOCTO_MACHINE_NAME"
+       default "versal-net-generic" if SUBSYSTEM_VARIANT_VERSALNET
        default "versal-generic" if SYSTEM_VERSAL
        default "zynqmp-generic" if SYSTEM_ZYNQMP
        default "zynq-generic" if SUBSYSTEM_ARCH_ARM

@@ -250,7 +250,7 @@ proc plnx_gen_conf_processor {mapping kconfprefix} {
 	if { "${cpuchoicesstr}" == "" } {
 		puts stderr [format "%s\n%s\n%s\n" "No CPU can be found in the system."\
 					"Please review your hardware system."\
-					"Valid processors are: microblaze, ps7_cortexa9, psu_cortexa53, psv_cortexa72."]
+					"Valid processors are: microblaze, ps7_cortexa9, psu_cortexa53, psv_cortexa72, psx_cortexa78."]
 		error ""
 	}
 	set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n%s\n%s\n" "${kconfstr}" \
@@ -394,6 +394,18 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 		}
 		set hds [hsi get_cells -hier -filter IP_NAME==${ipname}]
 		foreach hd ${hds} {
+			if {[llength ${bank_baseaddr_property}]} {
+				set bankbaseaddr [hsi get_property ${bank_baseaddr_property} ${hd}]
+				if {![llength $bankbaseaddr]} {
+					set bank_baseaddr_property [lindex [get_ip_property_info baseaddr1 ${devinfo}] 0]
+				}
+			}
+			if {[llength ${bank_highaddr_property}]} {
+				set bankhighaddr [hsi get_property ${bank_highaddr_property} ${hd}]
+				if {![llength $bankhighaddr]} {
+					set bank_highaddr_property [lindex [get_ip_property_info highaddr1 ${devinfo}] 0]
+				}
+			}
 			set name [hsi get_property NAME ${hd}]
 			if {[lsearch ${cpuslaves} ${name}] < 0} {
 				continue
@@ -596,6 +608,8 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 	if { [string match -nocase "*aarch64*" $current_arch ] } {
 		if { [regexp "psv_cortexa72*" $cpuname matched] == 1 } {
 			set components_list "PLM ATF DTG"
+		} elseif { [regexp "psx_cortexa78*" $cpuname matched] == 1 } {
+			set components_list "PLM ATF DTG"
 		} elseif { [regexp "psu_cortexa53*" $cpuname matched] == 1 } {
 			set components_list "PMUFW FSBL ATF DTG"
 		}
@@ -679,9 +693,11 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 					set atf_console "cadence"
 				} elseif { [string match -nocase "*psu_uart_1*" ${str} ] } {
 					set atf_console "cadence1"
-				} elseif { [string match -nocase "*psv_sbsauart_0*" ${str} ] } {
+				} elseif { [string match -nocase "*psv_sbsauart_0*" ${str} ] || \
+					[string match -nocase "*psx_sbsauart_0*" ${str} ] } {
 					set atf_console "pl011"
-				} elseif { [string match -nocase "*psv_sbsauart_1*" ${str} ] } {
+				} elseif { [string match -nocase "*psv_sbsauart_1*" ${str} ] || \
+					[string match -nocase "*psx_sbsauart_1*" ${str} ] } {
 					set atf_console "pl011_1"
 				}
 				if { "${atf_console}" == "" } {
@@ -1579,7 +1595,7 @@ proc generate_mapping_list {args} {
 		set devtype_mapping {}
 		lappend devtype_mapping "${devtype}"
 		if {"${devtype}" == "sd"} {
-			lappend devtype_mapping "processor_ip ps7_cortexa9 psu_cortexa53 psv_cortexa72"
+			lappend devtype_mapping "processor_ip ps7_cortexa9 psu_cortexa53 psv_cortexa72 psx_cortexa78"
 		} elseif {"${devtype}" == "timer"} {
 			lappend devtype_mapping "processor_ip microblaze"
 		} elseif {"${devtype}" == "reset_gpio"} {

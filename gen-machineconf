@@ -883,7 +883,7 @@ def generate_override_conf(args):
             serial_console = '%s;ttyUL0' % baudrate
         elif serialipname == 'axi_uart16550':
             serial_console = '%s;ttyS0' % baudrate
-        elif serialipname == 'psv_sbsauart':
+        elif serialipname == 'psv_sbsauart' or serialipname == 'psx_sbsauart':
             serial_console = '%s;ttyAMA0' % baudrate
         else:
             serial_console = '%s;ttyPS0' % baudrate

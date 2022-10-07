@@ -159,7 +159,8 @@ def get_sysconsole_bootargs(default_cfgfile, soc_family):
         earlyprintk = " earlycon"
         if soc_family == 'versal':
             serial_offset = '0xFF000000'
-            if re.search('psv_sbsauart_1', serialname.lower()):
+            if re.search('psv_sbsauart_1', serialname.lower()) or \
+                    re.search('psx_sbsauart_1', serialname.lower()):
                 serial_offset = '0xFF010000'
             earlyprintk=' earlycon=pl011,mmio32,%s,%sn8' % (serial_offset, baudrate)
     else:

@@ -216,7 +216,11 @@ proc gen_spi_flash_node {fid machine_dtsi} {
 	set spi_mode 0
 	puts $fid "\t#address-cells = <1>;"
 	puts $fid "\t#size-cells = <0>;"
-	set is_quad [hsi get_cells -hier -filter { IP_NAME == "axi_quad_spi" || IP_NAME == "psu_qspi" || IP_NAME == "psv_pmc_qspi" || IP_NAME == "psv_pmc_qspi_ospi" }]
+	set is_quad [hsi get_cells -hier -filter { \
+		IP_NAME == "axi_quad_spi" || IP_NAME == "psu_qspi" || \
+		IP_NAME == "psv_pmc_qspi" || IP_NAME == "psv_pmc_qspi_ospi" || \
+		IP_NAME == "psx_pmc_qspi" || IP_NAME == "psx_pmc_qspi_ospi" \
+		}]
 	foreach ip $is_quad {
 		set ip_name [hsi get_property IP_NAME [hsi get_cells -hier $ip]]
 		if { $ip_name eq "axi_quad_spi" } {
@@ -226,6 +230,10 @@ proc gen_spi_flash_node {fid machine_dtsi} {
 		} elseif { $ip_name eq "psv_pmc_qspi" } {
 			set spi_mode [hsi get_property CONFIG.C_QSPI_MODE [hsi get_cells -hier $ip]]
 		} elseif { $ip_name eq "psv_pmc_qspi_ospi" } {
+			set spi_mode [hsi get_property CONFIG.C_QSPI_MODE [hsi get_cells -hier $ip]]
+		} elseif { $ip_name eq "psx_pmc_qspi" } {
+			set spi_mode [hsi get_property CONFIG.C_QSPI_MODE [hsi get_cells -hier $ip]]
+		} elseif { $ip_name eq "psx_pmc_qspi_ospi" } {
 			set spi_mode [hsi get_property CONFIG.C_QSPI_MODE [hsi get_cells -hier $ip]]
 		}
 	}
@@ -278,7 +286,6 @@ proc gen_spi_flash_node {fid machine_dtsi} {
 		}
 		puts $fid "\t\tspi-max-frequency = <${freq}>;"
 	}
-
 	set machine_name ""
 	if {[dict exists $kconfig_dict subsys_conf machine_name]} {
 		set machine_name [dict get $kconfig_dict subsys_conf machine_name ]
@@ -534,7 +541,7 @@ proc is_ps_ip {ip_inst} {
 		return 0
 	}
 	set ip_name [hsi get_property IP_NAME $ip_obj]
-	if {[regexp "ps[7uv]_*" "$ip_name" match]} {
+	if {[regexp "ps[7uvx]_*" "$ip_name" match]} {
 		return 1
 	}
 	return 0

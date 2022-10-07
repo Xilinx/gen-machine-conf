@@ -153,6 +153,16 @@ psv_pmc_qspi_ospi:
     ip_type: spi_flash
     flash_type: spi
 
+psx_pmc_qspi:
+    var_count: spiflash_count
+    ip_type: spi_flash
+    flash_type: spi
+
+psx_pmc_qspi_ospi:
+    var_count: spiflash_count
+    ip_type: spi_flash
+    flash_type: spi
+
 ps7_spi:
     var_count: spiflash_count
     ip_type: spi_flash

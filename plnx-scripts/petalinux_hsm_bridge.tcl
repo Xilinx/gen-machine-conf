@@ -138,7 +138,7 @@ proc get_conf_list {db_dict ip_list} {
 proc get_sw_proc_arch {name} {
 	# processor arch mapping
 	set armv7_string {cortexa9}
-	set armv8_string {cortexa53 cortexa57 cortexa72}
+	set armv8_string {cortexa53 cortexa57 cortexa72 cortexa78}
 	set mb_string {microblaze}
 
 	# two different method of using get_cells -hier
@@ -298,10 +298,18 @@ if {[string equal -nocase $function "u-boot_bsp"]} {
 	set dtsifile ""
 	hsi open_sw_design "$sw_design/device-tree.mss"
 	# copy device tree out of here
-	foreach tmpdts {skeleton.dtsi versal.dtsi zynq-7000.dtsi zynqmp.dtsi pcw.dtsi pl.dtsi zynqmp-clk-ccf.dtsi versal-clk.dtsi} {
+	foreach tmpdts {skeleton.dtsi versal.dtsi zynq-7000.dtsi zynqmp.dtsi \
+		pcw.dtsi pl.dtsi zynqmp-clk-ccf.dtsi versal-clk.dtsi \
+		versal-net-ipp-rev1.9.dtsi \
+		} {
 		if {[file exists "${out_dir}/${tmpdts}"]} {
 			lappend dtsifile "${tmpdts}"
-			if {[string equal -nocase "zynq-7000.dtsi" ${tmpdts}] || [string equal -nocase "zynqmp.dtsi" ${tmpdts}] || [string equal -nocase "versal.dtsi" ${tmpdts}]} {
+			if { \
+				[string equal -nocase "zynq-7000.dtsi" ${tmpdts}] \
+				|| [string equal -nocase "zynqmp.dtsi" ${tmpdts}] \
+				|| [string equal -nocase "versal.dtsi" ${tmpdts}] \
+				|| [string equal -nocase "versal-net-ipp-rev1.9.dtsi" ${tmpdts}] \
+				} {
 				create_soc_mapping_from_dts_file ${out_dir}/${tmpdts}
 			}
 		}

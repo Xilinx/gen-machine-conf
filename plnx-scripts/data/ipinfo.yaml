@@ -11,6 +11,10 @@ psv_cortexa72:
     device_type:
         processor:
             arch: aarch64
+psx_cortexa78:
+    device_type:
+        processor:
+            arch: aarch64
 microblaze:
     device_type:
         processor:
@@ -67,8 +71,10 @@ ddr4:
     device_type:
         memory:
             has_bank: n
-            baseaddr: CONFIG.C_BASEADDR
-            highaddr: CONFIG.C_HIGHADDR
+            baseaddr: CONFIG.C0_DDR4_MEMORY_MAP_BASEADDR
+            highaddr: CONFIG.C0_DDR4_MEMORY_MAP_HIGHADDR
+            baseaddr1: CONFIG.C_BASEADDR
+            highaddr1: CONFIG.C_HIGHADDR
 
 ddr3:
     device_type:
@@ -112,6 +118,18 @@ axi_s6_ddrx:
                 bank_highaddr: CONFIG.C_S<PLNXNUM>_AXI_HIGHADDR
 
 psv_sbsauart:
+    device_type:
+        serial:
+            baudrate_editable: y
+            baseaddr: CONFIG.C_S_AXI_BASEADDR
+            highaddr: CONFIG.C_S_AXI_HIGHADDR
+            linux_kernel_properties:
+                SERIAL_XILINX_PS_UART_CONSOLE: bool y
+            linux_console_file_name: ttyAMA0
+            linux_earlycon_str: cdns,mmio
+    linux_kernel_properties:
+        SERIAL_XILINX_PS_UART: bool y
+psx_sbsauart:
     device_type:
         serial:
             baudrate_editable: y
@@ -187,6 +205,9 @@ psu_ethernet:
 psv_ethernet:
     device_type:
         ethernet:
+psx_ethernet:
+    device_type:
+        ethernet:
 ps7_ethernet:
     device_type:
         ethernet:
@@ -238,6 +259,23 @@ psv_pmc_qspi_ospi:
         flash:
             flash_type: spi
             flash_prefix: spi0
+
+psx_pmc_qspi:
+    device_type:
+        flash:
+            flash_type: spi
+            flash_prefix: qspi
+
+psx_pmc_qspi_ospi:
+    device_type:
+        flash:
+            flash_type: spi
+            flash_prefix: spi0
+
+psx_pmc_sd:
+    device_type:
+        sd:
+            processor_ip: psx_cortexa78
 
 ps7_qspi:
     device_type:
@@ -408,6 +446,12 @@ psu_i2c:
     linux_kernel_properties:
         I2C: bool y
         I2C_CADENCE: bool y
+psx_i2c:
+    device_type:
+        i2c:
+            processor_ip: psx_cortexa78
+    linux_kernel_properties:
+        I2C: bool y
 ps7_dev_cfg:
     linux_kernel_properties:
         XILINX_DEVCFG: bool y
