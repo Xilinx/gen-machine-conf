@@ -202,7 +202,7 @@ def generate_kernel_cfg(args):
         auto_linux_file_f.write(kernel_opts)
     auto_linux_file_f.close()
 
-def generate_plnx_config(args, gen_machine_file_name):
+def generate_plnx_config(args, machine_conf_file):
     global default_cfgfile
     default_cfgfile = os.path.join(args.output,'config')
     if not os.path.isfile(default_cfgfile):
@@ -227,7 +227,7 @@ def generate_plnx_config(args, gen_machine_file_name):
     tmp_dir = get_config_value('CONFIG_TMP_DIR_LOCATION',default_cfgfile)
     override_string += '# PetaLinux Tool Auto generated file\n'
     override_string += '\n# Generic variables\n'
-    override_string += '\nMACHINE = "%s"\n' % gen_machine_file_name
+    override_string += '\nMACHINE = "%s"\n' % machine_conf_file
 
     if tmp_dir:
        override_string += 'TMPDIR = "%s"\n' % tmp_dir

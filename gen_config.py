@@ -198,6 +198,11 @@ def get_soc_variant(soc_family, output):
             soc_variant = 'net'
     return soc_variant
 
+def pre_sys_conf(args, default_cfgfile):
+    if args.machine:
+        update_config_value('CONFIG_YOCTO_MACHINE_NAME', \
+                '"%s"' % args.machine, default_cfgfile)
+
 def post_sys_conf(args,default_cfgfile):
     output = args.output
 
@@ -356,6 +361,9 @@ def get_hw_description(args):
     with open(Kconfig,'w') as kconfig_f:
         kconfig_f.write(Kconfig_str)
     kconfig_f.close()
+    # Update the sysconfig with command line arguments
+    # to reflect in menuconfig/config
+    pre_sys_conf(args, default_cfgfile)
     if not menuconfig:
         cmd = 'yes "" | env KCONFIG_CONFIG=%s conf %s' % (default_cfgfile,Kconfig)
         print('Running CMD: %s' % cmd)
