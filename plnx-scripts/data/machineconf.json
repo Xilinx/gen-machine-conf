@@ -1,0 +1,154 @@
+{
+	"generic-machines":
+		["microblaze-generic", "zynq-generic",
+		"zynqmp-generic", "versal-generic",
+		"versal-net-generic"],
+	"xilinx-ac701": {
+		"machine-overrides": "ac701",
+		"dt-boardfile": "ac701-full"
+	},
+	"xilinx-kc705": {
+		"machine-overrides": "kc705",
+		"dt-boardfile": "kc705-full"
+	},
+	"xilinx-kcu105": {
+		"machine-overrides": "kcu105",
+		"dt-boardfile": "kcu105"
+	},
+	"xilinx-kcu105-tmr": {
+		"machine-overrides": "kcu105-tmr",
+		"dt-boardfile": "kcu105-tmr"
+	},
+	"xilinx-sp701": {
+		"machine-overrides": "sp701",
+		"dt-boardfile": "sp701-rev1.0"
+	},
+	"xilinx-vcu118": {
+		"machine-overrides": "vcu118",
+		"dt-boardfile": "vcu118-rev2.0"
+	},
+	"avnet-digilent-zedboard": {
+		"machine-overrides": "zedboard",
+		"dt-boardfile": "zedboard"
+	},
+	"xilinx-zc702": {
+		"machine-overrides": "zc702",
+		"dt-boardfile": "zc702"
+	},
+	"xilinx-zc706": {
+		"machine-overrides": "zc706",
+		"dt-boardfile": "zc706"
+	},
+	"xilinx-zcu102": {
+		"machine-overrides": "zcu102",
+		"dt-boardfile": "zcu102-rev1.0"
+	},
+	"xilinx-zcu104": {
+		"machine-overrides": "zcu104",
+		"dt-boardfile": "zcu104-revc"
+	},
+	"xilinx-zcu111": {
+		"machine-overrides": "zcu111",
+		"dt-boardfile": "zcu111-reva"
+	},
+	"xilinx-zcu1275": {
+		"machine-overrides": "zcu1275",
+		"dt-boardfile": "zcu1275-revb"
+	},
+	"xilinx-zcu1285": {
+		"machine-overrides": "zcu1285",
+		"dt-boardfile": "zcu1285-reva"
+	},
+	"xilinx-zcu208": {
+		"machine-overrides": "zcu208",
+		"dt-boardfile": "zcu208-reva"
+	},
+	"xilinx-zcu216": {
+		"machine-overrides": "zcu216",
+		"dt-boardfile": "zcu216-reva"
+	},
+	"xilinx-zcu670": {
+		"machine-overrides": "zcu670",
+		"dt-boardfile": "zcu670-revb"
+	},
+	"xilinx-zcu106": {
+		"machine-overrides": "zcu106",
+		"dt-boardfile": "zcu106-reva"
+	},
+	"eval-brd-sc": {
+		"machine-overrides": "eval-brd-sc",
+		"dt-boardfile": "",
+		"extra-yocto-vars": ["SOC_VARIANT ?= \"eg\"","DEFAULTTUNE ?= \"cortexa72-cortexa53\""]
+	},
+	"xilinx-k24-kd": {
+		"machine-overrides": "k24:k24-kd",
+		"dt-boardfile": ""
+	},
+	"xilinx-k24-som": {
+		"machine-overrides": "k24",
+		"dt-boardfile": ""
+	},
+	"xilinx-k26-kr": {
+		"machine-overrides": "k26:k26-kr",
+		"dt-boardfile": "zynqmp-sm-k26-reva",
+		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
+	},
+	"xilinx-k26-kv": {
+		"machine-overrides": "k26:k26-kv",
+		"dt-boardfile": "zynqmp-sm-k26-reva",
+		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
+	},
+	"xilinx-k26-som": {
+		"machine-overrides": "k26",
+		"dt-boardfile": "zynqmp-sm-k26-reva",
+		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
+	},
+	"xilinx-vck190-sc": {
+		"machine-overrides": "vck-sc",
+		"dt-boardfile": "zynqmp-e-a2197-00-reva"
+	},
+	"xilinx-zc1751-dc1": {
+		"machine-overrides": "zc1751",
+		"dt-boardfile": "zc1751-dc1"
+	},
+	"xilinx-ultra96-reva": {
+		"machine-overrides": "ultra96",
+		"dt-boardfile": "avnet-ultra96-rev1",
+		"extra-yocto-vars": ["KERNEL_DEVICETREE = \"xilinx/zynqmp-zcu100-revC.dtb\"",
+			"YAML_COMPILER_FLAGS:append = \" -DBOARD_SHUTDOWN_PIN=2 -DBOARD_SHUTDOWN_PIN_STATE=0 \"",
+			"MACHINE_ESSENTIAL_EXTRA_RDEPENDS:append = \" linux-firmware-wl18xx linux-firmware-ti-bt-wl180x\""]
+	},
+	"xilinx-vc-p-a2197-00": {
+		"machine-overrides": "vc-p-a2197-00",
+		"dt-boardfile": "versal-vc-p-a2197-00-reva-x-prc-01-reva"
+	},
+	"xilinx-vck190": {
+		"machine-overrides": "vck190",
+		"dt-boardfile": "versal-vck190-reva-x-ebm-01-reva"
+	},
+	"xilinx-vek280": {
+		"machine-overrides": "vek280",
+		"dt-boardfile": "versal-vek280-reva"
+	},
+	"xilinx-vhk158": {
+		"machine-overrides": "vhk158",
+		"dt-boardfile": "versal-vhk158-reva"
+	},
+	"xilinx-vmk180": {
+		"machine-overrides": "vmk180",
+		"dt-boardfile": "versal-vmk180-reva-x-ebm-01-reva"
+	},
+	"xilinx-vpk120": {
+		"machine-overrides": "vpk120",
+		"dt-boardfile": "versal-vpk120-reva"
+	},
+	"xilinx-vpk180": {
+		"machine-overrides": "vpk180",
+		"dt-boardfile": "versal-vpk180-reva"
+	},
+
+	"xilinx-vck5000": {
+		"machine-overrides": "vck5000",
+		"dt-boardfile": "versal-vck5000-reva"
+	}
+}
