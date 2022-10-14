@@ -28,54 +28,6 @@ def generate_yocto_machine(args):
     if 'device_id' in plnx_syshw_data.keys():
         device_id = plnx_syshw_data['device_id']
 
-    # Get optional machine name from --machine-name command line option or
-    # else tool will set one.
-    if args.machine:
-        machine_name = args.machine
-    else:
-        machine_name = get_config_value('CONFIG_YOCTO_MACHINE_NAME', \
-                            default_cfgfile)
-
-    # Define Yocto BSP config list based on machine conf file in
-    # meta-xilinx-bsp layer. These configs includes board dtsi files associated
-    # with evaluation board etc.
-    bsp_configs = {
-                        'kc705-microblazeel': ['kc705-full'],
-                        'zc702-zynq7': ['zc702'],
-                        'zc706-zynq7': ['zc706'],
-                        'zcu102-zynqmp': ['zcu102-rev1.0'],
-                        'zcu104-zynqmp': ['zcu104-revc'],
-                        'zcu106-zynqmp': ['zcu106-reva'],
-                        'zcu111-zynqmp': ['zcu111-reva'],
-                        'zcu1275-zynqmp': ['zcu1275-revb'],
-                        'zcu1285-zynqmp': ['zcu1285-reva'],
-                        'zcu208-zynqmp': ['zcu208-reva'],
-                        'zcu216-zynqmp': ['zcu216-reva'],
-                        'vck190-versal': ['versal-vck190-reva-x-ebm-01-reva'],
-                        'vmk180-versal': ['versal-vmk180-reva-x-ebm-01-reva'],
-                        'vck5000-versal': ['versal-vck5000-reva'],
-                        'vck-sc-zynqmp': ['zynqmp-e-a2197-00-reva'],
-    }
-
-    # Create a Yocto machine configuration file (${MACHINE}-${DEVICE_ID}.conf)
-    global gen_machine_file_name
-    global gen_machine_conf_path
-    if args.custom:
-        gen_machine_file_name = machine_name + '-' + device_id
-    else:
-        gen_machine_file_name = args.bsp + '-bsp'
-    gen_machine_conf_path = os.path.join(args.output, gen_machine_file_name + \
-                                    '.conf')
-
-    # Variable for constructing ${MACHINE}-${DEVICE_ID}.conf files.
-    machine_override_string = ''
-
-    # Start of ${MACHINE}-${DEVICE_ID}.conf
-    machine_override_string += '#@TYPE: Machine\n'
-    machine_override_string += '#@NAME: %s\n' % gen_machine_file_name
-    machine_override_string += '#@DESCRIPTION: Machine configuration for the '\
-                                    '%s boards.\n' % gen_machine_file_name
-
     # Get SOC_Family from the xsa device_id for machine generic required
     # inclusion metadata file.
     if device_id.startswith('xcvn'):
@@ -83,23 +35,64 @@ def generate_yocto_machine(args):
     else:
         req_conf_file = soc_family
 
+    # Machine conf json file
+    import json
+    machinejson_file = os.path.join(scripts_dir,'data/machineconf.json')
+    if not os.path.isfile(machinejson_file):
+        print('ERROR: Machine json file doesnot exist at: %s' % \
+                                    machinejson_file)
+        sys.exit(255)
+    # Get the machine file name from sys config
+    yocto_machine_name = get_config_value('CONFIG_YOCTO_MACHINE_NAME', \
+                                    default_cfgfile)
+    dtg_machine = get_config_value('CONFIG_SUBSYSTEM_MACHINE_NAME', \
+                                    default_cfgfile)
+    # Use the sysconfig machine name as yocto machine
+    machine_conf_file = yocto_machine_name
+    machine_conf_path = ''
+    dt_board_file = ''
+    json_yocto_vars = ''
+    # Parse json to string
+    with open(machinejson_file, 'r') as data_file:
+        machinejson_data = json.load(data_file)
+    data_file.close()
+
+    # Get optional machine name from sysconfig and check with json
+    if yocto_machine_name and yocto_machine_name in machinejson_data.keys():
+        # These configs includes board dtsi files associated to machine file
+        if 'dt-boardfile' in machinejson_data[machine_conf_file].keys():
+            dt_board_file = machinejson_data[machine_conf_file]['dt-boardfile']
+        if 'extra-yocto-vars' in machinejson_data[machine_conf_file].keys():
+            json_yocto_vars = '\n'.join(var for var in \
+                        machinejson_data[machine_conf_file]['extra-yocto-vars'])
+    else:
+        # Check if machine name from sysconfig is generic machine
+        # Append device_id if its a generic machine
+        if yocto_machine_name in machinejson_data['generic-machines']:
+            if device_id:
+                machine_conf_file += '-' + device_id
+            else:
+                machine_conf_file += '-999'
+    machine_conf_path = os.path.join(args.output, machine_conf_file + '.conf')
+
+    # Variable for constructing ${MACHINE}.conf files.
+    machine_override_string = ''
+
+    # Start of ${MACHINE}-${DEVICE_ID}.conf
+    machine_override_string += '#@TYPE: Machine\n'
+    machine_override_string += '#@NAME: %s\n' % machine_conf_file
+    machine_override_string += '#@DESCRIPTION: Machine configuration for the '\
+                                    '%s boards.\n' % machine_conf_file
+
     machine_override_string += '\n#### Preamble\n'
     machine_override_string += 'MACHINEOVERRIDES =. "'"${@['', '%s:']['%s' !=" \
                                "'${MACHINE}']}"'"\n'\
-                               % (gen_machine_file_name, gen_machine_file_name)
+                               % (machine_conf_file, machine_conf_file)
     machine_override_string += '#### Regular settings follow\n'
 
-# Check if argument is custom or bsp
-    if args.custom:
-        machine_override_string += '\n# Required generic machine inclusion for'\
-                                    ' custom xsa\n'
-        machine_override_string += '\nrequire conf/machine/%s-generic.conf\n' % \
+    machine_override_string += '\n# Required generic machine inclusion\n'
+    machine_override_string += 'require conf/machine/%s-generic.conf\n' % \
                                req_conf_file
-    else:
-        machine_override_string += '\n# Required bsp machine inclusion for'\
-                                    ' bsp xsa\n'
-        machine_override_string += '\nrequire conf/machine/%s.conf\n' % \
-                               args.bsp
 
     # Variable used for Vivado XSA path, name using local file or subversion
     # path
@@ -128,6 +121,11 @@ def generate_yocto_machine(args):
         machine_override_string += 'IMAGE_FEATURES += "hwcodecs"\n'
     if soc_variant:
         machine_override_string += 'SOC_VARIANT = "%s"\n' % soc_variant
+
+    # Update machine conf file with yocto variabls from json file
+    if json_yocto_vars:
+        machine_override_string += '\nMachine specific yocto variables\n'
+        machine_override_string += '%s\n' % json_yocto_vars
 
     machine_override_string += '\n# Yocto device-tree variables\n'
     serial_manual = get_config_value('CONFIG_SUBSYSTEM_SERIAL_MANUAL_SELECT', \
@@ -162,14 +160,18 @@ def generate_yocto_machine(args):
         machine_override_string += 'XSCTH_PROC:pn-device-tree = "%s"\n' \
                                     % processor_ipname
 
-    dtg_machine = get_config_value('CONFIG_SUBSYSTEM_MACHINE_NAME', default_cfgfile)
-    if dtg_machine and dtg_machine.lower() != 'auto':
-        if args.custom:
+
+    # Set dt board file as per the machine file 
+    # if config set to template/auto/AUTO
+    if dtg_machine:
+        if (dtg_machine == 'template' or dtg_machine.lower() == 'auto' ) \
+                and dt_board_file:
             machine_override_string += 'YAML_DT_BOARD_FLAGS = "{BOARD %s}"\n'\
-                                       % dtg_machine
-        else:
+                                        % dt_board_file
+        elif dtg_machine.lower() != 'auto':
             machine_override_string += 'YAML_DT_BOARD_FLAGS = "{BOARD %s}"\n'\
-                                       % bsp_configs[args.bsp][0]
+                                        % dtg_machine
+
     machine_override_string += '\n# Yocto linux-xlnx variables\n'
     machine_override_string += '\n# Yocto u-boot-xlnx variables\n'
     uboot_config = get_config_value('CONFIG_SUBSYSTEM_UBOOT_CONFIG_TARGET', \
@@ -331,7 +333,7 @@ def generate_yocto_machine(args):
             serial_console = '%s;ttyPS0' % baudrate
 
         machine_override_string += '\n# %s Serial Console \n' \
-                                   % gen_machine_file_name
+                                   % machine_conf_file
         # parse the selected serial IP if no_alias selected to get the serial no.
         # serial no. will be suffix to the serial ip name Ex:psu_uart_1 -> serial no. is 1.
         no_alias = get_config_value('CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS',default_cfgfile)
@@ -350,11 +352,11 @@ def generate_yocto_machine(args):
     machine_override_string += '#### Postamble\n'
     machine_override_string += 'PACKAGE_EXTRA_ARCHS:append = "'"${@['', " \
                                "'%s']['%s' != '${MACHINE}']}"'"\n'\
-                               % (gen_machine_file_name.replace('-', '_'), \
-                                  gen_machine_file_name)
+                               % (machine_conf_file.replace('-', '_'), \
+                                  machine_conf_file)
 
-    with open(gen_machine_conf_path, 'w') as machine_override_conf_f:
+    with open(machine_conf_path, 'w') as machine_override_conf_f:
         machine_override_conf_f.write(machine_override_string)
     machine_override_conf_f.close()
-    return gen_machine_file_name
+    return machine_conf_file
 
