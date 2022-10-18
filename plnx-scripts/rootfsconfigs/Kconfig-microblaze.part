@@ -1,0 +1,1901 @@
+menu "Filesystem Packages " 
+menu "base " 
+menu "base-files " 
+config base-files  
+	 bool "base-files"
+	 help
+	 Miscellaneous files for the base system
+	
+config base-files-dbg  
+	 bool "base-files-dbg"
+	 help
+	
+config base-files-dev  
+	 bool "base-files-dev"
+	 help
+	
+endmenu
+menu "base-passwd " 
+config base-passwd  
+	 bool "base-passwd"
+	 help
+	 Base system master password/group files
+	
+config base-passwd-dev  
+	 bool "base-passwd-dev"
+	 help
+	
+config base-passwd-dbg  
+	 bool "base-passwd-dbg"
+	 help
+	
+config base-passwd-update  
+	 bool "base-passwd-update"
+	 help
+	
+endmenu
+menu "bc " 
+config bc  
+	 bool "bc"
+	 help
+	 Arbitrary precision calculator language
+	
+config bc-dbg  
+	 bool "bc-dbg"
+	 help
+	
+config bc-dev  
+	 bool "bc-dev"
+	 help
+	
+endmenu
+
+menu "busybox " 
+config busybox  
+	 bool "busybox"
+	 help
+	 Tiny versions of many common UNIX utilities in a single small executable
+	
+config busybox-udhcpd  
+	 bool "busybox-udhcpd"
+	 help
+	
+config busybox-udhcpc  
+	 bool "busybox-udhcpc"
+	 help
+	
+config busybox-inetd  
+	 bool "busybox-inetd"
+	 help
+	
+config busybox-hwclock  
+	 bool "busybox-hwclock"
+	 help
+	
+config busybox-dev  
+	 bool "busybox-dev"
+	 help
+	
+config busybox-dbg  
+	 bool "busybox-dbg"
+	 help
+	
+config busybox-httpd  
+	 bool "busybox-httpd"
+	 help
+	
+config busybox-syslog  
+	 bool "busybox-syslog"
+	 help
+	
+endmenu
+menu "diffutils " 
+config diffutils  
+	 bool "diffutils"
+	 help
+	 Diffutils contains tools used for finding differences between files
+	
+config diffutils-dbg  
+	 bool "diffutils-dbg"
+	 help
+	
+config diffutils-dev  
+	 bool "diffutils-dev"
+	 help
+	
+endmenu
+menu "e2fsprogs " 
+config e2fsprogs  
+	 bool "e2fsprogs"
+	 help
+	 Ext2 Filesystem Utilities
+	
+config e2fsprogs-tune2fs  
+	 bool "e2fsprogs-tune2fs"
+	 help
+	
+config e2fsprogs-mke2fs  
+	 bool "e2fsprogs-mke2fs"
+	 help
+	
+config libe2p  
+	 bool "libe2p"
+	 help
+	
+config e2fsprogs-dev  
+	 bool "e2fsprogs-dev"
+	 help
+	
+config libcomerr  
+	 bool "libcomerr"
+	 help
+	
+config libext2fs  
+	 bool "libext2fs"
+	 help
+	
+config e2fsprogs-dbg  
+	 bool "e2fsprogs-dbg"
+	 help
+	
+config e2fsprogs-badblocks  
+	 bool "e2fsprogs-badblocks"
+	 help
+	
+config libss  
+	 bool "libss"
+	 help
+	
+config e2fsprogs-e2fsck  
+	 bool "e2fsprogs-e2fsck"
+	 help
+	
+config e2fsprogs-resize2fs  
+	 bool "e2fsprogs-resize2fs"
+	 help
+	
+endmenu
+menu "elfutils " 
+config elfutils  
+	 bool "elfutils"
+	 help
+	 Utilities and libraries for handling compiled object files
+	
+config elfutils-dev  
+	 bool "elfutils-dev"
+	 help
+	
+config libelf  
+	 bool "libelf"
+	 help
+	
+config elfutils-binutils  
+	 bool "elfutils-binutils"
+	 help
+	
+config libdw  
+	 bool "libdw"
+	 help
+	
+config libasm  
+	 bool "libasm"
+	 help
+	
+config elfutils-dbg  
+	 bool "elfutils-dbg"
+	 help
+	
+endmenu
+menu "init-ifupdown " 
+config init-ifupdown  
+	 bool "init-ifupdown"
+	 help
+	 Basic TCP/IP networking init scripts and configuration files
+	
+config init-ifupdown-dbg  
+	 bool "init-ifupdown-dbg"
+	 help
+	
+config init-ifupdown-dev  
+	 bool "init-ifupdown-dev"
+	 help
+	
+endmenu
+menu "initscripts " 
+config initscripts  
+	 bool "initscripts"
+	 help
+	 SysV init scripts
+	
+config initscripts-dbg  
+	 bool "initscripts-dbg"
+	 help
+	
+config initscripts-dev  
+	 bool "initscripts-dev"
+	 help
+	
+config initscripts-functions  
+	 bool "initscripts-functions"
+	 help
+	
+endmenu
+menu "iproute2 " 
+config iproute2  
+	 bool "iproute2"
+	 help
+	 TCP / IP networking and traffic control utilities
+	
+config iproute2-rtacct  
+	 bool "iproute2-rtacct"
+	 help
+	
+config iproute2-tc  
+	 bool "iproute2-tc"
+	 help
+	
+config iproute2-ifstat  
+	 bool "iproute2-ifstat"
+	 help
+	
+config iproute2-nstat  
+	 bool "iproute2-nstat"
+	 help
+	
+config iproute2-dbg  
+	 bool "iproute2-dbg"
+	 help
+	
+config iproute2-ss  
+	 bool "iproute2-ss"
+	 help
+	
+config iproute2-lnstat  
+	 bool "iproute2-lnstat"
+	 help
+	
+config iproute2-dev  
+	 bool "iproute2-dev"
+	 help
+	
+config iproute2-genl  
+	 bool "iproute2-genl"
+	 help
+	
+config iproute2-bash-completion  
+	 bool "iproute2-bash-completion"
+	 help
+	
+endmenu
+menu "kmod " 
+config kmod  
+	 bool "kmod"
+	 help
+	 Tools for managing Linux kernel modules
+	
+config kmod-dev  
+	 bool "kmod-dev"
+	 help
+	
+config kmod-dbg  
+	 bool "kmod-dbg"
+	 help
+	
+config libkmod  
+	 bool "libkmod"
+	 help
+	
+config kmod-bash-completion  
+	 bool "kmod-bash-completion"
+	 help
+	
+endmenu
+menu "libpam " 
+config libpam  
+	 bool "libpam"
+	 help
+	 Linux-PAM (Pluggable Authentication Modules)
+	
+config libpam-dbg  
+	 bool "libpam-dbg"
+	 help
+	
+config libpam-xtests  
+	 bool "libpam-xtests"
+	 help
+	
+config libpam-runtime  
+	 bool "libpam-runtime"
+	 help
+	
+config libpam-dev  
+	 bool "libpam-dev"
+	 help
+	
+endmenu
+menu "linuxptp "
+config linuxptp
+	 bool "linuxptp"
+	 help
+	 Precision Time Protocol (PTP) according to IEEE standard 1588 for Linux
+
+config linuxptp-dev
+	 bool "linuxptp-dev"
+	 help
+	 Precision Time Protocol (PTP) according to IEEE standard 1588 for Linux
+
+config linuxptp-dbg
+	 bool "linuxptp-dbg"
+	 help
+	 Precision Time Protocol (PTP) according to IEEE standard 1588 for Linux
+
+endmenu
+menu "modutils-initscripts " 
+config modutils-initscripts  
+	 bool "modutils-initscripts"
+	 help
+	 Initscript for auto-loading kernel modules on boot
+	
+config modutils-initscripts-dbg  
+	 bool "modutils-initscripts-dbg"
+	 help
+	
+config modutils-initscripts-dev  
+	 bool "modutils-initscripts-dev"
+	 help
+	
+endmenu
+menu "mtd-utils " 
+config mtd-utils  
+	 bool "mtd-utils"
+	 help
+	 Tools for managing memory technology devices
+	
+config mtd-utils-ubifs  
+	 bool "mtd-utils-ubifs"
+	 help
+	
+config mtd-utils-jffs2  
+	 bool "mtd-utils-jffs2"
+	 help
+	
+config mtd-utils-dev  
+	 bool "mtd-utils-dev"
+	 help
+	
+config mtd-utils-dbg  
+	 bool "mtd-utils-dbg"
+	 help
+	
+config mtd-utils-misc  
+	 bool "mtd-utils-misc"
+	 help
+	
+endmenu
+menu "netbase " 
+config netbase  
+	 bool "netbase"
+	 help
+	 Basic TCP/IP networking support
+	
+config netbase-dbg  
+	 bool "netbase-dbg"
+	 help
+	
+config netbase-dev  
+	 bool "netbase-dev"
+	 help
+	
+endmenu
+menu "opkg-utils " 
+config opkg-utils  
+	 bool "opkg-utils"
+	 help
+	 Additional utilities for the opkg package manager
+	
+config opkg-utils-dbg  
+	 bool "opkg-utils-dbg"
+	 help
+	
+config update-alternatives-opkg  
+	 bool "update-alternatives-opkg"
+	 help
+	
+endmenu
+menu "procps " 
+config procps  
+	 bool "procps"
+	 help
+	 System and process monitoring utilities
+	
+config procps-dbg  
+	 bool "procps-dbg"
+	 help
+	
+config procps-dev  
+	 bool "procps-dev"
+	 help
+	
+endmenu
+menu "shell " 
+menu "bash " 
+config bash  
+	 bool "bash"
+	 help
+	 An sh-compatible command language interpreter
+	
+config bash-dbg  
+	 bool "bash-dbg"
+	 help
+	
+config bash-dev  
+	 bool "bash-dev"
+	 help
+	
+endmenu
+endmenu
+menu "sysvinit " 
+config sysvinit  
+	 bool "sysvinit"
+	 help
+	 System-V like init
+	
+config sysvinit-sulogin  
+	 bool "sysvinit-sulogin"
+	 help
+	
+config sysvinit-dev  
+	 bool "sysvinit-dev"
+	 help
+	
+config sysvinit-dbg  
+	 bool "sysvinit-dbg"
+	 help
+	
+config sysvinit-pidof  
+	 bool "sysvinit-pidof"
+	 help
+	
+endmenu
+menu "update-rc.d " 
+config update-rc.d  
+	 bool "update-rc.d"
+	 help
+	 manage symlinks in /etc/rcN.d
+	
+config update-rc.d-dev  
+	 bool "update-rc.d-dev"
+	 help
+	
+config update-rc.d-dbg  
+	 bool "update-rc.d-dbg"
+	 help
+	
+endmenu
+menu "util-linux " 
+config util-linux  
+	 bool "util-linux"
+	 help
+	 A suite of basic system administration utilities
+	
+config util-linux-mount  
+	 bool "util-linux-mount"
+	 help
+	
+config util-linux-mountpoint  
+	 bool "util-linux-mountpoint"
+	 help
+	
+config util-linux-losetup  
+	 bool "util-linux-losetup"
+	 help
+	
+config util-linux-dbg  
+	 bool "util-linux-dbg"
+	 help
+	
+config util-linux-mkfs  
+	 bool "util-linux-mkfs"
+	 help
+	
+config util-linux-hwclock  
+	 bool "util-linux-hwclock"
+	 help
+	
+config util-linux-fsck  
+	 bool "util-linux-fsck"
+	 help
+	
+config util-linux-partx  
+	 bool "util-linux-partx"
+	 help
+	
+config util-linux-blkid  
+	 bool "util-linux-blkid"
+	 help
+	
+config util-linux-uuidd  
+	 bool "util-linux-uuidd"
+	 help
+	
+config util-linux-prlimit  
+	 bool "util-linux-prlimit"
+	 help
+	
+config util-linux-fdisk  
+	 bool "util-linux-fdisk"
+	 help
+	
+config util-linux-fsck.cramfs  
+	 bool "util-linux-fsck.cramfs"
+	 help
+	
+config util-linux-swaponoff  
+	 bool "util-linux-swaponoff"
+	 help
+	
+config util-linux-cfdisk  
+	 bool "util-linux-cfdisk"
+	 help
+	
+config util-linux-runuser  
+	 bool "util-linux-runuser"
+	 help
+	
+config util-linux-uuidgen  
+	 bool "util-linux-uuidgen"
+	 help
+	
+config util-linux-readprofile  
+	 bool "util-linux-readprofile"
+	 help
+	
+config util-linux-getopt  
+	 bool "util-linux-getopt"
+	 help
+	
+config util-linux-sulogin  
+	 bool "util-linux-sulogin"
+	 help
+	
+config util-linux-mcookie  
+	 bool "util-linux-mcookie"
+	 help
+	
+config util-linux-sfdisk  
+	 bool "util-linux-sfdisk"
+	 help
+	
+config util-linux-fstrim  
+	 bool "util-linux-fstrim"
+	 help
+	
+config util-linux-findfs  
+	 bool "util-linux-findfs"
+	 help
+	
+config util-linux-umount  
+	 bool "util-linux-umount"
+	 help
+	
+config util-linux-lscpu  
+	 bool "util-linux-lscpu"
+	 help
+	
+config util-linux-mkfs.cramfs  
+	 bool "util-linux-mkfs.cramfs"
+	 help
+	
+config util-linux-dev  
+	 bool "util-linux-dev"
+	 help
+	
+config util-linux-bash-completion  
+	 bool "util-linux-bash-completion"
+	 help
+	
+config util-linux-agetty  
+	 bool "util-linux-agetty"
+	 help
+	
+endmenu
+menu "utils " 
+menu "shadow " 
+config shadow  
+	 bool "shadow"
+	 help
+	 Tools to change and administer password and group data
+	
+config shadow-dbg  
+	 bool "shadow-dbg"
+	 help
+	
+config shadow-dev  
+	 bool "shadow-dev"
+	 help
+	
+config shadow-base  
+	 bool "shadow-base"
+	 help
+	
+endmenu
+endmenu
+endmenu
+menu "baseutils " 
+menu "shadow-securetty " 
+config shadow-securetty  
+	 bool "shadow-securetty"
+	 help
+	 Provider of the machine specific securetty file
+	
+config shadow-securetty-dbg  
+	 bool "shadow-securetty-dbg"
+	 help
+	
+config shadow-securetty-dev  
+	 bool "shadow-securetty-dev"
+	 help
+	
+endmenu
+endmenu
+menu "bootgen "
+config bootgen
+         bool "bootgen"
+         help
+         Xilinx tool that generate device boot images.
+
+config bootgen-dev
+         bool "bootgen-dev"
+         help
+
+config bootgen-dbg
+         bool "bootgen-dbg"
+         help
+
+endmenu
+menu "console " 
+menu "network " 
+menu "canutils " 
+config canutils  
+	 bool "canutils"
+	 help
+	 canutils (PTX flavour)
+	
+config canutils-dev  
+	 bool "canutils-dev"
+	 help
+	
+config canutils-dbg  
+	 bool "canutils-dbg"
+	 help
+	
+endmenu
+menu "can-utils "
+config can-utils
+         bool "can-utils"
+         help
+         Linux CAN network development utilities
+
+config can-utils-dbg
+         bool "can-utils-dbg"
+         help
+
+config can-utils-dev
+         bool "can-utils-dev"
+         help
+
+endmenu
+menu "dropbear " 
+config dropbear  
+	 bool "dropbear"
+	 help
+	 A lightweight SSH and SCP implementation
+	
+config dropbear-dev  
+	 bool "dropbear-dev"
+	 help
+	
+config dropbear-dbg  
+	 bool "dropbear-dbg"
+	 help
+	
+endmenu
+menu "ethtool "
+config ethtool
+	 bool "ethtool"
+	 help
+	 Display or change ethernet card settings
+
+config ethtool-dev
+	 bool "ethtool-dev"
+	 help
+
+config ethtool-dbg
+	 bool "ethtool-dbg"
+	 help
+
+endmenu
+menu "openssh " 
+config openssh  
+	 bool "openssh"
+	 help
+	 A suite of security-related network utilities based on \
+	
+config openssh-dev  
+	 bool "openssh-dev"
+	 help
+	
+config openssh-sftp  
+	 bool "openssh-sftp"
+	 help
+	
+config openssh-ssh  
+	 bool "openssh-ssh"
+	 help
+	
+config openssh-scp  
+	 bool "openssh-scp"
+	 help
+	
+config openssh-misc  
+	 bool "openssh-misc"
+	 help
+	
+config openssh-keygen  
+	 bool "openssh-keygen"
+	 help
+	
+config openssh-dbg  
+	 bool "openssh-dbg"
+	 help
+	
+config openssh-sftp-server  
+	 bool "openssh-sftp-server"
+	 help
+	
+config openssh-sshd  
+	 bool "openssh-sshd"
+	 help
+	
+endmenu
+endmenu
+menu "utils " 
+menu "bash-completion " 
+config bash-completion  
+	 bool "bash-completion"
+	 help
+	 Programmable Completion for Bash 4
+	
+config bash-completion-extra  
+	 bool "bash-completion-extra"
+	 help
+	
+config bash-completion-dbg  
+	 bool "bash-completion-dbg"
+	 help
+	
+config bash-completion-dev  
+	 bool "bash-completion-dev"
+	 help
+	
+endmenu
+menu "bzip2 " 
+config bzip2  
+	 bool "bzip2"
+	 help
+	 Very high-quality data compression program
+	
+config bzip2-dev  
+	 bool "bzip2-dev"
+	 help
+	
+config bzip2-dbg  
+	 bool "bzip2-dbg"
+	 help
+	
+config libbz2  
+	 bool "libbz2"
+	 help
+	
+endmenu
+menu "gawk " 
+config gawk  
+	 bool "gawk"
+	 help
+	 GNU awk text processing utility
+	
+config gawk-dbg  
+	 bool "gawk-dbg"
+	 help
+	
+config gawk-dev  
+	 bool "gawk-dev"
+	 help
+	
+endmenu
+menu "grep " 
+config grep  
+	 bool "grep"
+	 help
+	 GNU grep utility
+	
+config grep-dbg  
+	 bool "grep-dbg"
+	 help
+	
+config grep-dev  
+	 bool "grep-dev"
+	 help
+	
+endmenu
+menu "ltp "
+config ltp
+         bool "ltp"
+         help
+         Linux Test Project
+
+config ltp-dev
+         bool "ltp-dev"
+         help
+
+config ltp-dbg
+         bool "ltp-dbg"
+         help
+
+endmenu
+menu "pciutils " 
+config pciutils  
+	 bool "pciutils"
+	 help
+	 PCI utilities
+	
+config libpci  
+	 bool "libpci"
+	 help
+	
+config pciutils-dev  
+	 bool "pciutils-dev"
+	 help
+	
+config pciutils-ids  
+	 bool "pciutils-ids"
+	 help
+	
+config pciutils-dbg  
+	 bool "pciutils-dbg"
+	 help
+	
+endmenu
+menu "sed " 
+config sed  
+	 bool "sed"
+	 help
+	 Stream EDitor (text filtering utility)
+	
+config sed-dbg  
+	 bool "sed-dbg"
+	 help
+	
+config sed-dev  
+	 bool "sed-dev"
+	 help
+	
+endmenu
+endmenu
+endmenu
+menu "devel " 
+menu "flex " 
+config flex  
+	 bool "flex"
+	 help
+	 Flex (The Fast Lexical Analyzer)
+	
+config flex-dev  
+	 bool "flex-dev"
+	 help
+	
+config flex-dbg  
+	 bool "flex-dbg"
+	 help
+	
+endmenu
+menu "gmp " 
+config gmp  
+	 bool "gmp"
+	 help
+	 GNU multiprecision arithmetic library
+	
+config gmp-dbg  
+	 bool "gmp-dbg"
+	 help
+	
+config libgmpxx  
+	 bool "libgmpxx"
+	 help
+	
+config gmp-dev  
+	 bool "gmp-dev"
+	 help
+	
+endmenu
+menu "make " 
+config make  
+	 bool "make"
+	 help
+	 GNU tool that controls the build process
+	
+config make-dbg  
+	 bool "make-dbg"
+	 help
+	
+config make-dev  
+	 bool "make-dev"
+	 help
+	
+endmenu
+menu "perl " 
+config perl  
+	 bool "perl"
+	 help
+	 Perl scripting language
+	
+config perl-pod  
+	 bool "perl-pod"
+	 help
+	
+config perl-modules  
+	 bool "perl-modules"
+	 help
+	
+config perl-module-cpan  
+	 bool "perl-module-cpan"
+	 help
+	
+config perl-module-unicore  
+	 bool "perl-module-unicore"
+	 help
+	
+config perl-dbg  
+	 bool "perl-dbg"
+	 help
+	
+config perl-dev  
+	 bool "perl-dev"
+	 help
+	
+config perl-misc  
+	 bool "perl-misc"
+	 help
+	
+endmenu
+menu "python3 "
+menu "python3 "
+config python3
+	 bool "python3"
+	 help
+	 The Python Programming Language
+	
+config python3-crypt
+	 bool "python3-crypt"
+	 help
+	
+config python3-threading
+	 bool "python3-threading"
+	 help
+	
+config python3-difflib
+	 bool "python3-difflib"
+	 help
+	
+config python3-stringold
+	 bool "python3-stringold"
+	 help
+	
+config python3-codecs
+	 bool "python3-codecs"
+	 help
+	
+config python3-email
+	 bool "python3-email"
+	 help
+	
+config python3-ctypes
+	 bool "python3-ctypes"
+	 help
+	
+config python3-audio
+	 bool "python3-audio"
+	 help
+	
+config python3-datetime
+	 bool "python3-datetime"
+	 help
+	
+config python3-dev
+	 bool "python3-dev"
+	 help
+	
+config python3-pydoc
+	 bool "python3-pydoc"
+	 help
+	
+config python3-unixadmin
+	 bool "python3-unixadmin"
+	 help
+	
+config python3-unittest
+	 bool "python3-unittest"
+	 help
+	
+config python3-curses
+	 bool "python3-curses"
+	 help
+	
+config python3-profile
+	 bool "python3-profile"
+	 help
+	
+config python3-netclient
+	 bool "python3-netclient"
+	 help
+	
+config python3-mmap
+	 bool "python3-mmap"
+	 help
+	
+config python3-logging
+	 bool "python3-logging"
+	 help
+	
+config python3-io
+	 bool "python3-io"
+	 help
+	
+config python3-db
+	 bool "python3-db"
+	 help
+	
+config python3-plistlib
+	 bool "python3-plistlib"
+	 help
+	
+config python3-xml
+	 bool "python3-xml"
+	 help
+	
+config python3-gdbm
+	 bool "python3-gdbm"
+	 help
+	
+config python3-compile
+	 bool "python3-compile"
+	 help
+	
+config python3-distutils
+	 bool "python3-distutils"
+	 help
+	
+config python3-image
+	 bool "python3-image"
+	 help
+	
+config python3-resource
+	 bool "python3-resource"
+	 help
+	
+config python3-syslog
+	 bool "python3-syslog"
+	 help
+	
+config python3-multiprocessing
+	 bool "python3-multiprocessing"
+	 help
+	
+config python3-numbers
+	 bool "python3-numbers"
+	 help
+	
+config python3-xmlrpc
+	 bool "python3-xmlrpc"
+	 help
+	
+config python3-sqlite3
+	 bool "python3-sqlite3"
+	 help
+	
+config python3-mime
+	 bool "python3-mime"
+	 help
+	
+config python3-math
+	 bool "python3-math"
+	 help
+	
+config python3-debugger
+	 bool "python3-debugger"
+	 help
+	
+config python3-html
+	 bool "python3-html"
+	 help
+	
+config python3-core
+	 bool "python3-core"
+	 help
+	
+config python3-smtpd
+	 bool "python3-smtpd"
+	 help
+	
+config python3-fcntl
+	 bool "python3-fcntl"
+	 help
+	
+config python3-2to3
+	 bool "python3-2to3"
+	 help
+	
+config python3-pkgutil
+	 bool "python3-pkgutil"
+	 help
+	
+config python3-terminal
+	 bool "python3-terminal"
+	 help
+	
+config python3-pprint
+	 bool "python3-pprint"
+	 help
+	
+config python3-netserver
+	 bool "python3-netserver"
+	 help
+	
+config python3-mailbox
+	 bool "python3-mailbox"
+	 help
+	
+config python3-idle
+	 bool "python3-idle"
+	 help
+	
+config python3-pickle
+	 bool "python3-pickle"
+	 help
+	
+config python3-tests
+	 bool "python3-tests"
+	 help
+	
+config python3-misc
+	 bool "python3-misc"
+	 help
+	
+config python3-modules
+	 bool "python3-modules"
+	 help
+	
+config python3-dbg
+	 bool "python3-dbg"
+	 help
+	
+config python3-shell
+	 bool "python3-shell"
+	 help
+	
+config python3-tkinter
+	 bool "python3-tkinter"
+	 help
+	
+config python3-compression
+	 bool "python3-compression"
+	 help
+	
+config python3-json
+	 bool "python3-json"
+	 help
+	
+endmenu
+endmenu
+menu "run-postinsts " 
+config run-postinsts  
+	 bool "run-postinsts"
+	 help
+	 Runs postinstall scripts on first boot of the target device
+	
+config run-postinsts-dbg  
+	 bool "run-postinsts-dbg"
+	 help
+	
+config run-postinsts-dev  
+	 bool "run-postinsts-dev"
+	 help
+	
+endmenu
+endmenu
+menu "libs " 
+menu "acl " 
+config acl  
+	 bool "acl"
+	 help
+	 Utilities for managing POSIX Access Control Lists
+	
+config acl-dev  
+	 bool "acl-dev"
+	 help
+	
+config libacl  
+	 bool "libacl"
+	 help
+	
+config acl-dbg  
+	 bool "acl-dbg"
+	 help
+	
+endmenu
+menu "attr " 
+config attr  
+	 bool "attr"
+	 help
+	 Utilities for manipulating filesystem extended attributes
+	
+config attr-dev  
+	 bool "attr-dev"
+	 help
+	
+config libattr  
+	 bool "libattr"
+	 help
+	
+config attr-dbg  
+	 bool "attr-dbg"
+	 help
+	
+endmenu
+menu "db " 
+config db  
+	 bool "db"
+	 help
+	 Berkeley Database v5
+	
+config db-bin  
+	 bool "db-bin"
+	 help
+	
+config db-dev  
+	 bool "db-dev"
+	 help
+	
+config db-cxx  
+	 bool "db-cxx"
+	 help
+	
+config db-dbg  
+	 bool "db-dbg"
+	 help
+	
+endmenu
+menu "expat " 
+config expat  
+	 bool "expat"
+	 help
+	 A stream-oriented XML parser library
+	
+config expat-dev  
+	 bool "expat-dev"
+	 help
+	
+config expat-dbg  
+	 bool "expat-dbg"
+	 help
+	
+config expat-bin  
+	 bool "expat-bin"
+	 help
+	
+endmenu
+menu "gdbm " 
+config gdbm  
+	 bool "gdbm"
+	 help
+	 Key/value database library with extensible hashing
+	
+config gdbm-bin  
+	 bool "gdbm-bin"
+	 help
+	
+config gdbm-dbg  
+	 bool "gdbm-dbg"
+	 help
+	
+config gdbm-dev  
+	 bool "gdbm-dev"
+	 help
+	
+config gdbm-compat  
+	 bool "gdbm-compat"
+	 help
+	
+endmenu
+menu "gettext " 
+config gettext  
+	 bool "gettext"
+	 help
+	 Utilities and libraries for producing multi-lingual messages
+	
+config libgettextsrc  
+	 bool "libgettextsrc"
+	 help
+	
+config libgettextlib  
+	 bool "libgettextlib"
+	 help
+	
+config gettext-dev  
+	 bool "gettext-dev"
+	 help
+	
+config gettext-dbg  
+	 bool "gettext-dbg"
+	 help
+	
+config gettext-runtime  
+	 bool "gettext-runtime"
+	 help
+	
+endmenu
+menu "libcap " 
+config libcap  
+	 bool "libcap"
+	 help
+	 Library for getting/setting POSIX.1e capabilities
+	
+config libcap-dbg  
+	 bool "libcap-dbg"
+	 help
+	
+config libcap-dev  
+	 bool "libcap-dev"
+	 help
+	
+config libcap-bin  
+	 bool "libcap-bin"
+	 help
+	
+endmenu
+menu "libffi " 
+config libffi  
+	 bool "libffi"
+	 help
+	 A portable foreign function interface library
+	
+config libffi-dev  
+	 bool "libffi-dev"
+	 help
+	
+config libffi-dbg  
+	 bool "libffi-dbg"
+	 help
+	
+endmenu
+menu "libgcc-xilinx " 
+config libgcc-dbg  
+	 bool "libgcc-dbg"
+	 help
+	
+config libgcc-dev  
+	 bool "libgcc-dev"
+	 help
+	
+config libgcc  
+	 bool "libgcc"
+	 help
+	
+endmenu
+menu "libtool " 
+config libtool  
+	 bool "libtool"
+	 help
+	
+config libltdl  
+	 bool "libltdl"
+	 help
+	
+config libtool-dbg  
+	 bool "libtool-dbg"
+	 help
+	
+config libtool-dev  
+	 bool "libtool-dev"
+	 help
+	
+endmenu
+menu "lzo " 
+config lzo  
+	 bool "lzo"
+	 help
+	 Lossless data compression library
+	
+config lzo-dbg  
+	 bool "lzo-dbg"
+	 help
+	
+config lzo-dev  
+	 bool "lzo-dev"
+	 help
+	
+endmenu
+menu "ncurses " 
+config ncurses  
+	 bool "ncurses"
+	 help
+	 The New Curses library
+	
+config ncurses-terminfo-base  
+	 bool "ncurses-terminfo-base"
+	 help
+	
+config ncurses-dbg  
+	 bool "ncurses-dbg"
+	 help
+	
+config ncurses-terminfo  
+	 bool "ncurses-terminfo"
+	 help
+	
+config ncurses-dev  
+	 bool "ncurses-dev"
+	 help
+	
+config ncurses-tools  
+	 bool "ncurses-tools"
+	 help
+	
+endmenu
+menu "network " 
+menu "libsocketcan " 
+config libsocketcan  
+	 bool "libsocketcan"
+	 help
+	 Control basic functions in socketcan from userspace
+	
+config libsocketcan-dev  
+	 bool "libsocketcan-dev"
+	 help
+	
+config libsocketcan-dbg  
+	 bool "libsocketcan-dbg"
+	 help
+	
+endmenu
+menu "openssl " 
+config openssl  
+	 bool "openssl"
+	 help
+	 Secure Socket Layer
+
+config openssl-bin
+         bool "openssl-bin"
+         help
+	
+config libcrypto  
+	 bool "libcrypto"
+	 help
+	
+config openssl-misc  
+	 bool "openssl-misc"
+	 help
+	
+config libssl  
+	 bool "libssl"
+	 help
+	
+config openssl-conf  
+	 bool "openssl-conf"
+	 help
+	
+config openssl-dbg  
+	 bool "openssl-dbg"
+	 help
+	
+config openssl-dev  
+	 bool "openssl-dev"
+	 help
+	
+config openssl-engines  
+	 bool "openssl-engines"
+	 help
+	
+endmenu
+endmenu
+menu "readline " 
+config readline  
+	 bool "readline"
+	 help
+	 Library for editing typed command lines
+	
+config readline-dbg  
+	 bool "readline-dbg"
+	 help
+	
+config readline-dev  
+	 bool "readline-dev"
+	 help
+	
+endmenu
+menu "sqlite3 " 
+config sqlite3  
+	 bool "sqlite3"
+	 help
+	 Embeddable SQL database engine
+	
+config libsqlite3  
+	 bool "libsqlite3"
+	 help
+	
+config sqlite3-dbg  
+	 bool "sqlite3-dbg"
+	 help
+	
+config libsqlite3-dev  
+	 bool "libsqlite3-dev"
+	 help
+	
+endmenu
+menu "zlib " 
+config zlib  
+	 bool "zlib"
+	 help
+	 Zlib Compression Library
+	
+config zlib-dbg  
+	 bool "zlib-dbg"
+	 help
+	
+config zlib-dev  
+	 bool "zlib-dev"
+	 help
+	
+endmenu
+endmenu
+menu "misc " 
+menu "coreutils " 
+config coreutils  
+	 bool "coreutils"
+	 help
+	 The basic file, shell and text manipulation utilities
+	
+config coreutils-dev  
+	 bool "coreutils-dev"
+	 help
+	
+config coreutils-dbg  
+	 bool "coreutils-dbg"
+	 help
+	
+endmenu
+menu "cracklib " 
+config cracklib  
+	 bool "cracklib"
+	 help
+	 Password strength checker library
+	
+config cracklib-dev  
+	 bool "cracklib-dev"
+	 help
+	
+config cracklib-dbg  
+	 bool "cracklib-dbg"
+	 help
+	
+endmenu
+menu "cryptodev-linux " 
+config cryptodev-linux  
+	 bool "cryptodev-linux"
+	 help
+	 A /dev/crypto device driver header file
+	
+config cryptodev-linux-dbg  
+	 bool "cryptodev-linux-dbg"
+	 help
+	
+config cryptodev-linux-dev  
+	 bool "cryptodev-linux-dev"
+	 help
+	
+endmenu
+menu "gcc-runtime-xilinx " 
+
+config libstdcPLUSPLUS  
+	 bool "libstdc++"
+	 help
+	
+config libatomic  
+	 bool "libatomic"
+	 help
+	
+config libatomic-dev  
+	 bool "libatomic-dev"
+	 help
+	
+config libstdcPLUSPLUS-dev  
+	 bool "libstdc++-dev"
+	 help
+	
+endmenu
+menu "glibc-xilinx " 
+config catchsegv  
+	 bool "catchsegv"
+	 help
+	
+config nscd  
+	 bool "nscd"
+	 help
+	
+config glibc-thread-db  
+	 bool "glibc-thread-db"
+	 help
+
+config sln  
+	 bool "sln"
+	 help
+	
+config glibc-extra-nss  
+	 bool "glibc-extra-nss"
+	 help
+	
+config libsotruss  
+	 bool "libsotruss"
+	 help
+	
+config ldd  
+	 bool "ldd"
+	 help
+	
+config tzcode  
+	 bool "tzcode"
+	 help
+	
+config libmemusage  
+	 bool "libmemusage"
+	 help
+	
+config libsegfault  
+	 bool "libsegfault"
+	 help
+	
+endmenu
+menu "iptables " 
+config iptables  
+	 bool "iptables"
+	 help
+	 Tools for managing kernel packet filtering capabilities
+	
+config iptables-dbg  
+	 bool "iptables-dbg"
+	 help
+	
+config iptables-dev  
+	 bool "iptables-dev"
+	 help
+	
+endmenu
+menu "m4 " 
+config m4  
+	 bool "m4"
+	 help
+	 Traditional Unix macro processor
+	
+config m4-dev  
+	 bool "m4-dev"
+	 help
+	
+config m4-dbg  
+	 bool "m4-dbg"
+	 help
+	
+endmenu
+menu "packagegroup-core-boot " 
+config packagegroup-core-boot  
+	 bool "packagegroup-core-boot"
+	 help
+	 Minimal boot requirements
+	
+config packagegroup-core-boot-dev  
+	 bool "packagegroup-core-boot-dev"
+	 help
+	
+config packagegroup-core-boot-dbg  
+	 bool "packagegroup-core-boot-dbg"
+	 help
+	
+endmenu
+menu "packagegroup-core-ssh-dropbear " 
+config packagegroup-core-ssh-dropbear  
+	 bool "packagegroup-core-ssh-dropbear"
+	 help
+	 Dropbear SSH client/server
+	
+config packagegroup-core-ssh-dropbear-dbg  
+	 bool "packagegroup-core-ssh-dropbear-dbg"
+	 help
+	
+config packagegroup-core-ssh-dropbear-dev  
+	 bool "packagegroup-core-ssh-dropbear-dev"
+	 help
+	
+endmenu
+menu "ptest-runner " 
+config ptest-runner  
+	 bool "ptest-runner"
+	 help
+	 A C program to run all installed ptests
+	
+config ptest-runner-dbg  
+	 bool "ptest-runner-dbg"
+	 help
+	
+config ptest-runner-dev  
+	 bool "ptest-runner-dev"
+	 help
+	
+endmenu
+menu "sysfsutils " 
+config sysfsutils  
+	 bool "sysfsutils"
+	 help
+	 Tools for working with sysfs
+	
+config libsysfs  
+	 bool "libsysfs"
+	 help
+	
+config sysfsutils-dev  
+	 bool "sysfsutils-dev"
+	 help
+	
+config sysfsutils-dbg  
+	 bool "sysfsutils-dbg"
+	 help
+	
+endmenu
+menu "sysvinit-inittab " 
+config sysvinit-inittab  
+	 bool "sysvinit-inittab"
+	 help
+	 Inittab configuration for SysVinit
+	
+config sysvinit-inittab-dbg  
+	 bool "sysvinit-inittab-dbg"
+	 help
+	
+config sysvinit-inittab-dev  
+	 bool "sysvinit-inittab-dev"
+	 help
+	
+endmenu
+menu "tcf-agent " 
+config tcf-agent  
+	 bool "tcf-agent"
+	 help
+	 Target Communication Framework for the Eclipse IDE
+	
+config tcf-agent-dbg  
+	 bool "tcf-agent-dbg"
+	 help
+	
+config tcf-agent-dev  
+	 bool "tcf-agent-dev"
+	 help
+	
+endmenu
+endmenu
+menu "net " 
+menu "bridge-utils " 
+config bridge-utils  
+	 bool "bridge-utils"
+	 help
+	 Tools for ethernet bridging
+	
+config bridge-utils-dev  
+	 bool "bridge-utils-dev"
+	 help
+	
+config bridge-utils-dbg  
+	 bool "bridge-utils-dbg"
+	 help
+	
+endmenu
+endmenu
+menu "network"
+menu "ntp"
+config ntp
+	 bool "ntp"
+	 help
+	 Network Time Protocol daemon and utilities
+
+config ntp-dev
+	 bool "ntp-dev"
+	 help
+
+config ntp-dbg
+	 bool "ntp-dbg"
+	 help
+
+endmenu
+endmenu
+endmenu
+menu "Image Features"
+config imagefeature-debug-tweaks
+        bool "debug-tweaks"
+        help
+
+config auto-login
+        bool "auto-login"
+        select imagefeature-debug-tweaks
+        help
+        Select this option to enable autologin on system bootup.
+
+choice
+        prompt "Init-manager"
+        default Init-manager-sysvinit
+
+config Init-manager-systemd
+        bool "systemd"
+        help
+        Select this option to enable systemd as init manager
+
+config Init-manager-sysvinit
+        bool "sysvinit"
+        help
+        Select this option to enable sysvinit as init manager
+
+endchoice
+endmenu
+
+source ./Kconfig.user
+
+menu "PetaLinux RootFS Settings"
+config ADD_EXTRA_USERS
+        string "Add Extra Users"
+        help
+          Add users to the Petalinux system.
+          Provide the userid and passwd with separation of ':' and provide multiple userid's with separation of ';'.
+
+          Examples:
+           root:passwd			     --> Update the root passwd when debug-tweeks enabled.
+           user1:passwd1; or user1:passwd1   --> Add passwd1 for the user1
+           user1:                            --> Add empty passwd for the user1
+           user1:passwd1;user2:passwd2;      --> Add user1 and user2 with the passwd1 and passwd2
+           user1:;user2:passwd2              --> Add empty passwd for user1 and passwd2 for user2
+           user1:passwd1:passwd-expire       --> The passwd1 for user1 will expire on the frist login and
+                                                 user should enter the new passwd.
+           user1::passwd-expire;             --> This sets the empty passwd for user1.On the frist login
+                                                 user should enter the new passwd.
+
+config CREATE_NEW_GROUPS
+	string "Create new Groups"
+	help
+	  Add new groups to be created in a system.
+	  Provide multiple groupid's with separation of ';'.
+	  Example:
+	    group1;group2;
+
+config ADD_USERS_TO_GROUPS
+	string "Add Users to Groups"
+	help
+	  Add specific users to the Groups
+	  Provide the userid and groups with separation of ':',provide groups with separation of ',' and
+	  provide multiple userid's with separation of ';'.
+
+	  Example:
+	  user1:audio,video;user2:audio,video,disk --> Add user1 to audio,video groups and
+						       user2 to audio,video,disk groups.
+
+config ADD_USERS_TO_SUDOERS
+	string "Add Users to Sudo users"
+	help
+	  Specify the users with space that needs to be added to sudo users.
+	  Example: user1 user2
+
+endmenu
