@@ -33,6 +33,13 @@ config SUBSYSTEM_VARIANT_{0}{1}
 
 '''
 
+Kconfig_arch = '''
+config system-{0}
+        bool
+        default y
+
+'''
+
 scripts_dir = os.path.join(os.path.dirname(__file__),'plnx-scripts')
 
 def update_config_value(macro, value, filename):
@@ -293,14 +300,78 @@ def post_sys_conf(args,default_cfgfile):
             bootargs = '%s %s' % (bootargs, extra_bootargs)
         update_config_value('CONFIG_SUBSYSTEM_BOOTARGS_GENERATED', '"%s"' % bootargs, default_cfgfile)
 
+# Run menuconfig/silentconfig
+def run_menuconfig(Kconfig, cfgfile, ui, out_dir):
+    if not ui:
+        cmd = 'yes "" | env KCONFIG_CONFIG=%s conf %s' % (cfgfile, Kconfig)
+        print('Running CMD: %s' % cmd)
+        os.system(cmd)
+    else:
+        cmd = 'env KCONFIG_CONFIG=%s mconf %s' % (cfgfile, Kconfig)
+        print('Running CMD: %s' % cmd)
+        subprocess.check_call(cmd.split(),cwd=out_dir)
+
+# Rootfs configs starts
+def add_rootfs_configs(args, default_cfgfile):
+    arch = get_config_value('CONFIG_SUBSYSTEM_ARCH_',
+                            default_cfgfile, 'choice','=y').lower()
+    #template files for rootfs
+    template_rfsfile = os.path.join(scripts_dir,
+                        'rootfsconfigs/rootfsconfig_%s' % args.soc_family)
+    template_Kconfig = os.path.join(scripts_dir,
+                                'rootfsconfigs/Kconfig-%s.part' % arch)
+    rfsconfig_py = os.path.join(scripts_dir,
+                                'rootfsconfigs/rootfs_config.py')
+    user_cfg = os.path.join(scripts_dir,
+                                'rootfsconfigs/user-rootfsconfig')
+    # Create rootfsconfigs dir if not found
+    rootfs_cfgdir = os.path.join(args.output, 'rootfsconfigs')
+    if not os.path.exists(rootfs_cfgdir):
+        os.makedirs(rootfs_cfgdir)
+
+    default_rfsfile = os.path.join(args.output, 'rootfsconfig')
+    rfsKconfig_part = os.path.join(rootfs_cfgdir, 'Kconfig.part')
+    rfsKconfig_user = os.path.join(rootfs_cfgdir, 'Kconfig.user')
+    rootfs_Kconfig = os.path.join(rootfs_cfgdir, 'Kconfig')
+
+    for file_path in [template_rfsfile, template_Kconfig, rfsconfig_py]:
+        if not os.path.isfile(file_path):
+            print('ERROR: %s is not found in tool' % file_path)
+            sys.exit(255)
+
+    shutil.copy2(template_rfsfile, default_rfsfile)
+    shutil.copy2(template_Kconfig, rfsKconfig_part)
+    shutil.copy2(user_cfg, rootfs_cfgdir)
+    cmd = 'python3 %s --generate_kconfig %s %s' \
+            % (rfsconfig_py, user_cfg, rootfs_cfgdir)
+    print('Running CMD: %s' % cmd)
+    subprocess.check_call(cmd.split(),cwd=args.output)
+    rfsKconfig_str = Kconfig_arch.format(args.soc_family)
+    with open(rfsKconfig_part,'r',encoding='utf-8') as rfskconfig_part_f:
+        rfskconfig_part_data = rfskconfig_part_f.read()
+    rfskconfig_part_f.close()
+    rfsKconfig_str += rfskconfig_part_data.replace(
+            'source ./Kconfig.user','source %s' % rfsKconfig_user)
+    with open(rootfs_Kconfig,'w') as rfskconfig_f:
+        rfskconfig_f.write(rfsKconfig_str)
+    rfskconfig_f.close()
+    run_menuconfig(rootfs_Kconfig, default_rfsfile,
+                    True if args.menuconfig == 'rootfs' else False,
+                    args.output)
+
 def get_hw_description(args):
     hw_description = os.path.abspath(args.hw_description)
     output = os.path.abspath(args.output)
     soc_family = args.soc_family
     menuconfig = args.menuconfig
+    project_cfgdir = os.path.join(output, 'configs')
 
     if not os.path.exists(output):
         os.makedirs(output)
+
+    if not os.path.exists(project_cfgdir):
+        os.makedirs(project_cfgdir)
+
     if not os.path.isfile(hw_description):
         print('ERROR: XSA file doensn\'t exists: %s' % hw_description)
         sys.exit(255)
@@ -315,15 +386,15 @@ def get_hw_description(args):
         sys.exit(255)
 
     # XSCT command to read the hw file and generate syshw file
+    Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     cmd = 'xsct -sdx -nodisp %s/hw-description.tcl plnx_gen_hwsysconf %s %s' % \
-                (scripts_dir, hw_description, 'Kconfig.syshw')
+                (scripts_dir, hw_description, Kconfig_syshw)
     print('Running CMD: %s' % cmd)
     subprocess.check_call(cmd.split(),cwd=output)
 
     Kconfig_part = os.path.join(scripts_dir,'configs/Kconfig.part')
     ipinfo_file = os.path.join(scripts_dir,'data/ipinfo.yaml')
     plnx_syshw_file = os.path.join(output,'plnx_syshw_data')
-    Kconfig_syshw = os.path.join(output,'Kconfig.syshw')
 
     for file_path in [Kconfig_part, ipinfo_file, plnx_syshw_file, Kconfig_syshw]:
         if not os.path.isfile(file_path):
@@ -341,7 +412,7 @@ def get_hw_description(args):
         ipinfo_data = yaml.safe_load(ipinfo_file_f)
     ipinfo_file_f.close()
 
-    Kconfig = os.path.join(output,'Kconfig')
+    Kconfig = os.path.join(project_cfgdir,'Kconfig')
     default_cfgfile = os.path.join(output,'config')
     if not os.path.isfile(default_cfgfile):
         shutil.copy2(template_cfgfile,default_cfgfile)
@@ -364,12 +435,9 @@ def get_hw_description(args):
     # Update the sysconfig with command line arguments
     # to reflect in menuconfig/config
     pre_sys_conf(args, default_cfgfile)
-    if not menuconfig:
-        cmd = 'yes "" | env KCONFIG_CONFIG=%s conf %s' % (default_cfgfile,Kconfig)
-        print('Running CMD: %s' % cmd)
-        os.system(cmd)
-    else:
-        cmd = 'env KCONFIG_CONFIG=%s mconf %s' % (default_cfgfile,Kconfig)
-        print('Running CMD: %s' % cmd)
-        subprocess.check_call(cmd.split(),cwd=output)
+    run_menuconfig(Kconfig, default_cfgfile,
+                    True if menuconfig == 'project' else False,
+                    output)
     post_sys_conf(args,default_cfgfile)
+    #update rootfs configs to plnxtool.conf
+    add_rootfs_configs(args, default_cfgfile)

@@ -60,6 +60,7 @@ def main():
     parser = argparse.ArgumentParser(description = 'Yocto xsa to Machine '\
                                                    'Configuration File ' \
                                                    'generation tool', \
+                                    formatter_class=argparse.RawTextHelpFormatter, \
                                         usage = '%(prog)s --soc-family ' \
                                                 '[SOC_FAMILY] [--hw-description'\
                                                 ' <PATH_TO_XSA>/<xsa_name>.xsa]'\
@@ -84,8 +85,11 @@ def main():
                                     'commands')
     optional_args.add_argument('--native-sysroot', metavar='', help='Native ' \
                                 'sysroot path to use the mconf/conf commands.')
-    optional_args.add_argument('--menuconfig', help='UI menuconfig option' \
-                                'to update configuration.', action='store_true')
+    optional_args.add_argument('--menuconfig', help='UI menuconfig option ' \
+                                'to update configuration.' \
+                                '\nproject - To update System Level configurations ' \
+                                '\nrootfs  - To update Rootfs configurations', \
+                                choices=['project', 'rootfs'])
     optional_args.add_argument('--petalinux', help='Update the build/local.conf file ' \
                                 'with generated .conf files.', action='store_true')
     parser._action_groups.append(optional_args)

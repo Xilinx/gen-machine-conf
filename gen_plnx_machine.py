@@ -573,5 +573,16 @@ def generate_plnx_config(args, machine_conf_file):
     with open(plnx_conf_path, 'w') as override_conf_f:
         override_conf_f.write(override_string)
     override_conf_f.close()
+
+    # Rootfs configs
+    rfsconfig_py = os.path.join(scripts_dir,
+                        'rootfsconfigs/rootfs_config.py')
+    default_rfsfile = os.path.join(args.output, 'rootfsconfig')
+    cmd = 'python3 %s --update_cfg %s %s %s' \
+                    % (rfsconfig_py, default_rfsfile,
+                        plnx_conf_path, soc_family)
+    print('Running CMD: %s' % cmd)
+    subprocess.check_call(cmd.split(),cwd=args.output)
+
     return plnx_conf_file
 
