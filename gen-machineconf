@@ -82,7 +82,7 @@ def main():
                                dest='machine', type=str)
     optional_args.add_argument('--output',
                                metavar='', help='Output directory name',
-                               default=os.path.join(os.getcwd(), 'output'))
+                               default='')
     optional_args.add_argument('--xsct-tool', metavar='',
                                help='Vivado or Vitis XSCT path to use xsct '
                                     'commands')
@@ -98,7 +98,12 @@ def main():
     parser._action_groups.append(optional_args)
     args = parser.parse_args()
 
-    args.output = os.path.join(args.output, args.soc_family)
+    # If user specified output directory dont add soc_family
+    if not args.output:
+        args.output = os.path.join(os.getcwd(), 'output', args.soc_family)
+    else:
+        args.output = os.path.realpath(args.output)
+
     # Check SDK toolchain path
     if args.xsct_tool:
         if not os.path.isdir(args.xsct_tool):
