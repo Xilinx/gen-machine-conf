@@ -8,10 +8,11 @@
 import argparse
 from gen_plnx_machine import *
 
+
 def update_localconf(args, plnx_conf_file, machine_conf_file):
     builddir = ''
-    machine_conf_path = os.path.join(args.output, machine_conf_file + \
-                            '.conf')
+    machine_conf_path = os.path.join(args.output, machine_conf_file +
+                                     '.conf')
     plnx_conf_path = os.path.join(args.output, plnx_conf_file)
 
     if 'BUILDDIR' in os.environ.keys():
@@ -28,7 +29,7 @@ def update_localconf(args, plnx_conf_file, machine_conf_file):
 
         local_conf = os.path.join(builddir, 'conf/local.conf')
         if not os.path.isfile(local_conf):
-            print('No local.conf file found in %s/conf directory to add .conf' \
+            print('No local.conf file found in %s/conf directory to add .conf'
                   ' file' % builddir)
         else:
             # Copy XSA from HDF_PATH to ${TOPDIR}/xsa/machine_conf_file
@@ -56,46 +57,48 @@ def update_localconf(args, plnx_conf_file, machine_conf_file):
                         local_conf_f.write(file_str)
                     local_conf_f.close()
 
+
 def main():
-    parser = argparse.ArgumentParser(description = 'Yocto xsa to Machine '\
-                                                   'Configuration File ' \
-                                                   'generation tool', \
-                                    formatter_class=argparse.RawTextHelpFormatter, \
-                                        usage = '%(prog)s --soc-family ' \
-                                                '[SOC_FAMILY] [--hw-description'\
-                                                ' <PATH_TO_XSA>/<xsa_name>.xsa]'\
-                                            ' [--machine-name] [other options]')
+    parser = argparse.ArgumentParser(description='PetaLinux/Yocto xsa to Machine '
+                                     'Configuration File '
+                                     'generation tool',
+                                     formatter_class=argparse.RawTextHelpFormatter,
+                                     usage='%(prog)s --soc-family '
+                                     '[SOC_FAMILY] [--hw-description'
+                                     ' <PATH_TO_XSA>/<xsa_name>.xsa]'
+                                     ' [--machine-name] [other options]')
     optional_args = parser._action_groups.pop()
 
     required_args = parser.add_argument_group('required arguments')
-    required_args.add_argument('--soc-family', metavar='', required=True, \
-                               choices=['microblaze', 'zynq', 'zynqmp', 'versal'], \
+    required_args.add_argument('--soc-family', metavar='', required=True,
+                               choices=['microblaze', 'zynq',
+                                        'zynqmp', 'versal'],
                                help='Specify SOC family type from choice list.')
-    required_args.add_argument('--hw-description', \
-                               metavar='\t<PATH_TO_XSA>/<xsa_name>.xsa',\
+    required_args.add_argument('--hw-description',
+                               metavar='\t<PATH_TO_XSA>/<xsa_name>.xsa',
                                required=True, help='Specify Hardware(xsa) file')
-    optional_args.add_argument('--machine-name', metavar='', help='Provide a '\
-                                'name to generate machine configuration', \
+    optional_args.add_argument('--machine-name', metavar='', help='Provide a '
+                               'name to generate machine configuration',
                                dest='machine', type=str)
-    optional_args.add_argument('--output', \
-                               metavar='', help='Output directory name', \
-                               default=os.path.join(os.getcwd(),'output'))
-    optional_args.add_argument('--xsct-tool', metavar='', \
-                               help='Vivado or Vitis XSCT path to use xsct ' \
+    optional_args.add_argument('--output',
+                               metavar='', help='Output directory name',
+                               default=os.path.join(os.getcwd(), 'output'))
+    optional_args.add_argument('--xsct-tool', metavar='',
+                               help='Vivado or Vitis XSCT path to use xsct '
                                     'commands')
-    optional_args.add_argument('--native-sysroot', metavar='', help='Native ' \
-                                'sysroot path to use the mconf/conf commands.')
-    optional_args.add_argument('--menuconfig', help='UI menuconfig option ' \
-                                'to update configuration.' \
-                                '\nproject - To update System Level configurations ' \
-                                '\nrootfs  - To update Rootfs configurations', \
-                                choices=['project', 'rootfs'])
-    optional_args.add_argument('--petalinux', help='Update the build/local.conf file ' \
-                                'with generated .conf files.', action='store_true')
+    optional_args.add_argument('--native-sysroot', metavar='', help='Native '
+                               'sysroot path to use the mconf/conf commands.')
+    optional_args.add_argument('--menuconfig', help='UI menuconfig option '
+                               'to update configuration.'
+                               '\nproject - To update System Level configurations '
+                               '\nrootfs  - To update Rootfs configurations',
+                               choices=['project', 'rootfs'])
+    optional_args.add_argument('--petalinux', help='Update the build/local.conf file '
+                               'with generated .conf files.', action='store_true')
     parser._action_groups.append(optional_args)
     args = parser.parse_args()
 
-    args.output = os.path.join(args.output,args.soc_family)
+    args.output = os.path.join(args.output, args.soc_family)
     # Check SDK toolchain path
     if args.xsct_tool:
         if not os.path.isdir(args.xsct_tool):
@@ -105,16 +108,17 @@ def main():
             os.environ["PATH"] += os.pathsep + args.xsct_tool + '/bin'
     else:
         print('INFO: Running CMD: bitbake -e')
-        process = subprocess.Popen(['bitbake','-e'],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+        process = subprocess.Popen(['bitbake', '-e'],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         sdk_xsct = ''
         for line in stdout.splitlines():
             if line.decode('utf-8').startswith('XILINX_SDK_TOOLCHAIN'):
-                xilinx_xsct_tool = line.decode('utf-8').split('=')[1].replace('"','')
+                xilinx_xsct_tool = line.decode(
+                    'utf-8').split('=')[1].replace('"', '')
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
-            print('ERROR: XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists' \
+            print('ERROR: XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
                   ' please set a valid one, or' % xilinx_xsct_tool)
             print('Use --sdk-toolchain option to specify the SDK_XSCT path')
             sys.exit(255)
@@ -131,7 +135,7 @@ def main():
     # Check mconf utilities
     if args.native_sysroot:
         if not os.path.isdir(args.native_sysroot):
-            print('ERROR: Native sysroot path doesnot exists: %s' \
+            print('ERROR: Native sysroot path doesnot exists: %s'
                   % args.native_sysroot)
             sys.exit(255)
         else:
@@ -139,9 +143,9 @@ def main():
     else:
         mconf_provides = "kconfig-frontends-native"
         print('INFO: Getting kconfig-frontends sysroot path')
-        process = subprocess.Popen(['bitbake','-e',mconf_provides],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+        process = subprocess.Popen(['bitbake', '-e', mconf_provides],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         sysroot_path = ''
         sysroot_destdir = ''
@@ -149,20 +153,23 @@ def main():
         native_package_path_suffix = ''
         for line in stdout.splitlines():
             if line.decode('utf-8').startswith('SYSROOT_DESTDIR'):
-                sysroot_destdir = line.decode('utf-8').split('=')[1].replace('"','')
+                sysroot_destdir = line.decode(
+                    'utf-8').split('=')[1].replace('"', '')
             elif line.decode('utf-8').startswith('STAGING_BINDIR_NATIVE'):
-                staging_bindir_native = line.decode('utf-8').split('=')[1].replace('"','')
+                staging_bindir_native = line.decode(
+                    'utf-8').split('=')[1].replace('"', '')
             elif line.decode('utf-8').startswith('NATIVE_PACKAGE_PATH_SUFFIX'):
-                native_package_path_suffix = line.decode('utf-8').split('=')[1].replace('"','')
-        sysroot_path = '%s%s%s' % (sysroot_destdir,staging_bindir_native, \
+                native_package_path_suffix = line.decode(
+                    'utf-8').split('=')[1].replace('"', '')
+        sysroot_path = '%s%s%s' % (sysroot_destdir, staging_bindir_native,
                                    native_package_path_suffix)
         scripts = ['mconf', 'conf']
         not_found = False
         for script in scripts:
-            if not os.path.isfile(os.path.join(sysroot_path,script)):
+            if not os.path.isfile(os.path.join(sysroot_path, script)):
                 not_found = True
-            elif os.path.isfile(os.path.join(sysroot_path,script)) and not \
-                    os.access(os.path.join(sysroot_path,script), os.X_OK):
+            elif os.path.isfile(os.path.join(sysroot_path, script)) and not \
+                    os.access(os.path.join(sysroot_path, script), os.X_OK):
                 not_found = True
         if not_found:
             print('INFO: Running CMD: bitbake %s' % mconf_provides)
@@ -184,11 +191,12 @@ def main():
     update_localconf(args, plnx_conf_file, machine_conf_file)
 
     print('\n######## Bitbake Build Commands ########\n')
-    print('Run "MACHINE=%s bitbake petalinux-image-minimal"\n'\
+    print('Run "MACHINE=%s bitbake petalinux-image-minimal"\n'
           % machine_conf_file)
     print('\n######## QEMU boot Commands ########\n')
-    print('Run "MACHINE=%s runqemu slirp nographic"\n'\
+    print('Run "MACHINE=%s runqemu slirp nographic"\n'
           % machine_conf_file)
+
 
 if __name__ == "__main__":
     try:
