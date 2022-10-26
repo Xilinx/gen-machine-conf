@@ -18,27 +18,27 @@ def update_localconf(args, plnx_conf_file, machine_conf_file):
     if 'BUILDDIR' in os.environ.keys():
         builddir = os.environ['BUILDDIR']
     if builddir:
-        # Check if the build/conf/machine directory exist or not.
-        if not os.path.exists("conf/machine"):
-            os.makedirs("conf/machine")
-
-        # Check if the build/xsa directory exist or not.
-        xsapath = os.path.join('xsa/', machine_conf_file)
-        if not os.path.exists(xsapath):
-            os.makedirs(xsapath)
-
         local_conf = os.path.join(builddir, 'conf/local.conf')
         if not os.path.isfile(local_conf):
             print('No local.conf file found in %s/conf directory to add .conf'
                   ' file' % builddir)
         else:
+            # Check if the build/xsa directory exist or not.
             # Copy XSA from HDF_PATH to ${TOPDIR}/xsa/machine_conf_file
-            # directory
-            shutil.copy2(args.hw_description, builddir + '/' + xsapath)
+            # directory if not --petalinux
+            if not args.petalinux:
+                xsapath = os.path.join(builddir, 'xsa', machine_conf_file)
+                if not os.path.exists(xsapath):
+                    os.makedirs(xsapath)
+                shutil.copy2(args.hw_description, xsapath)
 
             # Copy Yocto machine configuration file to ${TOPDIR}/conf/machine
             # directory.
-            shutil.copy2(machine_conf_path, builddir + '/conf/machine')
+            # Check if the build/conf/machine directory exist or not.
+            machine_dir = os.path.join(builddir, 'conf', 'machine')
+            if not os.path.exists(machine_dir):
+                os.makedirs(machine_dir)
+            shutil.copy2(machine_conf_path, machine_dir)
 
             if args.petalinux:
                 # Copy plnxtool.conf file to ${TOPDIR}/conf directory
