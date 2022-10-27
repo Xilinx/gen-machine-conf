@@ -220,6 +220,8 @@ def get_soc_variant(soc_family, output):
             soc_variant = 'prime'
         elif device_id.startswith('xcvc'):
             soc_variant = 'ai-core'
+        elif device_id.startswith('xcve'):
+            soc_variant = 'ai-edge'
         elif device_id.startswith('xcvn'):
             soc_variant = 'net'
     return soc_variant
