@@ -76,7 +76,7 @@ def add_external_sources(component, Kcomponent):
 
 
 def generate_kernel_cfg(args):
-    print('INFO: Generating kernel autoconfigs')
+    logger.info('Generating kernel configuration files')
     sysconf_koptions = os.path.join(scripts_dir, 'data/sysconf_koptions.yaml')
     import yaml
     with open(sysconf_koptions, 'r') as sysconf_koptions_f:
@@ -219,11 +219,12 @@ def generate_kernel_cfg(args):
 
 
 def generate_plnx_config(args, machine_conf_file):
+    logger.info('Generating plnxtool conf file')
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
     if not os.path.isfile(default_cfgfile):
-        print('ERROR: Failed to generate .conf file, Unable to find config'
-              ' file at: %s' % args.output)
+        logger.error('Failed to generate .conf file, Unable to find config'
+                     ' file at: %s' % args.output)
         sys.exit(255)
     arch = get_config_value('CONFIG_SUBSYSTEM_ARCH_',
                             default_cfgfile, 'choice', '=y').lower()
@@ -345,12 +346,11 @@ def generate_plnx_config(args, machine_conf_file):
             auto_uboot_dir = os.path.join(args.output, 'u-boot-xlnx')
             if not os.path.isdir(auto_uboot_dir):
                 os.makedirs(auto_uboot_dir)
-            print('INFO: Generating u-boot autoconfigs')
+            logger.info('Generating u-boot configuration files')
             cmd = 'xsct -sdx -nodisp %s/petalinux_hsm_bridge.tcl -c %s -a u-boot_bsp -hdf %s -o %s -data %s' % \
                 (scripts_dir, default_cfgfile, os.path.abspath(args.hw_description),
                     auto_uboot_dir, os.path.join(scripts_dir, 'data'))
-            print('Running CMD: %s' % cmd)
-            subprocess.check_call(cmd.split(), cwd=args.output)
+            run_cmd(cmd, args.output, args.logfile)
 
     if arch == 'aarch64':
         override_string += '\n# PetaLinux tool Arm-trusted-firmware variables\n'
@@ -615,7 +615,6 @@ def generate_plnx_config(args, machine_conf_file):
     cmd = 'python3 %s --update_cfg %s %s %s' \
         % (rfsconfig_py, default_rfsfile,
            plnx_conf_path, soc_family)
-    print('Running CMD: %s' % cmd)
-    subprocess.check_call(cmd.split(), cwd=args.output)
+    run_cmd(cmd, args.output, args.logfile)
 
     return plnx_conf_file

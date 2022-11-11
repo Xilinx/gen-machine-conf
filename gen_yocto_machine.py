@@ -9,11 +9,12 @@ from gen_config import *
 
 
 def generate_yocto_machine(args):
+    logger.info('Generating machine conf file')
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
     if not os.path.isfile(default_cfgfile):
-        print('ERROR: Failed to generate .conf file, Unable to find config'
-              ' file at: %s' % args.output)
+        logger.error('Failed to generate .conf file, Unable to find config'
+                     ' file at: %s' % args.output)
         sys.exit(255)
     arch = get_config_value('CONFIG_SUBSYSTEM_ARCH_',
                             default_cfgfile, 'choice', '=y').lower()
@@ -41,8 +42,8 @@ def generate_yocto_machine(args):
     import json
     machinejson_file = os.path.join(scripts_dir, 'data/machineconf.json')
     if not os.path.isfile(machinejson_file):
-        print('ERROR: Machine json file doesnot exist at: %s' %
-              machinejson_file)
+        logger.error('Machine json file doesnot exist at: %s' %
+                     machinejson_file)
         sys.exit(255)
     # Get the machine file name from sys config
     yocto_machine_name = get_config_value('CONFIG_YOCTO_MACHINE_NAME',

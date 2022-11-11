@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: MIT
 
 import argparse
+import logging
 from gen_plnx_machine import *
 
 
@@ -20,8 +21,8 @@ def update_localconf(args, plnx_conf_file, machine_conf_file):
     if builddir:
         local_conf = os.path.join(builddir, 'conf/local.conf')
         if not os.path.isfile(local_conf):
-            print('No local.conf file found in %s/conf directory to add .conf'
-                  ' file' % builddir)
+            logger.debug('No local.conf file found in %s/conf directory to add .conf'
+                         ' file' % builddir)
         else:
             # Check if the build/xsa directory exist or not.
             # Copy XSA from HDF_PATH to ${TOPDIR}/xsa/machine_conf_file
@@ -95,6 +96,8 @@ def main():
                                choices=['project', 'rootfs'])
     optional_args.add_argument('--petalinux', help='Update the build/local.conf file '
                                'with generated .conf files.', action='store_true')
+    optional_args.add_argument('--debug', help='Output debug information on console',
+                               default=False, action='store_true')
     parser._action_groups.append(optional_args)
     args = parser.parse_args()
 
@@ -103,55 +106,64 @@ def main():
         args.output = os.path.join(os.getcwd(), 'output', args.soc_family)
     else:
         args.output = os.path.realpath(args.output)
+    if not os.path.exists(args.output):
+        os.makedirs(args.output)
+
+    args.logfile = os.path.join(args.output, 'gen-machineconf.log')
+    if os.path.exists(args.logfile):
+        shutil.move(args.logfile,
+                    os.path.join(args.output, 'gen-machineconf.log.old'))
+
+    # Setup logger to file
+    logger_setup.setup_logger_file(args.logfile)
+    if args.debug:
+        console_h.setLevel(logging.DEBUG)
 
     # Check SDK toolchain path
     if args.xsct_tool:
         if not os.path.isdir(args.xsct_tool):
-            print('ERROR: XSCT_TOOL path not found: %s' % args.xsct_tool)
+            logger.error('XSCT_TOOL path not found: %s' % args.xsct_tool)
             sys.exit(255)
         else:
             os.environ["PATH"] += os.pathsep + args.xsct_tool + '/bin'
     else:
-        print('INFO: Running CMD: bitbake -e')
-        process = subprocess.Popen(['bitbake', '-e'],
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
+        command = "bitbake -e"
+        logger.info('Getting XILINX_SDK_TOOLCHAIN path...')
+        stdout, stderr = run_cmd(command, os.getcwd(), args.logfile)
         sdk_xsct = ''
         for line in stdout.splitlines():
             if line.decode('utf-8').startswith('XILINX_SDK_TOOLCHAIN'):
                 xilinx_xsct_tool = line.decode(
                     'utf-8').split('=')[1].replace('"', '')
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
-            print('ERROR: XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
-                  ' please set a valid one, or' % xilinx_xsct_tool)
-            print('Use --sdk-toolchain option to specify the SDK_XSCT path')
+            logger.error('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
+                         ' please set a valid one, or' % xilinx_xsct_tool)
+            logger.error(
+                'Use --sdk-toolchain option to specify the SDK_XSCT path')
             sys.exit(255)
         elif xilinx_xsct_tool:
             os.environ["PATH"] += os.pathsep + xilinx_xsct_tool + '/bin'
 
     xsct_exe = shutil.which('xsct')
     if not xsct_exe:
-        print('ERROR: xsct command not found')
+        logger.error('xsct command not found')
         sys.exit(255)
     else:
-        print('INFO: Using xsct from : %s' % xsct_exe)
+        logger.debug('Using xsct from : %s' % xsct_exe)
 
     # Check mconf utilities
     if args.native_sysroot:
         if not os.path.isdir(args.native_sysroot):
-            print('ERROR: Native sysroot path doesnot exists: %s'
-                  % args.native_sysroot)
+            logger.error('Native sysroot path doesnot exists: %s'
+                         % args.native_sysroot)
             sys.exit(255)
         else:
             os.environ["PATH"] += os.pathsep + args.native_sysroot + '/usr/bin'
     else:
         mconf_provides = "kconfig-frontends-native"
-        print('INFO: Getting kconfig-frontends sysroot path')
-        process = subprocess.Popen(['bitbake', '-e', mconf_provides],
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
+        command = "bitbake -e %s" % (mconf_provides)
+        logger.info('Getting kconfig-frontends sysroot path...')
+        stdout, stderr = run_cmd(command, os.getcwd(), args.logfile)
         sysroot_path = ''
         sysroot_destdir = ''
         staging_bindir_native = ''
@@ -177,16 +189,16 @@ def main():
                     os.access(os.path.join(sysroot_path, script), os.X_OK):
                 not_found = True
         if not_found:
-            print('INFO: Running CMD: bitbake %s' % mconf_provides)
+            logger.debug('INFO: Running CMD: bitbake %s' % mconf_provides)
             subprocess.check_call(["bitbake", mconf_provides])
         os.environ["PATH"] += os.pathsep + sysroot_path
 
     conf_exe = shutil.which('mconf')
     if not conf_exe:
-        print('ERROR: mconf/conf command not found')
+        logger.error('mconf/conf command not found')
         sys.exit(255)
     else:
-        print('INFO: Using conf/mconf from : %s' % conf_exe)
+        logger.debug('Using conf/mconf from : %s' % conf_exe)
 
     if args.hw_description:
         get_hw_description(args)
@@ -194,13 +206,13 @@ def main():
     machine_conf_file = generate_yocto_machine(args)
     plnx_conf_file = generate_plnx_config(args, machine_conf_file)
     update_localconf(args, plnx_conf_file, machine_conf_file)
-
-    print('\n######## Bitbake Build Commands ########\n')
-    print('Run "MACHINE=%s bitbake petalinux-image-minimal"\n'
-          % machine_conf_file)
-    print('\n######## QEMU boot Commands ########\n')
-    print('Run "MACHINE=%s runqemu slirp nographic"\n'
-          % machine_conf_file)
+    if not args.petalinux:
+        logger.info('\n \
+        ######## Bitbake Build Commands ########\n \
+        Run "MACHINE=%s bitbake petalinux-image-minimal"\n\n \
+        ######## QEMU boot Commands ########\n \
+        Run "MACHINE=%s runqemu slirp nographic"\n'
+                    % (machine_conf_file, machine_conf_file))
 
 
 if __name__ == "__main__":

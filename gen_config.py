@@ -9,6 +9,10 @@ import pathlib
 import subprocess
 import re
 import shutil
+import logger_setup
+
+logger, console_h = logger_setup.setup_logger()
+
 
 start_menu = '''
 mainmenu "PetaLinux System Configuration"
@@ -161,8 +165,8 @@ def get_sysconsole_bootargs(default_cfgfile, soc_family):
     else:
         return ''
     if not serial_devfile:
-        print('ERROR: Unknown serial ipname %s for %s.' %
-              (serialipname, serialname))
+        logger.error('Unknown serial ipname %s for %s.' %
+                     (serialipname, serialname))
         sys.exit(255)
     no_alias = get_config_value(
         'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', default_cfgfile)
@@ -174,7 +178,7 @@ def get_sysconsole_bootargs(default_cfgfile, soc_family):
     baudrate = get_config_value(
         'CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_' % serialname, default_cfgfile, 'choice', '=y')
     if not baudrate:
-        print('ERROR: Failed to get baudrate of %s' % serialname)
+        logger.error('Failed to get baudrate of %s' % serialname)
         sys.exit(255)
     early_printk = get_config_value(
         'CONFIG_SUBSYSTEM_BOOTARGS_EARLYPRINTK', default_cfgfile)
@@ -271,13 +275,15 @@ def post_sys_conf(args, default_cfgfile):
         if not jffs2_partname:
             jffs2_partname = 'jffs2'
             if bootargs_auto:
-                print(
-                    'INFO: Jffs2 rootfs partition name is set to the default one "jffs2" since you haven\'t specify one')
+                logger.info(
+                    'Jffs2 rootfs partition name is set to the default one "jffs2" since you haven\'t specify one')
         found_part = get_config_value(
             'CONFIG_SUBSYSTEM_FLASH_', default_cfgfile, 'choice', '_NAME="%s"' % jffs2_partname)
         if not found_part:
-            print('Warning: Jffs2 is selected as root FS but the jffs2 partition: "%s" is not defined in the system config menu.' % jffs2_partname)
-            print('Warning: Please make sure you have "%s" defined in your flash partitions table.' % jffs2_partname)
+            logger.warning(
+                'Jffs2 is selected as root FS but the jffs2 partition: "%s" is not defined in the system config menu.' % jffs2_partname)
+            logger.warning(
+                'Please make sure you have "%s" defined in your flash partitions table.' % jffs2_partname)
         bootargs = 'root=mtd:%s rw rootfstype=jffs2' % jffs2_partname
     elif rootfs_type == 'UBIFS':
         ubi_partname = get_config_value(
@@ -285,14 +291,16 @@ def post_sys_conf(args, default_cfgfile):
         if not ubi_partname:
             ubi_partname = 'ubifs'
             if bootargs_auto:
-                print(
-                    'INFO: UBIFS rootfs partition name is set to the default one "ubifs" since you haven\'t specify one')
+                logger.info(
+                    'UBIFS rootfs partition name is set to the default one "ubifs" since you haven\'t specify one')
         found_part = get_config_value(
             'CONFIG_SUBSYSTEM_FLASH_', default_cfgfile, 'choice', '_NAME="%s"' % ubi_partname)
         ubi_partno = ''
         if not found_part:
-            print('Warning: UBIFS is selected as root FS but the ubi partition: "%s" is not defined in the system config menu.' % ubi_partname)
-            print('Warning: Please make sure you have "%s" defined as 2nd part in your flash partitions table' % ubi_partname)
+            logger.warning(
+                'UBIFS is selected as root FS but the ubi partition: "%s" is not defined in the system config menu.' % ubi_partname)
+            logger.warning(
+                'Please make sure you have "%s" defined as 2nd part in your flash partitions table' % ubi_partname)
         else:
             ubi_partno = found_part.split('_PART')[1]
         if not ubi_partno:
@@ -350,19 +358,51 @@ def post_sys_conf(args, default_cfgfile):
 
 
 # Run menuconfig/silentconfig
-def run_menuconfig(Kconfig, cfgfile, ui, out_dir):
+def run_menuconfig(Kconfig, cfgfile, ui, out_dir, component):
     if not ui:
+        logger.info('Silentconfig %s' % (component))
         cmd = 'yes "" | env KCONFIG_CONFIG=%s conf %s' % (cfgfile, Kconfig)
-        print('Running CMD: %s' % cmd)
-        os.system(cmd)
+        logger.debug('Running CMD: %s' % cmd)
+        status, stdout = subprocess.getstatusoutput(cmd)
+        logger.debug(stdout)
+        if status != 0:
+            logger.error('Failed to silentconfig %s' % component)
+            raise Exception(stdout)
     else:
+        logger.info('Menuconfig %s' % (component))
         cmd = 'env KCONFIG_CONFIG=%s mconf %s' % (cfgfile, Kconfig)
-        print('Running CMD: %s' % cmd)
-        subprocess.check_call(cmd.split(), cwd=out_dir)
+        logger.debug('Running CMD: %s' % cmd)
+        try:
+            subprocess.check_call(cmd.split(), cwd=out_dir)
+        except subprocess.CalledProcessError as e:
+            if e.returncode != 0:
+                logger.error('Failed to Menuconfig %s' % component)
+                raise Exception
+
+
+# Run shell commands
+def run_cmd(command, out_dir, logfile):
+    logger.debug('Running CMD: %s' % command)
+    process = subprocess.Popen(command.split(),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE,
+                               cwd=out_dir)
+    stdout, stderr = process.communicate()
+
+    if process.returncode != 0:
+        raise ExecutionError(command, process.returncode, stdout, stderr)
+    else:
+        if not stdout is None:
+            stdout = stdout.decode("utf-8")
+        if not stderr is None:
+            stderr = stderr.decode("utf-8")
+    logger.debug(stdout)
+    return stdout, stderr
 
 
 # Rootfs configs starts
 def add_rootfs_configs(args, default_cfgfile):
+    logger.info('Generating kconfig for rootfs')
     arch = get_config_value('CONFIG_SUBSYSTEM_ARCH_',
                             default_cfgfile, 'choice', '=y').lower()
     # template files for rootfs
@@ -386,7 +426,7 @@ def add_rootfs_configs(args, default_cfgfile):
 
     for file_path in [template_rfsfile, template_Kconfig, rfsconfig_py]:
         if not os.path.isfile(file_path):
-            print('ERROR: %s is not found in tool' % file_path)
+            logger.error('%s is not found in tool' % file_path)
             sys.exit(255)
 
     shutil.copy2(template_rfsfile, default_rfsfile)
@@ -394,8 +434,7 @@ def add_rootfs_configs(args, default_cfgfile):
     shutil.copy2(user_cfg, rootfs_cfgdir)
     cmd = 'python3 %s --generate_kconfig %s %s' \
         % (rfsconfig_py, user_cfg, rootfs_cfgdir)
-    print('Running CMD: %s' % cmd)
-    subprocess.check_call(cmd.split(), cwd=args.output)
+    run_cmd(cmd, args.output, args.logfile)
     rfsKconfig_str = Kconfig_arch.format(args.soc_family)
     with open(rfsKconfig_part, 'r', encoding='utf-8') as rfskconfig_part_f:
         rfskconfig_part_data = rfskconfig_part_f.read()
@@ -407,7 +446,7 @@ def add_rootfs_configs(args, default_cfgfile):
     rfskconfig_f.close()
     run_menuconfig(rootfs_Kconfig, default_rfsfile,
                    True if args.menuconfig == 'rootfs' else False,
-                   args.output)
+                   args.output, 'rootfs')
 
 
 def get_hw_description(args):
@@ -417,40 +456,36 @@ def get_hw_description(args):
     menuconfig = args.menuconfig
     project_cfgdir = os.path.join(output, 'configs')
 
-    if not os.path.exists(output):
-        os.makedirs(output)
-
     if not os.path.exists(project_cfgdir):
         os.makedirs(project_cfgdir)
 
     if not os.path.isfile(hw_description):
-        print('ERROR: XSA file doensn\'t exists: %s' % hw_description)
+        logger.error('XSA file doensn\'t exists: %s' % hw_description)
         sys.exit(255)
     hw_ext = pathlib.Path(hw_description).suffix
     if hw_ext != '.xsa':
-        print('ERROR: Only .xsa file are supported given %s' % hw_ext)
+        logger.error('Only .xsa file are supported given %s' % hw_ext)
         sys.exit(255)
 
     template_cfgfile = os.path.join(
         scripts_dir, 'configs/config_%s' % soc_family)
     if not os.path.isfile(template_cfgfile):
-        print('ERROR: Insupported soc_family: %s' % soc_family)
+        logger.error('Unsupported soc_family: %s' % soc_family)
         sys.exit(255)
 
+    logger.info('Generating Kconfig for project')
     # XSCT command to read the hw file and generate syshw file
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     cmd = 'xsct -sdx -nodisp %s/hw-description.tcl plnx_gen_hwsysconf %s %s' % \
         (scripts_dir, hw_description, Kconfig_syshw)
-    print('Running CMD: %s' % cmd)
-    subprocess.check_call(cmd.split(), cwd=output)
-
+    run_cmd(cmd, output, args.logfile)
     Kconfig_part = os.path.join(scripts_dir, 'configs/Kconfig.part')
     ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
     plnx_syshw_file = os.path.join(output, 'plnx_syshw_data')
 
     for file_path in [Kconfig_part, ipinfo_file, plnx_syshw_file, Kconfig_syshw]:
         if not os.path.isfile(file_path):
-            print('ERROR: %s is not found in tool' % file_path)
+            logger.error('%s is not found in tool' % file_path)
             sys.exit(255)
 
     import yaml
@@ -491,7 +526,7 @@ def get_hw_description(args):
     pre_sys_conf(args, default_cfgfile)
     run_menuconfig(Kconfig, default_cfgfile,
                    True if menuconfig == 'project' else False,
-                   output)
+                   output, 'project')
     post_sys_conf(args, default_cfgfile)
     # update rootfs configs to plnxtool.conf
     add_rootfs_configs(args, default_cfgfile)
