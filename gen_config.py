@@ -44,7 +44,7 @@ config system-{0}
 
 '''
 
-scripts_dir = os.path.join(os.path.dirname(__file__), 'plnx-scripts')
+scripts_dir = os.path.join(os.path.dirname(__file__), 'gen-machine-scripts')
 
 
 def update_config_value(macro, value, filename):
