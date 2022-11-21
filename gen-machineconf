@@ -169,15 +169,12 @@ def main():
         staging_bindir_native = ''
         native_package_path_suffix = ''
         for line in stdout.splitlines():
-            if line.decode('utf-8').startswith('SYSROOT_DESTDIR'):
-                sysroot_destdir = line.decode(
-                    'utf-8').split('=')[1].replace('"', '')
-            elif line.decode('utf-8').startswith('STAGING_BINDIR_NATIVE'):
-                staging_bindir_native = line.decode(
-                    'utf-8').split('=')[1].replace('"', '')
-            elif line.decode('utf-8').startswith('NATIVE_PACKAGE_PATH_SUFFIX'):
-                native_package_path_suffix = line.decode(
-                    'utf-8').split('=')[1].replace('"', '')
+            if line.startswith('SYSROOT_DESTDIR'):
+                sysroot_destdir = line.split('=')[1].replace('"', '')
+            elif line.startswith('STAGING_BINDIR_NATIVE'):
+                staging_bindir_native = line.split('=')[1].replace('"', '')
+            elif line.startswith('NATIVE_PACKAGE_PATH_SUFFIX'):
+                native_package_path_suffix = line.split('=')[1].replace('"', '')
         sysroot_path = '%s%s%s' % (sysroot_destdir, staging_bindir_native,
                                    native_package_path_suffix)
         scripts = ['mconf', 'conf']
