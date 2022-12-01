@@ -10,7 +10,19 @@ import logging
 from gen_plnx_machine import *
 
 
-def update_localconf(args, plnx_conf_file, machine_conf_file):
+def search_strin_file(filename, string):
+    with open(filename, 'r') as filename_f:
+        lines = filename_f.readlines()
+    filename_f.close()
+    str_found = ''
+    for line in lines:
+        line = line.replace('\\', '').strip()
+        if re.search(string, line):
+            str_found = True
+    return str_found
+
+
+def update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow):
     builddir = ''
     machine_conf_path = os.path.join(args.output, machine_conf_file +
                                      '.conf')
@@ -27,7 +39,7 @@ def update_localconf(args, plnx_conf_file, machine_conf_file):
             # Check if the build/xsa directory exist or not.
             # Copy XSA from HDF_PATH to ${TOPDIR}/xsa/machine_conf_file
             # directory if not --petalinux
-            if not args.petalinux:
+            if not args.petalinux and hw_flow == 'xsct':
                 xsapath = os.path.join(builddir, 'xsa', machine_conf_file)
                 if not os.path.exists(xsapath):
                     os.makedirs(xsapath)
@@ -41,22 +53,100 @@ def update_localconf(args, plnx_conf_file, machine_conf_file):
                 os.makedirs(machine_dir)
             shutil.copy2(machine_conf_path, machine_dir)
 
+            localconf_strs = []
+            if hw_flow == 'sdt':
+                localconf_strs += ['include conf/sdt-auto.conf']
             if args.petalinux:
                 # Copy plnxtool.conf file to ${TOPDIR}/conf directory
                 shutil.copy2(plnx_conf_path, builddir + '/conf/')
-                file_str = 'include conf/plnxtool.conf'
-                with open(local_conf, 'r') as local_conf_f:
-                    lines = local_conf_f.readlines()
-                local_conf_f.close()
-                str_found = ''
-                for line in lines:
-                    if re.search(file_str, line):
-                        str_found = True
-                        break
-                if not str_found:
+                localconf_strs += ['include conf/plnxtool.conf']
+            for file_str in localconf_strs:
+                found = search_strin_file(local_conf, file_str)
+                if not found:
                     with open(local_conf, 'a') as local_conf_f:
-                        local_conf_f.write(file_str)
+                        local_conf_f.write(file_str + '\n')
                     local_conf_f.close()
+
+
+# Validate the hw_description given and justify xsct/sdt flow.
+def validate_hwfile(args):
+    hw_description = args.hw_description
+    if not os.path.exists(hw_description):
+        logger.error('Given path doesnot exists: %s', hw_description)
+        sys.exit(255)
+    elif os.path.isfile(hw_description):
+        hw_ext = pathlib.Path(hw_description).suffix
+        if hw_ext != '.xsa':
+            logger.error('Only .xsa files are supported given %s' % hw_ext)
+            sys.exit(255)
+        hw_ext = 'xsct'
+    elif os.path.isdir(hw_description):
+        sdtfiles = []
+        for file in os.listdir(hw_description):
+            if file.endswith('.dts'):
+                sdtfiles.append(file)
+        if not sdtfiles:
+            logger.error('No .dts file found in given directory %s' %
+                         hw_description)
+            sys.exit(255)
+        if len(sdtfiles) > 1:
+            logger.error(
+                'More than one .dts files found in given directory %s' % hw_description)
+            sys.exit(255)
+        hw_ext = 'sdt'
+        hw_description = os.path.join(hw_description, sdtfiles[0])
+        if args.soc_family in ['microblaze', 'zynq']:
+            logger.error(
+                'SDT flow not supported for given soc_family %s' % (args.soc_family))
+            sys.exit(255)
+    else:
+        logger.error(
+            'Only .xsa file or System Device-tree directory supported.')
+        sys.exit(255)
+    return hw_ext, hw_description
+
+
+# Run dtprocessor.sh to generate the dtb files using lopper
+def run_dtprocessor(args, hw_file):
+    builddir = ''
+    if 'BUILDDIR' in os.environ.keys():
+        builddir = os.environ['BUILDDIR']
+    if not builddir:
+        logger.error('No BUILDDIR found in environment'
+                     'to set this up please run oe-init-build-env')
+        sys.exit(255)
+    conf_dir = os.path.join(builddir, 'conf')
+    sdtauto_conf = os.path.join(conf_dir, 'sdt-auto.conf')
+    plnx_syshw_file = os.path.join(conf_dir, 'petalinux_config.yaml')
+    sdtipinfo = os.path.join(scripts_dir, 'data', 'sdt_ipinfo.yaml')
+    sdt_envscript = os.path.join(
+        args.sdt_sysroot, 'environment-setup-x86_64-petalinux-linux')
+    dt_procscript = os.path.join(args.sdt_sysroot, 'dt-processor.sh')
+    if not os.path.isfile(dt_procscript):
+        logger.error('No environment-setup-x86_64-petalinux-linux file found '
+                     'in given path args.sdt_sysroot')
+        sys.exit(255)
+    # Remove sdt-auto.conf as dt-processor.sh script
+    # is appending everytime instead of override
+    if os.path.exists(sdtauto_conf):
+        os.remove(sdtauto_conf)
+    logger.info('Executing dt-processor.sh script')
+    cmd = "bash -c 'source %s;source %s -c %s -s %s -l %s -P %s'" % (
+        sdt_envscript, dt_procscript, conf_dir, hw_file, sdtauto_conf, sdtipinfo)
+    run_cmd(cmd, os.getcwd(), args.logfile, shell=True)
+    if not os.path.isfile(plnx_syshw_file):
+        logger.error('Failed to generate petalinux_config.yaml')
+        sys.exit(255)
+    if os.path.isfile(sdtauto_conf):
+        sdtauto_str = '\nPREFERRED_VERSION_fsbl-firmware = "experimental%"\n'
+        sdtauto_str += 'PREFERRED_VERSION_pmu-firmware = "experimental%"\n'
+        sdtauto_str += 'PREFERRED_VERSION_plm-firmware = "experimental%"\n'
+        sdtauto_str += 'PREFERRED_VERSION_psm-firmware = "experimental%"\n'
+        sdtauto_str += '\nLICENSE_FLAGS_ACCEPTED += "xilinx"\n'
+        with open(sdtauto_conf, 'a') as sdtauto_conf_f:
+            sdtauto_conf_f.write(sdtauto_str)
+        sdtauto_conf_f.close()
+    shutil.copy2(plnx_syshw_file, args.output)
 
 
 def main():
@@ -77,7 +167,8 @@ def main():
                                help='Specify SOC family type from choice list.')
     required_args.add_argument('--hw-description',
                                metavar='\t<PATH_TO_XSA>/<xsa_name>.xsa',
-                               required=True, help='Specify Hardware(xsa) file')
+                               required=True, help='Specify Hardware(xsa) file '
+                               'or System Device-tree Directory')
     optional_args.add_argument('--machine-name', metavar='', help='Provide a '
                                'name to generate machine configuration',
                                dest='machine', type=str)
@@ -89,6 +180,8 @@ def main():
                                     'commands')
     optional_args.add_argument('--native-sysroot', metavar='', help='Native '
                                'sysroot path to use the mconf/conf commands.')
+    optional_args.add_argument('--sdt-sysroot', metavar='', help='Native '
+                               'sysroot path to use lopper utilities.')
     optional_args.add_argument('--menuconfig', help='UI menuconfig option '
                                'to update configuration.'
                                '\nproject - To update System Level configurations '
@@ -109,6 +202,10 @@ def main():
     if not os.path.exists(args.output):
         os.makedirs(args.output)
 
+    args.hw_description = os.path.realpath(args.hw_description)
+    # validate the given hw file
+    hw_flow, hw_file = validate_hwfile(args)
+
     args.logfile = os.path.join(args.output, 'gen-machineconf.log')
     if os.path.exists(args.logfile):
         shutil.move(args.logfile,
@@ -119,37 +216,48 @@ def main():
     if args.debug:
         console_h.setLevel(logging.DEBUG)
 
-    # Check SDK toolchain path
-    if args.xsct_tool:
-        if not os.path.isdir(args.xsct_tool):
-            logger.error('XSCT_TOOL path not found: %s' % args.xsct_tool)
+    # Check SDK toolchain path if xsct flow
+    if hw_flow == 'xsct':
+        if args.xsct_tool:
+            if not os.path.isdir(args.xsct_tool):
+                logger.error('XSCT_TOOL path not found: %s' % args.xsct_tool)
+                sys.exit(255)
+            else:
+                os.environ["PATH"] += os.pathsep + args.xsct_tool + '/bin'
+        else:
+            command = "bitbake -e"
+            logger.info('Getting XILINX_SDK_TOOLCHAIN path...')
+            stdout, stderr = run_cmd(command, os.getcwd(), args.logfile)
+            sdk_xsct = ''
+            for line in stdout.splitlines():
+                if line.decode('utf-8').startswith('XILINX_SDK_TOOLCHAIN'):
+                    xilinx_xsct_tool = line.decode(
+                        'utf-8').split('=')[1].replace('"', '')
+            if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
+                logger.error('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
+                             ' please set a valid one, or' % xilinx_xsct_tool)
+                logger.error(
+                    'Use --sdk-toolchain option to specify the SDK_XSCT path')
+                sys.exit(255)
+            elif xilinx_xsct_tool:
+                os.environ["PATH"] += os.pathsep + xilinx_xsct_tool + '/bin'
+
+        xsct_exe = shutil.which('xsct')
+        if not xsct_exe:
+            logger.error('xsct command not found')
             sys.exit(255)
         else:
-            os.environ["PATH"] += os.pathsep + args.xsct_tool + '/bin'
-    else:
-        command = "bitbake -e"
-        logger.info('Getting XILINX_SDK_TOOLCHAIN path...')
-        stdout, stderr = run_cmd(command, os.getcwd(), args.logfile)
-        sdk_xsct = ''
-        for line in stdout.splitlines():
-            if line.decode('utf-8').startswith('XILINX_SDK_TOOLCHAIN'):
-                xilinx_xsct_tool = line.decode(
-                    'utf-8').split('=')[1].replace('"', '')
-        if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
-            logger.error('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
-                         ' please set a valid one, or' % xilinx_xsct_tool)
-            logger.error(
-                'Use --sdk-toolchain option to specify the SDK_XSCT path')
-            sys.exit(255)
-        elif xilinx_xsct_tool:
-            os.environ["PATH"] += os.pathsep + xilinx_xsct_tool + '/bin'
+            logger.debug('Using xsct from : %s' % xsct_exe)
 
-    xsct_exe = shutil.which('xsct')
-    if not xsct_exe:
-        logger.error('xsct command not found')
-        sys.exit(255)
-    else:
-        logger.debug('Using xsct from : %s' % xsct_exe)
+    if hw_flow == 'sdt':
+        if args.sdt_sysroot:
+            if not os.path.isdir(args.sdt_sysroot):
+                logger.error('SDT sysroot path doesnot exists: %s'
+                             % args.sdt_sysroot)
+                sys.exit(255)
+        else:
+            logger.error('SDT sysroot path required run lopper')
+            sys.exit(255)
 
     # Check mconf utilities
     if args.native_sysroot:
@@ -174,7 +282,8 @@ def main():
             elif line.startswith('STAGING_BINDIR_NATIVE'):
                 staging_bindir_native = line.split('=')[1].replace('"', '')
             elif line.startswith('NATIVE_PACKAGE_PATH_SUFFIX'):
-                native_package_path_suffix = line.split('=')[1].replace('"', '')
+                native_package_path_suffix = line.split(
+                    '=')[1].replace('"', '')
         sysroot_path = '%s%s%s' % (sysroot_destdir, staging_bindir_native,
                                    native_package_path_suffix)
         scripts = ['mconf', 'conf']
@@ -197,12 +306,37 @@ def main():
     else:
         logger.debug('Using conf/mconf from : %s' % conf_exe)
 
-    if args.hw_description:
-        get_hw_description(args)
+    if hw_flow == 'sdt':
+        run_dtprocessor(args, hw_file)
+        logger.info('Update bblayers.conf file for SDT')
+        #Check meta-xilinx-tools in bblayers.conf and remove
+        file_str = '/meta-xilinx-tools$'
+        found = search_strin_file(os.path.join(
+            os.environ['BUILDDIR'], 'conf', 'bblayers.conf'), file_str)
+        if found:
+            command = 'bitbake-layers remove-layer meta-xilinx-tools'
+            run_cmd(command, os.getcwd(), args.logfile)
+        #Check meta-xilinx-standalone-experimental layer and add
+        standlone_exp_layer = os.path.realpath(os.path.join(
+            base_dir, '../../meta-xilinx-standalone-experimental'))
+        if os.path.isdir(standlone_exp_layer):
+            file_str = '/meta-xilinx-standalone-experimental$'
+            found = search_strin_file(os.path.join(
+                os.environ['BUILDDIR'], 'conf', 'bblayers.conf'), file_str)
+            if not found:
+                command = 'bitbake-layers -F add-layer %s' % (
+                    standlone_exp_layer)
+                run_cmd(command, os.getcwd(), args.logfile)
+        else:
+            logger.warning(
+                'meta-xilinx-standlone-experimental layer couldnot found to add into bblayers.conf')
 
-    machine_conf_file = generate_yocto_machine(args)
-    plnx_conf_file = generate_plnx_config(args, machine_conf_file)
-    update_localconf(args, plnx_conf_file, machine_conf_file)
+    if args.hw_description:
+        get_hw_description(args, hw_flow)
+
+    machine_conf_file = generate_yocto_machine(args, hw_flow)
+    plnx_conf_file = generate_plnx_config(args, machine_conf_file, hw_flow)
+    update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow)
     if not args.petalinux:
         logger.info('\n \
         ######## Bitbake Build Commands ########\n \
