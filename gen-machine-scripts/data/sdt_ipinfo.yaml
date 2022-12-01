@@ -1,0 +1,114 @@
+ps7_cortexa9:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - const: arm,cortex-a9
+    device_type: processor
+
+psu_cortexa53:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - const: arm,cortex-a53
+    device_type: processor
+
+psv_cortexa72:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - const: arm,cortex-a72
+    device_type: processor
+
+microblaze:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - pmu-microblaze
+              - xlnx,microblaze-11.0
+              - xlnx,microblaze
+              - pmc-microblaze
+              - psm-microblaze
+    device_type: processor
+    linux_kernel_properties:
+        XILINX_MICROBLAZE0_FAMILY: CONFIG.C_FAMILY string
+        XILINX_MICROBLAZE0_USE_MSR_INSTR: CONFIG.C_USE_MSR_INSTR int
+        XILINX_MICROBLAZE0_USE_PCMP_INSTR: CONFIG.C_USE_PCMP_INSTR int
+        XILINX_MICROBLAZE0_USE_BARREL: CONFIG.C_USE_BARREL int
+        XILINX_MICROBLAZE0_USE_DIV: CONFIG.C_USE_DIV int
+        XILINX_MICROBLAZE0_USE_HW_MUL: CONFIG.C_USE_HW_MUL int
+        XILINX_MICROBLAZE0_USE_FPU: CONFIG.C_USE_FPU int
+        XILINX_MICROBLAZE0_HW_VER: VLNV string
+
+ps7_ddr:
+    device_type: memory
+
+psu_ddr:
+    device_type: memory
+
+axi_emc:
+    device_type: memory
+
+psv_sbsauart:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - arm,pl011
+              - arm,sbsa-uart
+    device_type: serial
+    baudrate_editable: y
+
+psu_uart:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - cdns,uart-r1p12
+              - xlnx,zynqmp-uart
+            - enum:
+              - cdns,uart-r1p8
+              - xlnx,xuartps
+    device_type: serial
+    baudrate_editable: y
+
+psu_ethernet:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - cdns,zynqmp-gem
+              - cdns,zynq-gem
+            - enum:
+              - cdns,versal-gem
+    device_type: ethernet
+
+psv_ethernet:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - cdns,zynqmp-gem
+              - cdns,zynq-gem
+            - enum:
+              - cdns,versal-gem
+    device_type: ethernet
+
+psu_qspi:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - xlnx,zynqmp-qspi-1.0
+            - enum:
+              - xlnx,versal-qspi-1.0
+    device_type: spi
