@@ -319,7 +319,7 @@ def generate_yocto_machine(args, hw_flow):
                                     'asterisk', '_BASEADDR=')
     if not ddr_baseaddr:
         ddr_baseaddr = '0x0'
-    machine_override_string += '\n#Set DDR Base address for u-boot-zynq-scr '\
+    machine_override_string += '\n#Set DDR Base address for u-boot-xlnx-scr '\
                                'variables\n'
     machine_override_string += 'DDR_BASEADDR = "%s"\n' % ddr_baseaddr
     skip_append_baseaddr = get_config_value('CONFIG_SUBSYSTEM_UBOOT_APPEND_BASEADDR',
