@@ -43,8 +43,16 @@ config system-{0}
         default y
 
 '''
+Kconfig_sdt = '''
+config SUBSYSTEM_SDT_FLOW
+        bool
+        default y
+        help
 
-scripts_dir = os.path.join(os.path.dirname(__file__), 'gen-machine-scripts')
+'''
+
+base_dir = os.path.dirname(__file__)
+scripts_dir = os.path.join(base_dir, 'gen-machine-scripts')
 
 
 def update_config_value(macro, value, filename):
@@ -158,10 +166,12 @@ def get_sysconsole_bootargs(default_cfgfile, soc_family):
     serial_devfile = ''
     serial_earlycon = ''
     if serialipname in ipinfo_data.keys():
-        if 'linux_console_file_name' in ipinfo_data[serialipname]['device_type']['serial'].keys():
-            serial_devfile = ipinfo_data[serialipname]['device_type']['serial']['linux_console_file_name']
-        if 'linux_earlycon_str' in ipinfo_data[serialipname]['device_type']['serial'].keys():
-            serial_earlycon = ipinfo_data[serialipname]['device_type']['serial']['linux_earlycon_str']
+        if isinstance(ipinfo_data[serialipname]['device_type'], dict) and \
+                'serial' in ipinfo_data[serialipname]['device_type'].keys():
+            if 'linux_console_file_name' in ipinfo_data[serialipname]['device_type']['serial'].keys():
+                serial_devfile = ipinfo_data[serialipname]['device_type']['serial']['linux_console_file_name']
+            if 'linux_earlycon_str' in ipinfo_data[serialipname]['device_type']['serial'].keys():
+                serial_earlycon = ipinfo_data[serialipname]['device_type']['serial']['linux_earlycon_str']
     else:
         return ''
     if not serial_devfile:
@@ -194,8 +204,11 @@ def get_sysconsole_bootargs(default_cfgfile, soc_family):
     else:
         earlyprintk = ''
     if serial_earlycon:
-        earlycon_addr = hex(get_ipproperty(
-            serialname, default_cfgfile, 'baseaddr')).upper()
+        earlycon_addr = get_ipproperty(
+            serialname, default_cfgfile, 'baseaddr')
+        if isinstance(earlycon_addr, str):
+            earlycon_addr = int(earlycon_addr, base=16)
+        earlycon_addr = hex(earlycon_addr).upper()
         if soc_family != 'versal':
             return '%s console=%s,%s clk_ignore_unused' % (earlyprintk, serial_devfile, baudrate)
         else:
@@ -381,16 +394,18 @@ def run_menuconfig(Kconfig, cfgfile, ui, out_dir, component):
 
 
 # Run shell commands
-def run_cmd(command, out_dir, logfile):
+def run_cmd(command, out_dir, logfile, shell=False):
     logger.debug('Running CMD: %s' % command)
-    process = subprocess.Popen(command.split(),
+    command = command.split() if not shell else command
+    process = subprocess.Popen(command,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
+                               shell=shell,
                                cwd=out_dir)
     stdout, stderr = process.communicate()
 
     if process.returncode != 0:
-        raise ExecutionError(command, process.returncode, stdout, stderr)
+        raise Exception(stderr.decode("utf-8"))
     else:
         if not stdout is None:
             stdout = stdout.decode("utf-8")
@@ -449,7 +464,7 @@ def add_rootfs_configs(args, default_cfgfile):
                    args.output, 'rootfs')
 
 
-def get_hw_description(args):
+def get_hw_description(args, hw_flow):
     hw_description = os.path.abspath(args.hw_description)
     output = os.path.abspath(args.output)
     soc_family = args.soc_family
@@ -458,14 +473,6 @@ def get_hw_description(args):
 
     if not os.path.exists(project_cfgdir):
         os.makedirs(project_cfgdir)
-
-    if not os.path.isfile(hw_description):
-        logger.error('XSA file doensn\'t exists: %s' % hw_description)
-        sys.exit(255)
-    hw_ext = pathlib.Path(hw_description).suffix
-    if hw_ext != '.xsa':
-        logger.error('Only .xsa file are supported given %s' % hw_ext)
-        sys.exit(255)
 
     template_cfgfile = os.path.join(
         scripts_dir, 'configs/config_%s' % soc_family)
@@ -476,12 +483,20 @@ def get_hw_description(args):
     logger.info('Generating Kconfig for project')
     # XSCT command to read the hw file and generate syshw file
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
-    cmd = 'xsct -sdx -nodisp %s/hw-description.tcl plnx_gen_hwsysconf %s %s' % \
-        (scripts_dir, hw_description, Kconfig_syshw)
-    run_cmd(cmd, output, args.logfile)
-    Kconfig_part = os.path.join(scripts_dir, 'configs/Kconfig.part')
+    if hw_flow == 'xsct':
+        cmd = 'xsct -sdx -nodisp %s/hw-description.tcl plnx_gen_hwsysconf %s %s' % \
+            (scripts_dir, hw_description, Kconfig_syshw)
+        ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
+        plnx_syshw_file = os.path.join(output, 'plnx_syshw_data')
+    elif hw_flow == 'sdt':
+        cmd = 'chmod 777 %s/sdt-description.tcl;' % (scripts_dir)
+        cmd += 'tclsh %s/sdt-description.tcl plnx_gen_hwsysconf "" %s' % \
+            (scripts_dir, Kconfig_syshw)
+        ipinfo_file = os.path.join(scripts_dir, 'data/sdt_ipinfo.yaml')
+        plnx_syshw_file = os.path.join(output, 'petalinux_config.yaml')
     ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
-    plnx_syshw_file = os.path.join(output, 'plnx_syshw_data')
+    run_cmd(cmd, output, args.logfile, shell=True)
+    Kconfig_part = os.path.join(scripts_dir, 'configs/Kconfig.part')
 
     for file_path in [Kconfig_part, ipinfo_file, plnx_syshw_file, Kconfig_syshw]:
         if not os.path.isfile(file_path):
@@ -509,6 +524,8 @@ def get_hw_description(args):
     soc_variant = get_soc_variant(soc_family, output)
     Kconfig_soc_family = soc_family.upper()
     Kconfig_str = start_menu.format(Kconfig_soc_family, output)
+    if hw_flow == 'sdt':
+        Kconfig_str += Kconfig_sdt
     if soc_variant:
         Kconfig_soc_variant = soc_variant.upper()
         Kconfig_str += socvariant_menu.format(

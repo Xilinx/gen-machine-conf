@@ -8,7 +8,7 @@
 from gen_config import *
 
 
-def generate_yocto_machine(args):
+def generate_yocto_machine(args, hw_flow):
     logger.info('Generating machine conf file')
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
@@ -21,7 +21,10 @@ def generate_yocto_machine(args):
 
     soc_family = args.soc_family
     import yaml
-    plnx_syshw_file = os.path.join(args.output, 'plnx_syshw_data')
+    if hw_flow == 'xsct':
+        plnx_syshw_file = os.path.join(args.output, 'plnx_syshw_data')
+    else:
+        plnx_syshw_file = os.path.join(args.output, 'petalinux_config.yaml')
     with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
         plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
     plnx_syshw_file_f.close()
@@ -99,11 +102,12 @@ def generate_yocto_machine(args):
 
     # Variable used for Vivado XSA path, name using local file or subversion
     # path
-    machine_override_string += '\n# Add system XSA\n'
-    machine_override_string += 'HDF_EXT = "xsa"\n'
-    machine_override_string += 'HDF_BASE = "file://"\n'
-    machine_override_string += 'HDF_PATH = "%s"\n' % \
-                               os.path.abspath(args.hw_description)
+    if hw_flow == 'xsct':
+        machine_override_string += '\n# Add system XSA\n'
+        machine_override_string += 'HDF_EXT = "xsa"\n'
+        machine_override_string += 'HDF_BASE = "file://"\n'
+        machine_override_string += 'HDF_PATH = "%s"\n' % \
+                                   os.path.abspath(args.hw_description)
 
     # Set Tune Features for MicroBlaze
     if soc_family == 'microblaze':

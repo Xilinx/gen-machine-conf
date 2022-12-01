@@ -218,7 +218,7 @@ def generate_kernel_cfg(args):
     auto_linux_file_f.close()
 
 
-def generate_plnx_config(args, machine_conf_file):
+def generate_plnx_config(args, machine_conf_file, hw_flow):
     logger.info('Generating plnxtool conf file')
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
@@ -248,6 +248,8 @@ def generate_plnx_config(args, machine_conf_file):
 
     if tmp_dir:
         override_string += 'TMPDIR = "%s"\n' % tmp_dir
+        if hw_flow == 'sdt':
+            override_string += 'BASE_TMPDIR = "%s-multiconfig"\n' % tmp_dir
     bb_no_network = get_config_value('CONFIG_YOCTO_BB_NO_NETWORK',
                                      default_cfgfile)
     if bb_no_network:
@@ -262,7 +264,7 @@ def generate_plnx_config(args, machine_conf_file):
         override_string += 'PARALLEL_MAKE = "-j %s"\n' % parallel_make
 
     if soc_family == "zynqmp":
-        override_string += 'LICENSE_FLAGS_WHITELIST:append = " xilinx_pmu-rom-native"\n'
+        override_string += 'LICENSE_FLAGS_ACCEPTED:append = " xilinx_pmu-rom-native"\n'
 
     override_string += 'PACKAGE_CLASSES = "package_rpm"\n'
     override_string += 'DL_DIR = "${TOPDIR}/downloads"\n'
@@ -280,7 +282,7 @@ def generate_plnx_config(args, machine_conf_file):
     override_string += 'DISTRO_VERSION:pn-base-files-plnx = "%s"\n' \
                        % firmware_version
 
-    if args.xsct_tool:
+    if args.xsct_tool and hw_flow == 'xsct':
         override_string += '\n# SDK path variables\n'
         override_string += 'XILINX_SDK_TOOLCHAIN = "%s"\n' % args.xsct_tool
         override_string += 'USE_XSCT_TARBALL = "0"\n'
@@ -425,6 +427,10 @@ def generate_plnx_config(args, machine_conf_file):
     override_string += 'KERNEL_CLASSES:append = " kernel-fitimage"\n'
     override_string += 'KERNEL_IMAGETYPES:append = " %s"\n' % kernel_images
     override_string += '\n#Add u-boot-zynq-scr Variables\n'
+    if hw_flow == 'sdt':
+        override_string += 'SYMLINK_FILES:%s = "%s:%s"\n' \
+            % (soc_family, 'system-default.dtb', 'system.dtb')
+        override_string += 'DEVICE_TREE_NAME = "system.dtb"\n'
     override_string += 'KERNEL_IMAGE = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_KERNEL_IMAGE',
                            default_cfgfile)
