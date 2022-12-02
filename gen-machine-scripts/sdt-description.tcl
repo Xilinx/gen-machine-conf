@@ -1,3 +1,8 @@
+# Copyright (C) 2016-2022, Xilinx, Inc.  All rights reserved.
+# Copyright (C) 2022, Advanced Micro Devices, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+
 proc plnx_output_kconfig {msg} {
 	global plnx_kconfig
 	puts ${plnx_kconfig} "${msg}"
