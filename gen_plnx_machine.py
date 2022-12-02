@@ -426,7 +426,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     override_string += '\n# PetaLinux tool FIT Variables\n'
     override_string += 'KERNEL_CLASSES:append = " kernel-fitimage"\n'
     override_string += 'KERNEL_IMAGETYPES:append = " %s"\n' % kernel_images
-    override_string += '\n#Add u-boot-zynq-scr Variables\n'
+    override_string += '\n#Add u-boot-xlnx-scr Variables\n'
     if hw_flow == 'sdt':
         override_string += 'SYMLINK_FILES:%s = "%s:%s"\n' \
             % (soc_family, 'system-default.dtb', 'system.dtb')
@@ -539,13 +539,13 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     override_string += '\n#Add EXTRA_IMAGEDEPENDS\n'
     imagedepends = {
         'microblaze': ['virtual/bootloader', 'virtual/fsboot',
-                       'virtual/elfrealloc', 'u-boot-zynq-scr'],
-        'zynq': ['virtual/bootloader', 'virtual/fsbl', 'u-boot-zynq-scr'],
+                       'virtual/elfrealloc', 'u-boot-xlnx-scr'],
+        'zynq': ['virtual/bootloader', 'virtual/fsbl', 'u-boot-xlnx-scr'],
         'zynqmp': ['virtual/bootloader', 'virtual/fsbl', 'virtual/pmu-firmware',
                    'arm-trusted-firmware', 'qemu-devicetrees', 'pmu-rom-native',
-                   'u-boot-zynq-scr'],
+                   'u-boot-xlnx-scr'],
         'versal': ['virtual/bootloader', 'virtual/psm-firmware', 'virtual/plm',
-                   'arm-trusted-firmware', 'u-boot-zynq-scr',
+                   'arm-trusted-firmware', 'u-boot-xlnx-scr',
                    'qemu-devicetrees', 'extract-cdo'],
     }
     is_imgsel = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_IMG_SEL',
