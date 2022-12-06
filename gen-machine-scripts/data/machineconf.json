@@ -76,7 +76,7 @@
 		"dt-boardfile": "zcu106-reva"
 	},
 	"eval-brd-sc": {
-		"machine-overrides": "eval-brd-sc",
+		"machine-overrides": "eval-brd-sc-zynqmp",
 		"dt-boardfile": "",
 		"extra-yocto-vars": ["SOC_VARIANT ?= \"eg\"","DEFAULTTUNE ?= \"cortexa72-cortexa53\""]
 	},
@@ -104,7 +104,7 @@
 		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
 	},
 	"xilinx-vck190-sc": {
-		"machine-overrides": "vck-sc",
+		"machine-overrides": "vck-sc-zynqmp",
 		"dt-boardfile": "zynqmp-e-a2197-00-reva"
 	},
 	"xilinx-zc1751-dc1": {
