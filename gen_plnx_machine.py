@@ -387,6 +387,17 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         override_string += 'YAML_COMPILER_FLAGS:append:pn-fsbl-firmware = " %s"\n' \
                            % fsbl_compiler_extra_flags
 
+    if soc_family in ['zynqmp']:
+        override_string += '\n# PetaLinux tool PMUFW variables\n'
+        pmufw_bspcompiler_flags = get_config_value('CONFIG_SUBSYSTEM_PMUFW_BSPCOMPILER_FLAGS',
+                                                    default_cfgfile)
+        pmufw_bspcompiler_flagset = get_config_value('CONFIG_SUBSYSTEM_PMUFW_BSPCOMPILER_FLAGSSET',
+                                                    default_cfgfile)
+        if pmufw_bspcompiler_flagset:
+            override_string += 'YAML_BSP_COMPILER_FLAGS:append:pn-pmu-firmware = " %s"' \
+                                % pmufw_bspcompiler_flags
+        override_string += '\n'
+
     is_fpga_manager = get_config_value(
         'CONFIG_SUBSYSTEM_FPGA_MANAGER', default_cfgfile)
     if is_fpga_manager == 'y':

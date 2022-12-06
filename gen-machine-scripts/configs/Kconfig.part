@@ -564,6 +564,17 @@ endmenu
 
 if SYSTEM_ZYNQMP
 menu "PMUFW Configuration"
+config SUBSYSTEM_PMUFW_BSPCOMPILER_FLAGSSET
+	bool
+	default y if SUBSYSTEM_PMUFW_BSPCOMPILER_FLAGS != ""
+
+config SUBSYSTEM_PMUFW_BSPCOMPILER_FLAGS
+	string "PMUFW BSP extra compiler flags"
+	default ""
+	help
+	 PMUFW BSP extra compiler flags. You can specify multiple flags separated with space.
+	 E.g: -DXSK_ACCESS_USER_EFUSE for enabling USER EFUSE access
+
 config SUBSYSTEM_PMUFW_COMPILER_EXTRA_FLAGS
 	string "PMUFW compiler flags"
 	default ""
