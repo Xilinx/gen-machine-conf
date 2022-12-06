@@ -9420,9 +9420,9 @@ config packagegroup-petalinux-v4lutils-dev
          help
 
 endmenu
-menu "packagegroup-petalinux-vitis-acceleration "
-config packagegroup-petalinux-vitis-acceleration
-         bool "packagegroup-petalinux-vitis-acceleration"
+menu "packagegroup-petalinux-vitis-acceleration-essential "
+config packagegroup-petalinux-vitis-acceleration-essential
+         bool "packagegroup-petalinux-vitis-acceleration-essential"
          help
          Includes packages for Vitis compatible platforms
 		xrt
@@ -9437,12 +9437,12 @@ config packagegroup-petalinux-vitis-acceleration
                 iperf3
                 meson
                 dnf
-config packagegroup-petalinux-vitis-acceleration-dbg
-         bool "packagegroup-petalinux-vitis-acceleration-dbg"
+config packagegroup-petalinux-vitis-acceleration-essential-dbg
+         bool "packagegroup-petalinux-vitis-acceleration-essential-dbg"
          help
 
-config packagegroup-petalinux-vitis-acceleration-dev
-         bool "packagegroup-petalinux-vitis-acceleration-dev"
+config packagegroup-petalinux-vitis-acceleration-essential-dev
+         bool "packagegroup-petalinux-vitis-acceleration-essential-dev"
          help
 
 endmenu
