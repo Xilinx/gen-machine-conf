@@ -5134,23 +5134,7 @@ config encodings-dbg
 	 help
 	
 endmenu
-if system-zynqmp
-menu "epiphany " 
-config epiphany  
-	 bool "epiphany"
-	 help
-	 WebKit based web browser for GNOME
-	
-config epiphany-dev  
-	 bool "epiphany-dev"
-	 help
-	
-config epiphany-dbg  
-	 bool "epiphany-dbg"
-	 help
-	
-endmenu
-endif
+
 menu "libudev "
 config libudev  
 	 bool "libudev"
@@ -7414,21 +7398,7 @@ config watchdog-init
 endmenu
 endif
 
-menu "webkitgtk " 
-config webkitgtk  
-	 bool "webkitgtk"
-	 help
-	 WebKit web rendering engine for the GTK+ platform
-	
-config webkitgtk-dbg  
-	 bool "webkitgtk-dbg"
-	 help
-	
-config webkitgtk-dev  
-	 bool "webkitgtk-dev"
-	 help
-	
-endmenu
+
 
 menu "x11perf " 
 config x11perf  

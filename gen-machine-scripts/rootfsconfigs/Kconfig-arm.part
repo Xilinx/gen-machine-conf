@@ -4953,21 +4953,7 @@ config encodings-dbg
 	 help
 	
 endmenu
-menu "epiphany " 
-config epiphany  
-	 bool "epiphany"
-	 help
-	 WebKit based web browser for GNOME
-	
-config epiphany-dbg  
-	 bool "epiphany-dbg"
-	 help
-	
-config epiphany-dev  
-	 bool "epiphany-dev"
-	 help
-	
-endmenu
+
 menu "libudev "
 config libudev  
 	 bool "libudev"
@@ -7071,21 +7057,7 @@ config watchdog-config-dev
 	 help
 	
 endmenu
-menu "webkitgtk " 
-config webkitgtk  
-	 bool "webkitgtk"
-	 help
-	 WebKit web rendering engine for the GTK+ platform
-	
-config webkitgtk-dbg  
-	 bool "webkitgtk-dbg"
-	 help
-	
-config webkitgtk-dev  
-	 bool "webkitgtk-dev"
-	 help
-	
-endmenu
+
 menu "x11perf " 
 config x11perf  
 	 bool "x11perf"
