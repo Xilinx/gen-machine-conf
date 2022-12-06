@@ -819,13 +819,15 @@ proc plnx_gen_conf_ethernet {mapping kconfprefix cpuname cpuslaves} {
 				"help" \
 				"  The IP address of your main network interface when static network" \
 				"  address assignment is used."]
-			set ipstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n" "${ipstr}" \
+			set ipstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n" "${ipstr}" \
 				"config ${ethkconfprefix}${kname}_IP_NETMASK" \
 				"string \"Static IP netmask\"" \
 				"default \"255.255.255.0\"" \
 				"depends on ${ethkconfprefix}${kname}_SELECT && !${ethkconfprefix}${kname}_USE_DHCP" \
 				"help" \
-				"  Default netmask when static network address assignment is used."]
+				"  Default netmask when static network address assignment is used." \
+				"  In case of systemd please specify netmask value as 24 instead of 255.255.255.0" \
+				"  In case of sysvinit please specify netmask value as 255.255.255.0 instead of 24 "]
 			set ipstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n" "${ipstr}" \
 				"config ${ethkconfprefix}${kname}_IP_GATEWAY" \
 				"string \"Static IP gateway\"" \
