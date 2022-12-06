@@ -946,7 +946,7 @@ config SUBSYSTEM_UBOOT_EXT_DTB
 	 Select this option to build seperate dtb for u-boot.
 	 If user select this option the source files will come from
 	 design using DTG and user can customize the nodes by creating
-	 system-user.dtsi in <plnx-proj>/project-spec/meta-user/recipes-bsp/uboot-device-tree
+	 system-user.dtsi in <plnx-proj>/project-spec/meta-user/meta-xilinx-tools/recipes-bsp/uboot-device-tree
 
 if SUBSYSTEM_UBOOT_EXT_DTB
 config UBOOT_EXT_DTB_FROM_DTS
@@ -1219,6 +1219,19 @@ config TMP_DIR_LOCATION
 	        ${TOPDIR} will not be functional.
 endmenu
 
+menu "Devtool Workspace Location"
+
+config DEVTOOL_WORKSPACE_LOCATION
+	string "Devtool Workspace Location"
+	default "${PROOT}/components/yocto/workspace"
+	help
+	  Specify the devtool workspace directory, This will setup a workspace layer
+	  in an alternative specified absolute or releative path using layerpath option.
+	  Relative path can be used with reference to ${PROOT}
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+		${TOPDIR} will not be functional.
+endmenu
+
 menu "Parallel thread execution"
 
 config YOCTO_BB_NUMBER_THREADS
@@ -1294,4 +1307,106 @@ config YOCTO_BUILDTOOLS_EXTENDED
 	 Enabling this option to use the gcc and other libraries from $PETALINUX/components/yocto/buildtools_extended/
 	 Use this option on a machine that does not meet the minimal gcc, Git, tar, and Python requirements.
 
+menu "User Layers"
+
+config USER_LAYER_0
+	string "user layer 0"
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_1
+	string "user layer 1"
+	depends on USER_LAYER_0 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_2
+	string "user layer 2"
+	depends on USER_LAYER_1 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_3
+	string "user layer 3"
+	depends on USER_LAYER_2 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_4
+	string "user layer 4"
+	depends on USER_LAYER_3 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_5
+	string "user layer 5"
+	depends on USER_LAYER_4 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_6
+	string "user layer 6"
+	depends on USER_LAYER_5 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_7
+	string "user layer 7"
+	depends on USER_LAYER_6 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_8
+	string "user layer 8"
+	depends on USER_LAYER_7 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+config USER_LAYER_9
+	string "user layer 9"
+	depends on USER_LAYER_8 != ""
+	help
+	  You can specify relative path or absolute path of layer.
+	  To add layer at <project-root>/project-spec/meta-security
+	  Enter: ${PROOT}/project-spec/meta-security
+	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
+	        ${TOPDIR} will not be functional.
+
+endmenu
 endmenu
