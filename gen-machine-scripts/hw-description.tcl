@@ -641,11 +641,11 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 	set components_list ""
 	if { [string match -nocase "*aarch64*" $current_arch ] } {
 		if { [regexp "psv_cortexa72*" $cpuname matched] == 1 } {
-			set components_list "PLM ATF DTG"
+			set components_list "PLM TF-A DTG"
 		} elseif { [regexp "psx_cortexa78*" $cpuname matched] == 1 } {
-			set components_list "PLM ATF DTG"
+			set components_list "PLM TF-A DTG"
 		} elseif { [regexp "psu_cortexa53*" $cpuname matched] == 1 } {
-			set components_list "PMUFW FSBL ATF DTG"
+			set components_list "PMUFW FSBL TF-A DTG"
 		}
 	} elseif { [regexp "arm*" $current_arch matched] == 1 } {
 		set components_list "FSBL DTG"
@@ -671,7 +671,7 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 				"  YAML_SERIAL_CONSOLE_STDIN_forcevariable_pn-${component} = \"<serial_ipname>\" " \
 				"  YAML_SERIAL_CONSOLE_STDOUT_forcevariable_pn-${component} = \"<serial_ipname>\" " \
 				"  in petalinuxbsp.conf file to specify the stdin/stdout." ]
-			if { "${component}" == "ATF" } {
+			if { "${component}" == "TF-A" } {
 				set choicestr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n" "${choicestr}" \
 					"help" \
 					"  Select a serial as the ${component}'s stdin,stdout." \
@@ -722,7 +722,7 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 		foreach str $tmpstr {
 			set kstr [plnx_fix_kconf_name ${str}]
 			set atf_console ""
-			if { "${component}" == "ATF" } {
+			if { "${component}" == "TF-A" } {
 				if { [string match -nocase "*psu_uart_0*" ${str} ] } {
 					set atf_console "cadence"
 				} elseif { [string match -nocase "*psu_uart_1*" ${str} ] } {

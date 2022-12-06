@@ -125,59 +125,59 @@ config SUBSYSTEM_COMPONENT_U__BOOT_LIC_FILES_CHKSUM_LOCAL__SRC
 endmenu
 if SUBSYSTEM_ARCH_AARCH64
 choice
-prompt "arm-trusted-firmware"
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_ARM__TRUSTED__FIRMWARE
-        bool "arm-trusted-firmware"
+prompt "trusted-firmware-arm"
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_TRUSTED__FIRMWARE__ARM
+        bool "trusted-firmware-arm"
         help
          You can find about this option
          in UG1144 in "Steps to Configure Out-of-tree Build" section.
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE
         bool "remote"
         help
          You can find about this option
          in UG1144 in "Steps to Configure Out-of-tree Build" section.
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_EXT__LOCAL__SRC
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_EXT__LOCAL__SRC
         bool "ext-local-src"
         help
          You can find about this option
          in UG1144 in "Steps to Configure Out-of-tree Build" section.
 endchoice
-menu "Remote arm-trusted-firmware settings"
-        depends on SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE_DOWNLOAD_PATH
-        string "Remote arm-trusted-firmware git URL"
-        depends on SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE
+menu "Remote trusted-firmware-arm settings"
+        depends on SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE_DOWNLOAD_PATH
+        string "Remote trusted-firmware-arm git URL"
+        depends on SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE
         help
          It will git clone the specified remote git url repo
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE_REFERENCE
-        string "Remote arm-trusted-firmware git TAG/Commit ID"
-        depends on SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE_REFERENCE
+        string "Remote trusted-firmware-arm git TAG/Commit ID"
+        depends on SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE
         help
          It will git clone the remote with the specified commitid
          into the project's components dir
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE_BRANCH
-        string "Remote arm-trusted-firmware git BRANCH"
-        depends on SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE_BRANCH
+        string "Remote trusted-firmware-arm git BRANCH"
+        depends on SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE
         help
          Specify the BRANCH of the remote repo
          This is optional, anyway if you dont specify it will take from the component bb file
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_LIC_FILES_CHKSUM_REMOTE
-        string "Remote arm-trusted-firmware license checksum"
-        depends on SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_REMOTE
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_LIC_FILES_CHKSUM_REMOTE
+        string "Remote trusted-firmware-arm license checksum"
+        depends on SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_REMOTE
         help
          Specify the LIC_FILES_CHKSUM of the license text in the source code for the recipe
          This is optional, anyway if you dont specify it will take from the component bb file
          Ex: file://license.txt;md5=xxxx
 endmenu
-menu "External arm-trusted-firmware local source settings"
-        depends on SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_EXT__LOCAL__SRC
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_EXT_LOCAL_SRC_PATH
-        string "External arm-trusted-firmware local source path"
+menu "External trusted-firmware-arm local source settings"
+        depends on SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_EXT__LOCAL__SRC
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_EXT_LOCAL_SRC_PATH
+        string "External trusted-firmware-arm local source path"
         help
-         It will point the arm-trusted-firmware source path to this location
-config SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_LIC_FILES_CHKSUM_LOCAL__SRC
-        string "External arm-trusted-firmware license checksum"
-        depends on SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_EXT__LOCAL__SRC
+         It will point the trusted-firmware-arm source path to this location
+config SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_LIC_FILES_CHKSUM_LOCAL__SRC
+        string "External trusted-firmware-arm license checksum"
+        depends on SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_EXT__LOCAL__SRC
         help
          Specify the LIC_FILES_CHKSUM of the license text in the source code for the recipe
          This is optional, anyway if you dont specify it will take from the component bb file
@@ -608,32 +608,32 @@ config SUBSYSTEM_FSBL_COMPILER_EXTRA_FLAGS
 endmenu
 endif
 
-if SUBSYSTEM_ARCH_AARCH64 && !SUBSYSTEM_COMPONENT_ARM__TRUSTED__FIRMWARE_NAME_NONE
-menu "ARM Trusted Firmware Configuration"
-config SUBSYSTEM_ATF_MEMORY_SETTINGS
-	bool "ATF memory settings"
+if SUBSYSTEM_ARCH_AARCH64 && !SUBSYSTEM_COMPONENT_TRUSTED__FIRMWARE__ARM_NAME_NONE
+menu "Trusted Firmware ARM (TF-A) Configuration"
+config SUBSYSTEM_TF-A_MEMORY_SETTINGS
+	bool "TF-A memory settings"
 	default n
 	help
-	 Select this option, if membase and memsize settings of ATF are to be modified.These are defined already in atf source.
-	  Use this option inorder to over-ride these values.For further info: ref arm-trusted-firmware/docs/plat/*.md's
-if SUBSYSTEM_ATF_MEMORY_SETTINGS
-config SUBSYSTEM_ATF_MEM_BASE
-	hex "ATF MEM BASE"
+	 Select this option, if membase and memsize settings of TF-A are to be modified.These are defined already in tfa source.
+	  Use this option inorder to over-ride these values.For further info: ref trusted-firmware-arm/docs/plat/*.md's
+if SUBSYSTEM_TF-A_MEMORY_SETTINGS
+config SUBSYSTEM_TF-A_MEM_BASE
+	hex "TF-A MEM BASE"
 	default 0xFFFEA000
 	help
-	  On default the ATF is placed in OCM memory. Alternatively, the ATF can be
-	  placed in DRAM by updating ATF_MEM_BASE and ATF_MEM_SIZE.
-config SUBSYSTEM_ATF_MEM_SIZE
-	hex "ATF MEM SIZE"
+	  On default the TF-A is placed in OCM memory. Alternatively, the TF-A can be
+	  placed in DRAM by updating TF-A_MEM_BASE and TF-A_MEM_SIZE.
+config SUBSYSTEM_TF-A_MEM_SIZE
+	hex "TF-A MEM SIZE"
 	default 0x16000
 	help
-	  Mention the ATF size.
+	  Mention the TF-A size.
 endif
-config SUBSYSTEM_ATF_EXTRA_COMPILER_FLAGS
-	string "ATF extra compiler flags"
+config SUBSYSTEM_TF-A_EXTRA_COMPILER_FLAGS
+	string "TF-A extra compiler flags"
 	default ""
 	help
-	  ATF extra compilation flags. You can specify multiple flags separated with semicolon.
+	  TF-A extra compilation flags. You can specify multiple flags separated with semicolon.
 	  (NEW!) : ZYNQMP_WDT_RESTART=1 for Special handling to cleanly restart the APU during AWDT recovery
 	  Other E.g. MAKEARCH+=RESET_TO_BL31=1 SPD=tspd; ATF_BUILD_TARGET=bl31 bl32
 
@@ -644,11 +644,11 @@ config SUBSYSTEM_PRELOADED_BL33_BASE
 	 BL33 address can be mentioned.Only takes care of passing PRELOADED_BL33_BASE
 	 during atf compilation.For Example incase of BL33 being U-boot CONFIG_SYS_TEXT_BASE
 	 has to be adjusted using "petalinux-config -c --u-boot"
-config SUBSYSTEM_ATF_DEBUG
-	bool "atf debug"
+config SUBSYSTEM_TF-A_DEBUG
+	bool "TF-A debug"
 	default n
 	help
-	 Select this option for selecting atf debug mode
+	 Select this option for selecting TF-A debug mode
 endmenu
 endif
 

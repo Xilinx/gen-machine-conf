@@ -190,23 +190,23 @@ def generate_yocto_machine(args, hw_flow):
 
     if arch == 'aarch64':
         machine_override_string += '\n# Yocto arm-trusted-firmware(TF-A) variables\n'
-        atf_serial_ip_name = get_config_value('CONFIG_SUBSYSTEM_SERIAL_ATF_IP_NAME',
+        atf_serial_ip_name = get_config_value('CONFIG_SUBSYSTEM_SERIAL_TF-A_IP_NAME',
                                               default_cfgfile)
-        atf_serial_manual = get_config_value('CONFIG_SUBSYSTEM_ATF_SERIAL_MANUAL_SELECT',
+        atf_serial_manual = get_config_value('CONFIG_SUBSYSTEM_TF-A_SERIAL_MANUAL_SELECT',
                                              default_cfgfile)
         if not atf_serial_manual:
             machine_override_string += 'ATF_CONSOLE ?= "%s"\n' % atf_serial_ip_name
-        atf_mem_settings = get_config_value('CONFIG_SUBSYSTEM_ATF_MEMORY_SETTINGS',
+        atf_mem_settings = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEMORY_SETTINGS',
                                             default_cfgfile)
-        atf_mem_base = get_config_value('CONFIG_SUBSYSTEM_ATF_MEM_BASE',
+        atf_mem_base = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEM_BASE',
                                         default_cfgfile)
-        atf_mem_size = get_config_value('CONFIG_SUBSYSTEM_ATF_MEM_SIZE',
+        atf_mem_size = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEM_SIZE',
                                         default_cfgfile)
         if atf_mem_settings:
             machine_override_string += 'ATF_MEM_BASE ?= "%s"\n' % atf_mem_base
             machine_override_string += 'ATF_MEM_SIZE ?= "%s"\n' % atf_mem_size
 
-        atf_extra_settings = get_config_value('CONFIG_SUBSYSTEM_ATF_EXTRA_COMPILER_FLAGS',
+        atf_extra_settings = get_config_value('CONFIG_SUBSYSTEM_TF-A_EXTRA_COMPILER_FLAGS',
                                               default_cfgfile)
         atf_bl33_load = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE',
                                          default_cfgfile)

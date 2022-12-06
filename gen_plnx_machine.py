@@ -357,11 +357,11 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if arch == 'aarch64':
         override_string += '\n# PetaLinux tool Arm-trusted-firmware variables\n'
         override_string += add_remote_sources(
-            'arm-trusted-firmware', 'ARM__TRUSTED__FIRMWARE')
+            'arm-trusted-firmware', 'TRUSTED__FIRMWARE__ARM')
         override_string += add_external_sources(
-            'arm-trusted-firmware', 'ARM__TRUSTED__FIRMWARE')
+            'arm-trusted-firmware', 'TRUSTED__FIRMWARE__ARM')
         atf_debug = get_config_value(
-            'CONFIG_SUBSYSTEM_ATF_DEBUG', default_cfgfile)
+            'CONFIG_SUBSYSTEM_TF-A_DEBUG', default_cfgfile)
         if atf_debug:
             override_string += 'DEBUG_ATF = "1"\n'
 
