@@ -84,8 +84,12 @@
 		"machine-overrides": "k24:k24-kd",
 		"dt-boardfile": ""
 	},
+	"xilinx-k24-kv": {
+                "machine-overrides": "k24:k24-kv",
+                "required-machine-conf": "zynqmp-generic"
+        },
 	"xilinx-k24-som": {
-		"machine-overrides": "k24",
+		"machine-overrides": "kria",
 		"dt-boardfile": ""
 	},
 	"xilinx-k26-kr": {
@@ -150,5 +154,9 @@
 	"xilinx-vck5000": {
 		"machine-overrides": "vck5000",
 		"dt-boardfile": "versal-vck5000-reva"
+	},
+	"xilinx-vn-p-b2197-00": {
+	        "machine-overrides": "vn-p-b2197-00",
+		"dt-boardfile": ""
 	}
 }
