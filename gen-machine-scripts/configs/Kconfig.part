@@ -704,7 +704,7 @@ choice
 endchoice
 endif
 
-if !SUBSYSTEM_ARCH_MICROBLAZE
+if !SUBSYSTEM_ARCH_MICROBLAZE && !SUBSYSTEM_SDT_FLOW
 menu "FPGA Manager"
 config SUBSYSTEM_FPGA_MANAGER
         bool "Fpga Manager"
@@ -725,6 +725,16 @@ config FPGA_HW_PATH
 	       ${TOPDIR} will not be functional. Absolute path is preferred.
 
 endif
+endmenu
+endif
+
+if SUBSYSTEM_SDT_FLOW
+menu "FPGA Manager"
+config SUBSYSTEM_FPGA_MANAGER
+	bool "Fpga Manager"
+	help
+	 Select this option to provides an interface to the Linux for configuring the programmable logic(PL).
+	 It will create /lib/firmware directory in rootfs and copy bitstream and dtb/dtbo files
 endmenu
 endif
 
