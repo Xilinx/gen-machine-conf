@@ -8229,10 +8229,7 @@ config libdrm-radeon
 	 bool "libdrm-radeon"
 	 help
 	
-config libdrm-kms  
-	 bool "libdrm-kms"
-	 help
-	
+
 config libdrm-dbg  
 	 bool "libdrm-dbg"
 	 help
@@ -9019,7 +9016,7 @@ config packagegroup-petalinux-display-debug
                 libdrm :libdrm provides a user space library for accessing the DRM, \
                         direct rendering manager, on operating systems that support the ioctl interface
                 libdrm-tests
-                libdrm-kms
+
 
 config packagegroup-petalinux-display-debug-dbg
          bool "packagegroup-petalinux-display-debug-dbg"
