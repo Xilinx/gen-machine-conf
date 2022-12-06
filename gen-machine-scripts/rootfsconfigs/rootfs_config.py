@@ -191,6 +191,9 @@ def update_cfg(cfg_file, xilinx_arch):
     cfg_file.write('IMAGE_INSTALL:pn-petalinux-image-minimal = "\\\n')
     cfg_file.write("\t\tkernel-modules \\\n")
     write_list(cfg_file, packages['image_packages'])
+    if 'libmali-xlnx' in packages['image_packages']:
+        machine_features = 'MACHINE_FEATURES:append = " mali400"\n'
+        cfg_file.write(machine_features)
     if 'package_feeds' in packages.keys() and packages['package_feeds']:
         package_feedstr = 'PACKAGE_FEED_URIS = "' + \
             packages['package_feeds'] + '"\n\n'
