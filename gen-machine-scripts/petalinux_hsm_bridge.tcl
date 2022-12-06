@@ -200,6 +200,41 @@ proc add_dtsi {main_dts dtsi} {
 	}
 }
 
+proc update_alias_node {main_dts} {
+	global out_dir kconfig_dict
+	if {[file exists "${out_dir}/${main_dts}"]} {
+		set eeprom_alias ""
+		set rtc_alias ""
+		if {[dict exists $kconfig_dict subsys_conf add_eeprom_alias]} {
+			set eeprom_alias [dict get $kconfig_dict subsys_conf add_eeprom_alias]
+		}
+		if {[dict exists $kconfig_dict subsys_conf add_rtc_alias]} {
+			set rtc_alias [dict get $kconfig_dict subsys_conf add_rtc_alias]
+		}
+		if {[llength $eeprom_alias] || [llength $rtc_alias]} {
+			set fd [open "${out_dir}/${main_dts}" "r"]
+			set data_read [split [read "$fd"] "\n"]
+			close $fd
+			foreach line $data_read {
+				if {[string match -nocase "*aliases \{*" $line]} {
+					if { ![dict exists $kconfig_dict subsys_conf enable_no_alias]} {
+						regsub -all "aliases \{" $line "/delete-node/ aliases; \n\taliases \{" line
+					}
+					if {[llength $eeprom_alias]} {
+						regsub -all "aliases \{" $line "aliases \{\n\t\tnvmem0 = \\&eeprom;" line
+					}
+					if {[llength $rtc_alias]} {
+						regsub -all "aliases \{" $line "aliases \{\n\t\trtc0 = \\&rtc;" line
+					}
+				}
+				set append_data [append append_data "$line" "\n"]
+			}
+		set data_write [open "${out_dir}/${main_dts}" "w"]
+		puts "$data_write" "$append_data"
+		close $data_write
+		}
+	}
+}
 #
 # === main ===
 #
@@ -324,6 +359,7 @@ if {[string equal -nocase $function "u-boot_bsp"]} {
 		set dtsifile "${out_dir}/${machinename}.dtsi"
 	}
 	generate_system_dtsi ${out_dir}/system-conf.dtsi ${dtsifile}
+	update_alias_node "system-top.dts"
 	add_dtsi "system-top.dts" "system-user.dtsi"
 } elseif {[string equal -nocase $function "sys-property"]} {
 	report_sys_property

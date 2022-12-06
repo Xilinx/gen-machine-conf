@@ -545,6 +545,21 @@ config SUBSYSTEM_ENABLE_DT_VERBOSE
 	 Enable this option to get additional logs for device-tree.
 	 These debug prints can be seen in log.do_configure which will be saved in device-tree workspace directory.
 
+if !SUBSYSTEM_ENABLE_NO_ALIAS
+config SUBSYSTEM_ADD_EEPROM_ALIAS
+	bool "Enable eeprom alias"
+	default n
+	help
+	 Enable this option to add eeprom in aliases node
+	 E.g: nvmem0 = &eeprom
+
+config SUBSYSTEM_ADD_RTC_ALIAS
+	bool "Enable rtc alias"
+	default n
+	help
+	 Enable this option to add rtc in alias node
+	 E.g: rtc0 = &rtc
+endif
 endmenu
 
 if SYSTEM_ZYNQMP
