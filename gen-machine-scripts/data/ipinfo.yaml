@@ -40,7 +40,12 @@ psu_ddr:
             has_bank: n
             baseaddr: CONFIG.C_S_AXI_BASEADDR
             highaddr: CONFIG.C_S_AXI_HIGHADDR
-
+axi_noc:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: BASE_VALUE
+            highaddr: HIGH_VALUE
 axi_emc:
     device_type:
         memory:

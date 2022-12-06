@@ -10,6 +10,9 @@ mig:
 mig_7series:
     ip_type: main_memory
 
+axi_noc:
+    ip_type: main_memory
+
 #FIXME: support multi-bank
 axi_s6_ddrx:
     ip_type: main_memory_multibank

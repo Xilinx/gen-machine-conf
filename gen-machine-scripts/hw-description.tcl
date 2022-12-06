@@ -412,22 +412,56 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 			}
 			set kname [plnx_fix_kconf_name ${name}]
 			if {"${has_bank}" == "n"} {
-				set bankbaseaddr [hsi get_property ${bank_baseaddr_property} ${hd}]
-				set bankhighaddr [hsi get_property ${bank_highaddr_property} ${hd}]
-				if {[regexp "ps[7]_ddr" "${ipname}" match]} {
-					set bankbaseaddr "0x0"
-				}
-				set strlist [plnx_gen_memory_bank_kconfig "" ${bankbaseaddr} ${bankhighaddr} "${name}" "${memorykconfprefix}"]
-				set tmpchoicestr [lindex ${strlist} 0]
-				if {"${tmpchoicestr}" != ""} {
-					set choicestr [format "%s%s" "${choicestr}" "${tmpchoicestr}"]
-					set baseaddrstr [format "%s\n%s\n" "${baseaddrstr}" [lindex ${strlist} 1]]
-					set sizestr [format "%s\n%s\n" "${sizestr}" [lindex ${strlist} 2]]
-					set kernelbaseaddrstr [format "%s\n%s\n" "${kernelbaseaddrstr}" [lindex ${strlist} 3]]
-					set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 4]]
-					set ddripname [format "%s\n%s\n" "${ddripname}" [lindex ${strlist} 5]]
-					set memnode [list "${name}_bankless" [list device_type ${devicetype}] [list ip_name ${ipname}] [list baseaddr ${bankbaseaddr}] [list highaddr "${bankhighaddr}"]]
-					lappend retmemories ${memnode}
+				if {[regexp "axi_noc" "${ipname}" match]} {
+					set addr_list [dict create]
+					set strlist ""
+					set interface_block_names [hsi get_property ADDRESS_BLOCK [hsi get_mem_ranges -of_objects [hsi get_cells -hier $cpuname] $hd]]
+					set i 0
+					foreach block_name $interface_block_names {
+						set bankbaseaddr [common::get_property BASE_VALUE [lindex [hsi get_mem_ranges -of_objects [hsi get_cells -hier $cpuname] $hd] $i]]
+						set bankhighaddr [common::get_property HIGH_VALUE [lindex [hsi get_mem_ranges -of_objects [hsi get_cells -hier $cpuname] $hd] $i]]
+						if {"${bankbaseaddr}" != "" && "${bankhighaddr}" != ""} {
+							dict set addr_list $block_name bankbaseaddr $bankbaseaddr
+							dict set addr_list $block_name bankhighaddr $bankhighaddr
+						}
+						incr i
+					}
+					foreach block_name [dict keys $addr_list] {
+						set baseaddr [dict get $addr_list $block_name bankbaseaddr]
+						set highaddr [dict get $addr_list $block_name bankhighaddr]
+						if {"${baseaddr}" != "" && "${highaddr}" != ""} {
+							set strlist [plnx_gen_memory_bank_kconfig "" ${baseaddr} ${highaddr} "${block_name}" "${memorykconfprefix}"]
+							set tmpchoicestr [lindex ${strlist} 0]
+							if {"${tmpchoicestr}" != ""} {
+								set choicestr [format "%s%s" "${choicestr}" "${tmpchoicestr}"]
+								set baseaddrstr [format "%s\n%s\n" "${baseaddrstr}" [lindex ${strlist} 1]]
+								set sizestr [format "%s\n%s\n" "${sizestr}" [lindex ${strlist} 2]]
+								set kernelbaseaddrstr [format "%s\n%s\n" "${kernelbaseaddrstr}" [lindex ${strlist} 3]]
+								set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 4]]
+								set ddripname [format "%s\n%s\n" "${ddripname}" [lindex ${strlist} 5]]
+								set memnode [list "${name}_bankless" [list device_type ${devicetype}] [list ip_name ${ipname}] [list baseaddr ${bankbaseaddr}] [list highaddr "${bankhighaddr}"]]
+								lappend retmemories ${memnode}
+							}
+						}
+					}
+				} else {
+					set bankbaseaddr [hsi get_property ${bank_baseaddr_property} ${hd}]
+					set bankhighaddr [hsi get_property ${bank_highaddr_property} ${hd}]
+					if {[regexp "ps[7]_ddr" "${ipname}" match]} {
+						set bankbaseaddr "0x0"
+					}
+					set strlist [plnx_gen_memory_bank_kconfig "" ${bankbaseaddr} ${bankhighaddr} "${name}" "${memorykconfprefix}"]
+					set tmpchoicestr [lindex ${strlist} 0]
+					if {"${tmpchoicestr}" != ""} {
+						set choicestr [format "%s%s" "${choicestr}" "${tmpchoicestr}"]
+						set baseaddrstr [format "%s\n%s\n" "${baseaddrstr}" [lindex ${strlist} 1]]
+						set sizestr [format "%s\n%s\n" "${sizestr}" [lindex ${strlist} 2]]
+						set kernelbaseaddrstr [format "%s\n%s\n" "${kernelbaseaddrstr}" [lindex ${strlist} 3]]
+						set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 4]]
+						set ddripname [format "%s\n%s\n" "${ddripname}" [lindex ${strlist} 5]]
+						set memnode [list "${name}_bankless" [list device_type ${devicetype}] [list ip_name ${ipname}] [list baseaddr ${bankbaseaddr}] [list highaddr "${bankhighaddr}"]]
+						lappend retmemories ${memnode}
+					}
 				}
 			} elseif {"${has_bank}" == "y" && "${banks_property}" != ""} {
 				set bankcount [hsi get_property ${banks_property} ${hd}]

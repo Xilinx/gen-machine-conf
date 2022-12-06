@@ -94,10 +94,12 @@ proc read_config {} {
 					continue
 				}
 				# now check if flash_type exists
-				set ip_name [hsi get_property IP_NAME [hsi get_cells -hier $value]]
-				if {[dict exists $mapping_dict $ip_name flash_type]} {
-					set flash_typ [dict get $mapping_dict $ip_name flash_type]
-					dict set kconfig_dict $lookup_string flash_type $flash_typ
+				if { ![regexp "(^hbm.*)|(.*ddr.*)" $value matched] } {
+					set ip_name [hsi get_property IP_NAME [hsi get_cells -hier $value]]
+					if {[dict exists $mapping_dict $ip_name flash_type]} {
+						set flash_typ [dict get $mapping_dict $ip_name flash_type]
+						dict set kconfig_dict $lookup_string flash_type $flash_typ
+					}
 				}
 				# now check if uart baudrate exists
 				if { "${lookup_string}" == "serial" } {
