@@ -131,6 +131,6 @@ CONFIG_SUBSYSTEM_MACHINE_NAME="template"
 #
 
 
-CONFIG_TMP_DIR_LOCATION=""
+CONFIG_TMP_DIR_LOCATION="${TOPDIR}/tmp"
 CONFIG_PRE_MIRROR_URL="http://petalinux.xilinx.com/sswreleases/rel-v${PETALINUX_MAJOR_VER}/downloads"
 CONFIG_YOCTO_NETWORK_SSTATE_FEEDS_URL="http://petalinux.xilinx.com/sswreleases/rel-v${PETALINUX_MAJOR_VER}/microblaze/sstate-cache"

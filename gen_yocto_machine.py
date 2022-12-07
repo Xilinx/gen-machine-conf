@@ -58,6 +58,7 @@ def generate_yocto_machine(args, hw_flow):
     machine_conf_path = ''
     dt_board_file = ''
     json_yocto_vars = ''
+    board_overrides = ''
     # Parse json to string
     with open(machinejson_file, 'r') as data_file:
         machinejson_data = json.load(data_file)
@@ -68,6 +69,8 @@ def generate_yocto_machine(args, hw_flow):
         # These configs includes board dtsi files associated to machine file
         if 'dt-boardfile' in machinejson_data[machine_conf_file].keys():
             dt_board_file = machinejson_data[machine_conf_file]['dt-boardfile']
+        if 'machine-overrides' in machinejson_data[machine_conf_file].keys():
+            board_overrides = machinejson_data[machine_conf_file]['machine-overrides']
         if 'extra-yocto-vars' in machinejson_data[machine_conf_file].keys():
             json_yocto_vars = '\n'.join(var for var in
                                         machinejson_data[machine_conf_file]['extra-yocto-vars'])
@@ -89,6 +92,10 @@ def generate_yocto_machine(args, hw_flow):
     machine_override_string += '#@NAME: %s\n' % machine_conf_file
     machine_override_string += '#@DESCRIPTION: Machine configuration for the '\
         '%s boards.\n' % machine_conf_file
+
+    if board_overrides:
+        machine_override_string += '\n# Compatibility with old BOARD value.\n'
+        machine_override_string += 'MACHINEOVERRIDES =. "%s:"\n' % board_overrides
 
     machine_override_string += '\n#### Preamble\n'
     machine_override_string += 'MACHINEOVERRIDES =. "'"${@['', '%s:']['%s' !=" \
