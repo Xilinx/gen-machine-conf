@@ -250,7 +250,7 @@ def pre_sys_conf(args, default_cfgfile):
                             '"%s"' % args.machine, default_cfgfile)
 
 
-def post_sys_conf(args, default_cfgfile):
+def post_sys_conf(args, default_cfgfile, hw_flow):
     output = args.output
 
     bootargs_auto = get_config_value(
@@ -368,6 +368,16 @@ def post_sys_conf(args, default_cfgfile):
             bootargs = '%s %s' % (bootargs, extra_bootargs)
         update_config_value('CONFIG_SUBSYSTEM_BOOTARGS_GENERATED',
                             '"%s"' % bootargs, default_cfgfile)
+    # generate flash parts info for given xsa
+    if hw_flow == 'xsct':
+        ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
+        flashinfo_file = os.path.join(output, 'flash_parts.txt')
+        with open(flashinfo_file, 'w') as fp:
+            pass
+        cmd = 'xsct -sdx -nodisp %s/petalinux_hsm.tcl get_flash_width_parts %s %s %s %s' % \
+                (scripts_dir, default_cfgfile, ipinfo_file, os.path.abspath(args.hw_description),
+                    flashinfo_file)
+        run_cmd(cmd, output, args.logfile)
 
 
 # Run menuconfig/silentconfig
@@ -544,6 +554,6 @@ def get_hw_description(args, hw_flow):
     run_menuconfig(Kconfig, default_cfgfile,
                    True if menuconfig == 'project' else False,
                    output, 'project')
-    post_sys_conf(args, default_cfgfile)
+    post_sys_conf(args, default_cfgfile, hw_flow)
     # update rootfs configs to plnxtool.conf
     add_rootfs_configs(args, default_cfgfile)
