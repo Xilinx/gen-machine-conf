@@ -81,29 +81,29 @@
 		"extra-yocto-vars": ["SOC_VARIANT ?= \"eg\"","DEFAULTTUNE ?= \"cortexa72-cortexa53\""]
 	},
 	"xilinx-k24-kd": {
-		"machine-overrides": "k24:k24-kd",
+		"machine-overrides": "kria:k24:k24-kd",
 		"dt-boardfile": ""
 	},
 	"xilinx-k24-kv": {
-                "machine-overrides": "k24:k24-kv",
-                "required-machine-conf": "zynqmp-generic"
-        },
+        "machine-overrides": "kria:k24:k24-kv",
+        "dt-boardfile": ""
+    },
 	"xilinx-k24-som": {
 		"machine-overrides": "kria",
 		"dt-boardfile": ""
 	},
 	"xilinx-k26-kr": {
-		"machine-overrides": "k26:k26-kr",
+		"machine-overrides": "kria:k26-smk",
 		"dt-boardfile": "zynqmp-sm-k26-reva",
 		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
 	},
 	"xilinx-k26-kv": {
-		"machine-overrides": "k26:k26-kv",
+		"machine-overrides": "kria:k26-smk",
 		"dt-boardfile": "zynqmp-sm-k26-reva",
 		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
 	},
 	"xilinx-k26-som": {
-		"machine-overrides": "k26",
+		"machine-overrides": "kria:k26-smk",
 		"dt-boardfile": "zynqmp-sm-k26-reva",
 		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
 	},
@@ -155,8 +155,8 @@
 		"machine-overrides": "vck5000",
 		"dt-boardfile": "versal-vck5000-reva"
 	},
-	"xilinx-vn-p-b2197-00": {
-	        "machine-overrides": "vn-p-b2197-00",
-		"dt-boardfile": ""
-	}
+    "xilinx-vn-p-b2197-00": {
+        "machine-overrides": "vn-p-b2197-00",
+        "dt-boardfile": ""
+    }
 }
