@@ -496,3 +496,9 @@ vcu:
             processor_ip: psu_cortexa53
     linux_kernel_properties:
         CMA_SIZE_MBYTES: 1000
+vdu:
+    device_type:
+        vdu:
+            processor_ip: psv_cortexa72
+    linux_kernel_properties:
+        CMA_SIZE_MBYTES: 1000

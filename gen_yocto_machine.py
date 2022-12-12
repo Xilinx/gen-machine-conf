@@ -287,15 +287,21 @@ def generate_yocto_machine(args, hw_flow):
                                              default_cfgfile)
         machine_override_string += 'XSCTH_PROC:pn-fs-boot = "%s"\n' % processor_ip_name
 
+    machine_features = ''
     is_fpga_manager = get_config_value(
         'CONFIG_SUBSYSTEM_FPGA_MANAGER', default_cfgfile)
     if is_fpga_manager == 'y':
-        machine_override_string += '\n# Yocto FPGA manager variables\n'
-        if soc_family == 'versal':
-            machine_override_string += 'MACHINE_FEATURES += "fpga-overlay"\n'
-        else:
-            machine_override_string += 'IMAGE_FEATURES += " fpga-manager"\n'
-            machine_override_string += 'MACHINE_FEATURES += "fpga-overlay"\n'
+        machine_features = ' fpga-overlay'
+        if soc_family != 'versal':
+            machine_override_string += '\nIMAGE_FEATURES += " fpga-manager"\n'
+
+    if check_ip('vdu', default_cfgfile):
+        machine_features += ' vdu'
+
+    if machine_features:
+        machine_override_string += '\n# Yocto MACHINE_FEATURES Variable\n'
+        machine_override_string += 'MACHINE_FEATURES += "%s"\n' % (
+            machine_features.strip())
 
     machine_override_string += '\n# Yocto KERNEL Variables\n'
     # Additional kernel make command-line arguments

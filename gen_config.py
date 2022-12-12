@@ -362,12 +362,20 @@ def post_sys_conf(args, default_cfgfile, hw_flow):
             if vcu_maxsize:
                 vcu_bootargs = 'cma=%sM' % vcu_maxsize
         bootargs = '%s %s' % (bootargs, vcu_bootargs)
+
+        vdu_bootargs = ''
+        vdu_maxsize = ''
+        if check_ip('vdu', default_cfgfile):
+            vdu_maxsize = ipinfo_data['vdu']['linux_kernel_properties']['CMA_SIZE_MBYTES']
+            if vdu_maxsize:
+                vdu_bootargs = 'cma=%sM' % vdu_maxsize
+        bootargs = '%s %s' % (bootargs, vdu_bootargs)
         extra_bootargs = get_config_value(
             'CONFIG_SUBSYSTEM_EXTRA_BOOTARGS', default_cfgfile)
         if extra_bootargs:
             bootargs = '%s %s' % (bootargs, extra_bootargs)
         update_config_value('CONFIG_SUBSYSTEM_BOOTARGS_GENERATED',
-                            '"%s"' % bootargs, default_cfgfile)
+                            '"%s"' % re.sub(' +', ' ', bootargs.strip()), default_cfgfile)
     # generate flash parts info for given xsa
     if hw_flow == 'xsct':
         ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
@@ -375,8 +383,8 @@ def post_sys_conf(args, default_cfgfile, hw_flow):
         with open(flashinfo_file, 'w') as fp:
             pass
         cmd = 'xsct -sdx -nodisp %s/petalinux_hsm.tcl get_flash_width_parts %s %s %s %s' % \
-                (scripts_dir, default_cfgfile, ipinfo_file, os.path.abspath(args.hw_description),
-                    flashinfo_file)
+            (scripts_dir, default_cfgfile, ipinfo_file, os.path.abspath(args.hw_description),
+             flashinfo_file)
         run_cmd(cmd, output, args.logfile)
 
 
