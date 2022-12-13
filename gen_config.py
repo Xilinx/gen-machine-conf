@@ -445,8 +445,12 @@ def add_rootfs_configs(args, default_cfgfile):
                                     'rootfsconfigs/Kconfig-%s.part' % arch)
     rfsconfig_py = os.path.join(scripts_dir,
                                 'rootfsconfigs/rootfs_config.py')
-    user_cfg = os.path.join(scripts_dir,
-                            'rootfsconfigs/user-rootfsconfig')
+    if args.add_rootfsconfig:
+        user_cfg = os.path.realpath(args.add_rootfsconfig)
+    else:
+        user_cfg = os.path.join(scripts_dir,
+                                'rootfsconfigs/user-rootfsconfig')
+
     # Create rootfsconfigs dir if not found
     rootfs_cfgdir = os.path.join(args.output, 'rootfsconfigs')
     if not os.path.exists(rootfs_cfgdir):

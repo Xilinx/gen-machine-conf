@@ -191,6 +191,9 @@ def main():
                                'with generated .conf files.', action='store_true')
     optional_args.add_argument('--debug', help='Output debug information on console',
                                default=False, action='store_true')
+    optional_args.add_argument('--add-rootfsconfig', help='Specify a file with list of '
+                                'package names to add into rootfs menu entry',
+                                metavar='')
     parser._action_groups.append(optional_args)
     args = parser.parse_args()
 
