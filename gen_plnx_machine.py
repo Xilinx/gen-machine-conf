@@ -336,6 +336,10 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if dt_manual_include:
         override_string += 'KERNEL_INCLUDE:append:pn-device-tree = " %s"\n' \
                            % dt_include_dir
+    dt_openamp_dtsi = get_config_value('CONFIG_SUBSYSTEM_ENABLE_OPENAMP_DTSI',
+                                        default_cfgfile)
+    if dt_openamp_dtsi:
+        override_string += 'ENABLE_OPENAMP_DTSI = "1"\n'
 
     override_string += '\n# PetaLinux tool U-boot variables\n'
     override_string += add_remote_sources('u-boot-xlnx', 'U__BOOT')
