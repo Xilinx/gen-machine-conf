@@ -544,7 +544,8 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     rootfs_types = get_config_value('CONFIG_SUBSYSTEM_RFS_FORMATS',
                                     default_cfgfile)
     if rootfs_types:
-        override_string += 'IMAGE_FSTYPES = "%s"\n' % (rootfs_types)
+        override_string += 'IMAGE_FSTYPES:%s = "%s"\n' % (
+            soc_family, rootfs_types)
 
     if re.search('initramfs', provides_name):
         override_string += 'INITRAMFS_FSTYPES = "cpio.gz cpio.gz.u-boot tar.gz"\n'
