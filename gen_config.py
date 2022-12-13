@@ -452,7 +452,7 @@ def add_rootfs_configs(args, default_cfgfile):
     if not os.path.exists(rootfs_cfgdir):
         os.makedirs(rootfs_cfgdir)
 
-    default_rfsfile = os.path.join(args.output, 'rootfsconfig')
+    default_rfsfile = os.path.join(args.output, 'rootfs_config')
     rfsKconfig_part = os.path.join(rootfs_cfgdir, 'Kconfig.part')
     rfsKconfig_user = os.path.join(rootfs_cfgdir, 'Kconfig.user')
     rootfs_Kconfig = os.path.join(rootfs_cfgdir, 'Kconfig')
@@ -462,8 +462,10 @@ def add_rootfs_configs(args, default_cfgfile):
             logger.error('%s is not found in tool' % file_path)
             sys.exit(255)
 
-    shutil.copy2(template_rfsfile, default_rfsfile)
-    shutil.copy2(template_Kconfig, rfsKconfig_part)
+    if not os.path.isfile(default_rfsfile):
+        shutil.copy2(template_rfsfile, default_rfsfile)
+    if not os.path.isfile(rfsKconfig_part):
+        shutil.copy2(template_Kconfig, rfsKconfig_part)
     shutil.copy2(user_cfg, rootfs_cfgdir)
     cmd = 'python3 %s --generate_kconfig %s %s' \
         % (rfsconfig_py, user_cfg, rootfs_cfgdir)

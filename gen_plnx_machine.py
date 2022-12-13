@@ -632,7 +632,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     # Rootfs configs
     rfsconfig_py = os.path.join(scripts_dir,
                                 'rootfsconfigs/rootfs_config.py')
-    default_rfsfile = os.path.join(args.output, 'rootfsconfig')
+    default_rfsfile = os.path.join(args.output, 'rootfs_config')
     cmd = 'python3 %s --update_cfg %s %s %s' \
         % (rfsconfig_py, default_rfsfile,
            plnx_conf_path, soc_family)
