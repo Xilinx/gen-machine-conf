@@ -855,7 +855,7 @@ config SUBSYSTEM_UBOOT_QSPI_FIT_IMAGE_OFFSET
 	default 0x3F80000 if SUBSYSTEM_VARIANT_ZYNQMPDR
 	default 0xF40000 if SYSTEM_ZYNQMP
 	default 0xA80000 if SUBSYSTEM_ARCH_ARM
-	default 0xC00000 if SUBSYSTEM_ARCH_MICROBLAZE
+	default 0xE00000 if SUBSYSTEM_ARCH_MICROBLAZE
 	help
 	  Specify the QSPI/OSPI Fit image offset to read the Fit image from Flash.
 
