@@ -139,7 +139,7 @@ def generate_yocto_machine(args, hw_flow):
 
     # Update machine conf file with yocto variabls from json file
     if json_yocto_vars:
-        machine_override_string += '\nMachine specific yocto variables\n'
+        machine_override_string += '\n# Machine specific yocto variables\n'
         machine_override_string += '%s\n' % json_yocto_vars
 
     machine_override_string += '\n# Yocto device-tree variables\n'

@@ -777,8 +777,8 @@ proc plnx_gen_conf_ethernet {mapping kconfprefix cpuname cpuslaves} {
 					"depends on ${ethkconfprefix}${kname}_SELECT && !${ethkconfprefix}${kname}_USE_DHCP" \
 					"help" \
 					"  Default netmask when static network address assignment is used." \
-					"  In case of systemd please specify netmask value as 24 instead of 255.255.255.0" \
-					"  In case of sysvinit please specify netmask value as 255.255.255.0 instead of 24 "]
+					"  In case of systemd please specify netmask value like CIDR notation Eg: 24 instead of 255.255.255.0" \
+					"  In case of sysvinit please specify netmask value like dot-decimal notation Eg: 255.255.255.0 instead of 24 "]
 				set ipstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n" "${ipstr}" \
 					"config ${ethkconfprefix}${kname}_IP_GATEWAY" \
 					"string \"Static IP gateway\"" \
