@@ -680,6 +680,12 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 			}
 		foreach str $tmpstr {
 			set kstr [plnx_fix_kconf_name ${str}]
+			if { "${component}" != "DTG" } {
+				set prop [hsi get_property IS_PL [hsi::get_cells -hier ${str}]]
+				if {$prop} {
+					continue
+				}
+			}
 			set choicestr [format "%s%s\n\t%s\n" "${choicestr}" \
 		"config ${kconfprefix}${conf_comp}SERIAL_${kstr}_SELECT" \
                 "bool \"${str}\""]
