@@ -292,8 +292,6 @@ def generate_yocto_machine(args, hw_flow):
         'CONFIG_SUBSYSTEM_FPGA_MANAGER', default_cfgfile)
     if is_fpga_manager == 'y':
         machine_features = ' fpga-overlay'
-        if soc_family != 'versal':
-            machine_override_string += '\nIMAGE_FEATURES += " fpga-manager"\n'
 
     if check_ip('vdu', default_cfgfile):
         machine_features += ' vdu'

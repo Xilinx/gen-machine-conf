@@ -721,31 +721,7 @@ config SUBSYSTEM_FPGA_MANAGER
         bool "Fpga Manager"
         help
 	 Select this option to provides an interface to the Linux for configuring the programmable logic(PL).
-	 It will create /lib/firmware directory in rootfs and copy bitstream and dtb/dtbo files of base hdf/xsa in it.
 
-if SUBSYSTEM_FPGA_MANAGER
-config FPGA_HW_PATH
-        string "Specify hw directory path"
-        default ""
-	depends on SYSTEM_ZYNQMP || SUBSYSTEM_ARCH_ARM
-	help
-	 Specify directory path containing extra XSA files which is used to generate
-	 bitstream and dtb/dtbo files. These are copied into /lib/firmware directory.
-	 Ex: ${PROOT}/project-spec/extra-hw-description/
-	 Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
-	       ${TOPDIR} will not be functional. Absolute path is preferred.
-
-endif
-endmenu
-endif
-
-if SUBSYSTEM_SDT_FLOW
-menu "FPGA Manager"
-config SUBSYSTEM_FPGA_MANAGER
-	bool "Fpga Manager"
-	help
-	 Select this option to provides an interface to the Linux for configuring the programmable logic(PL).
-	 It will create /lib/firmware directory in rootfs and copy bitstream and dtb/dtbo files
 endmenu
 endif
 

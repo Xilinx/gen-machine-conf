@@ -402,14 +402,6 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                                 % pmufw_bspcompiler_flags
         override_string += '\n'
 
-    is_fpga_manager = get_config_value(
-        'CONFIG_SUBSYSTEM_FPGA_MANAGER', default_cfgfile)
-    if is_fpga_manager == 'y':
-        override_string += '\n# PetaLinux tool FPGA manager Variables\n'
-        if soc_family != 'versal':
-            extra_hdf = get_config_value(
-                'CONFIG_FPGA_HW_PATH', default_cfgfile)
-            override_string += 'EXTRA_HDF = "%s"\n' % extra_hdf
     is_uboot_dtb = get_config_value('CONFIG_SUBSYSTEM_UBOOT_EXT_DTB',
                                     default_cfgfile)
     ubootdtb_dts_path = get_config_value('CONFIG_UBOOT_EXT_DTB_FROM_DTS',
