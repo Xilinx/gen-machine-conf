@@ -161,7 +161,7 @@ def check_ip(prop, default_cfgfile):
     return ''
 
 
-def get_sysconsole_bootargs(default_cfgfile, soc_family):
+def get_sysconsole_bootargs(default_cfgfile, soc_family, soc_variant):
     global ipinfo_data
     serialname = get_config_value(
         'CONFIG_SUBSYSTEM_SERIAL_', default_cfgfile, 'choice', '_SELECT=y')
@@ -197,7 +197,7 @@ def get_sysconsole_bootargs(default_cfgfile, soc_family):
         'CONFIG_SUBSYSTEM_BOOTARGS_EARLYPRINTK', default_cfgfile)
     if early_printk == 'y':
         earlyprintk = " earlycon"
-        if soc_family == 'versal':
+        if soc_family == 'versal' and soc_variant != 'net':
             serial_offset = '0xFF000000'
             if re.search('psv_sbsauart_1', serialname.lower()) or \
                     re.search('psx_sbsauart_1', serialname.lower()):
@@ -215,7 +215,10 @@ def get_sysconsole_bootargs(default_cfgfile, soc_family):
         if soc_family != 'versal':
             return '%s console=%s,%s clk_ignore_unused' % (earlyprintk, serial_devfile, baudrate)
         else:
-            return 'console=%s %s clk_ignore_unused' % (serial_devfile, earlyprintk)
+            if soc_variant == 'net':
+                return '%s console=%s,%s clk_ignore_unused' % (earlyprintk, serial_devfile, baudrate)
+            else:
+                return 'console=%s %s clk_ignore_unused' % (serial_devfile, earlyprintk)
     else:
         return 'console=%s,%s%s' % (serial_devfile, baudrate, earlyprintk)
 
@@ -253,7 +256,7 @@ def pre_sys_conf(args, default_cfgfile):
                             '"%s"' % args.machine, default_cfgfile)
 
 
-def post_sys_conf(args, default_cfgfile, hw_flow):
+def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
     output = args.output
 
     bootargs_auto = get_config_value(
@@ -352,7 +355,7 @@ def post_sys_conf(args, default_cfgfile, hw_flow):
 
     if bootargs_auto == 'y':
         consolebootargs = get_sysconsole_bootargs(
-            default_cfgfile, args.soc_family)
+            default_cfgfile, args.soc_family, soc_variant)
         ramdisk_image = get_config_value(
             'CONFIG_SUBSYSTEM_INITRAMFS_IMAGE_NAME', default_cfgfile)
         if ramdisk_image and re.search('initramfs', ramdisk_image):
@@ -571,6 +574,6 @@ def get_hw_description(args, hw_flow):
     run_menuconfig(Kconfig, default_cfgfile,
                    True if menuconfig == 'project' else False,
                    output, 'project')
-    post_sys_conf(args, default_cfgfile, hw_flow)
+    post_sys_conf(args, default_cfgfile, hw_flow, soc_variant)
     # update rootfs configs to plnxtool.conf
     add_rootfs_configs(args, default_cfgfile)
