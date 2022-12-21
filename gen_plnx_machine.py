@@ -222,6 +222,7 @@ def generate_kernel_cfg(args):
 
 
 def generate_plnx_config(args, machine_conf_file, hw_flow):
+    import glob
     logger.info('Generating plnxtool conf file')
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
@@ -252,7 +253,13 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if tmp_dir:
         override_string += 'TMPDIR = "%s"\n' % tmp_dir
         if hw_flow == 'sdt':
+            base = os.path.normpath(args.output + os.sep + os.pardir)
+            proot = os.path.normpath(base + os.sep + os.pardir)
+            uninative_path = os.path.join(proot, "components", "yocto", "downloads", "uninative")
+            uninative_file = glob.glob(uninative_path + '/*/')
             override_string += 'BASE_TMPDIR = "%s-multiconfig"\n' % tmp_dir
+            override_string += 'include conf/distro/include/yocto-uninative.inc\n'
+            override_string += 'UNINATIVE_URL = "file://%s"\n' % uninative_file[0]
     bb_no_network = get_config_value('CONFIG_YOCTO_BB_NO_NETWORK',
                                      default_cfgfile)
     if bb_no_network:
