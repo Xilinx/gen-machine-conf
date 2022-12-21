@@ -330,7 +330,7 @@ def generate_yocto_machine(args, hw_flow):
     machine_override_string += 'KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_ENTRYPOINT}"\n'
 
     if soc_family == 'zynq':
-    machine_override_string += 'KERNEL_EXTRA_ARGS:zynq += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n'
+    	machine_override_string += 'KERNEL_EXTRA_ARGS:zynq += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n'
 
     ddr_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_', default_cfgfile,
                                     'asterisk', '_BASEADDR=')
