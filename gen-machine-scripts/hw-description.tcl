@@ -668,19 +668,19 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 				"help" \
 				"  Select a serial as the ${component}'s stdin,stdout." \
 				"  If you select \'manual\', you will need to add this variable " \
-				"  YAML_SERIAL_CONSOLE_STDIN_forcevariable_pn-${component} = \"<serial_ipname>\" " \
-				"  YAML_SERIAL_CONSOLE_STDOUT_forcevariable_pn-${component} = \"<serial_ipname>\" " \
+				"  YAML_SERIAL_CONSOLE_STDIN:forcevariable:pn-${component} = \"<serial_ipname>\" " \
+				"  YAML_SERIAL_CONSOLE_STDOUT:forcevariable:pn-${component} = \"<serial_ipname>\" " \
 				"  in petalinuxbsp.conf file to specify the stdin/stdout." ]
 			if { "${component}" == "TF-A" } {
 				set choicestr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n" "${choicestr}" \
 					"help" \
 					"  Select a serial as the ${component}'s stdin,stdout." \
 					"  If you select \'manual\', you will need to add this variable " \
-					"  ATF_CONSOLE_forcevariable = \"<serial_ipname>\" in petalinuxbps.conf "]
+					"  ATF_CONSOLE:forcevariable = \"<serial_ipname>\" in petalinuxbps.conf "]
 			}
 		foreach str $tmpstr {
 			set kstr [plnx_fix_kconf_name ${str}]
-			if { "${component}" != "DTG" } {
+			if { "${component}" != "DTG" && "${component}" != "FSBOOT" } {
 				set prop [hsi get_property IS_PL [hsi::get_cells -hier ${str}]]
 				if {$prop} {
 					continue
