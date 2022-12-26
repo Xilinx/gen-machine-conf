@@ -327,10 +327,11 @@ def generate_yocto_machine(args, hw_flow):
 
     machine_override_string += 'UBOOT_ENTRYPOINT  = "%s"\n' % loadaddr
     machine_override_string += 'UBOOT_LOADADDRESS = "%s"\n' % loadaddr
-    machine_override_string += 'KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_ENTRYPOINT}"\n'
 
-    if soc_family == 'zynq':
-    	machine_override_string += 'KERNEL_EXTRA_ARGS:zynq += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n'
+    if arch != 'aarch64':
+        # Using soc_family override due to soc-zynq.inc has :zynq
+        machine_override_string += 'KERNEL_EXTRA_ARGS:%s += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n' % (
+            soc_family)
 
     ddr_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_', default_cfgfile,
                                     'asterisk', '_BASEADDR=')
