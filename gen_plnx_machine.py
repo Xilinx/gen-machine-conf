@@ -304,7 +304,8 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     kernel_config = get_config_value('CONFIG_SUBSYSTEM_LINUX_CONFIG_TARGET',
                                      default_cfgfile)
     if kernel_config and kernel_config.lower() != 'auto':
-        override_string += 'KBUILD_DEFCONFIG = "%s"\n' % kernel_config
+        override_string += 'KBUILD_DEFCONFIG:%s = "%s"\n' % (
+            soc_family, kernel_config)
     kernel_autoconfig = get_config_value('CONFIG_SUBSYSTEM_AUTOCONFIG_KERNEL',
                                          default_cfgfile)
 

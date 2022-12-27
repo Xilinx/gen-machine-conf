@@ -86,6 +86,7 @@ def generate_yocto_machine(args, hw_flow):
             else:
                 machine_conf_file += '-999'
     machine_conf_path = os.path.join(args.output, machine_conf_file + '.conf')
+    machine_override = machine_conf_file
 
     # Variable for constructing ${MACHINE}.conf files.
     machine_override_string = ''
@@ -175,19 +176,20 @@ def generate_yocto_machine(args, hw_flow):
     processor_ipname = get_config_value('CONFIG_SUBSYSTEM_PROCESSOR0_IP_NAME',
                                         default_cfgfile)
     if soc_family == 'microblaze':
-        machine_override_string += 'XSCTH_PROC:pn-device-tree = "%s"\n' \
-            % processor_ipname
+        machine_override_string += 'XSCTH_PROC:%s:pn-device-tree = "%s"\n' \
+            % (soc_family, processor_ipname)
 
     # Set dt board file as per the machine file
     # if config set to template/auto/AUTO
     if dtg_machine:
+        # Add machine name as override due to meta-xilinx-tool device-tree bbappend
         if (dtg_machine == 'template' or dtg_machine.lower() == 'auto') \
                 and dt_board_file:
-            machine_override_string += 'YAML_DT_BOARD_FLAGS = "{BOARD %s}"\n'\
-                % dt_board_file
+            machine_override_string += 'YAML_DT_BOARD_FLAGS:%s = "{BOARD %s}"\n'\
+                % (machine_override, dt_board_file)
         elif dtg_machine.lower() != 'auto':
-            machine_override_string += 'YAML_DT_BOARD_FLAGS = "{BOARD %s}"\n'\
-                % dtg_machine
+            machine_override_string += 'YAML_DT_BOARD_FLAGS:%s = "{BOARD %s}"\n'\
+                % (machine_override, dtg_machine)
 
     machine_override_string += '\n# Yocto linux-xlnx variables\n'
     machine_override_string += '\n# Yocto u-boot-xlnx variables\n'
@@ -205,7 +207,9 @@ def generate_yocto_machine(args, hw_flow):
         atf_serial_manual = get_config_value('CONFIG_SUBSYSTEM_TF-A_SERIAL_MANUAL_SELECT',
                                              default_cfgfile)
         if not atf_serial_manual:
-            machine_override_string += 'ATF_CONSOLE ?= "%s"\n' % atf_serial_ip_name
+            # Use soc_family override due to arm-trusted-firmware.inc has :zynqmp
+            machine_override_string += 'ATF_CONSOLE:%s ?= "%s"\n' % (
+                soc_family, atf_serial_ip_name)
         atf_mem_settings = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEMORY_SETTINGS',
                                             default_cfgfile)
         atf_mem_base = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEM_BASE',
