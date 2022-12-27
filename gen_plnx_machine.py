@@ -449,61 +449,66 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         override_string += 'SYMLINK_FILES:%s = "%s:%s"\n' \
             % (soc_family, 'system-default.dtb', 'system.dtb')
         override_string += 'DEVICE_TREE_NAME = "system.dtb"\n'
-    override_string += 'KERNEL_IMAGE = "%s"\n' \
+    override_string += 'BOOTMODE = "generic"\n'
+    override_string += 'BOOTFILE_EXT = ""\n'
+    #Use MACHINE as override due to u-boot-xlnx-scr has $soc_family-$soc_variant overrides
+    override_string += 'RAMDISK_IMAGE:${MACHINE} = "rootfs.cpio.gz.u-boot"\n'
+    override_string += 'RAMDISK_IMAGE1:${MACHINE} = "ramdisk.cpio.gz.u-boot"\n'
+    override_string += 'KERNEL_IMAGE:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_KERNEL_IMAGE',
                            default_cfgfile)
-    override_string += 'DEVICETREE_OFFSET = "%s"\n' \
+    override_string += 'DEVICETREE_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_DEVICETREE_OFFSET',
                            default_cfgfile)
-    override_string += 'KERNEL_OFFSET = "%s"\n' \
+    override_string += 'KERNEL_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_KERNEL_OFFSET',
                            default_cfgfile)
-    override_string += 'RAMDISK_OFFSET = "%s"\n' \
+    override_string += 'RAMDISK_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_RAMDISK_IMAGE_OFFSET',
                            default_cfgfile)
-    override_string += 'QSPI_KERNEL_OFFSET = "%s"\n' \
+    override_string += 'QSPI_KERNEL_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_KERNEL_OFFSET',
                            default_cfgfile)
-    override_string += 'QSPI_KERNEL_SIZE = "%s"\n' \
+    override_string += 'QSPI_KERNEL_SIZE:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_KERNEL_SIZE',
                            default_cfgfile)
-    override_string += 'QSPI_RAMDISK_OFFSET = "%s"\n' \
+    override_string += 'QSPI_RAMDISK_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_RAMDISK_OFFSET',
                            default_cfgfile)
-    override_string += 'QSPI_RAMDISK_SIZE = "%s"\n' \
+    override_string += 'QSPI_RAMDISK_SIZE:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_RAMDISK_SIZE',
                            default_cfgfile)
-    override_string += 'QSPI_FIT_IMAGE_OFFSET = "%s"\n' \
+    override_string += 'QSPI_FIT_IMAGE_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_FIT_IMAGE_OFFSET',
                            default_cfgfile)
-    override_string += 'QSPI_FIT_IMAGE_SIZE = "%s"\n' \
+    override_string += 'QSPI_FIT_IMAGE_SIZE:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_QSPI_FIT_IMAGE_SIZE',
                            default_cfgfile)
-    override_string += 'NAND_KERNEL_OFFSET = "%s"\n' \
+    override_string += 'NAND_KERNEL_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_KERNEL_OFFSET',
                            default_cfgfile)
-    override_string += 'NAND_KERNEL_SIZE = "%s"\n' \
+    override_string += 'NAND_KERNEL_SIZE:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_KERNEL_SIZE',
                            default_cfgfile)
-    override_string += 'NAND_RAMDISK_OFFSET = "%s"\n' \
+    override_string += 'NAND_RAMDISK_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_RAMDISK_OFFSET',
                            default_cfgfile)
-    override_string += 'NAND_RAMDISK_SIZE = "%s"\n' \
+    override_string += 'NAND_RAMDISK_SIZE:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_RAMDISK_SIZE',
                            default_cfgfile)
-    override_string += 'NAND_FIT_IMAGE_OFFSET = "%s"\n' \
+    override_string += 'NAND_FIT_IMAGE_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_FIT_IMAGE_OFFSET',
                            default_cfgfile)
-    override_string += 'NAND_FIT_IMAGE_SIZE = "%s"\n' \
+    override_string += 'NAND_FIT_IMAGE_SIZE:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_NAND_FIT_IMAGE_SIZE',
                            default_cfgfile)
-    override_string += 'FIT_IMAGE = "%s"\n' \
+    override_string += 'FIT_IMAGE:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_FIT_IMAGE',
                            default_cfgfile)
-    override_string += 'FIT_IMAGE_OFFSET = "%s"\n' \
+    override_string += 'FIT_IMAGE_OFFSET:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_FIT_IMAGE_OFFSET',
                            default_cfgfile)
-    override_string += 'PRE_BOOTENV = "%s"\n' \
+    override_string += 'PRE_BOOTENV:${MACHINE} = "%s"\n' \
         % get_config_value('CONFIG_SUBSYSTEM_UBOOT_PRE_BOOTENV',
                            default_cfgfile)
 
