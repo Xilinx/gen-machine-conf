@@ -255,7 +255,8 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         if hw_flow == 'sdt':
             base = os.path.normpath(args.output + os.sep + os.pardir)
             proot = os.path.normpath(base + os.sep + os.pardir)
-            uninative_path = os.path.join(proot, "components", "yocto", "downloads", "uninative")
+            uninative_path = os.path.join(
+                proot, "components", "yocto", "downloads", "uninative")
             uninative_file = glob.glob(uninative_path + '/*/')
             override_string += 'BASE_TMPDIR = "%s-multiconfig"\n' % tmp_dir
             override_string += 'include conf/distro/include/yocto-uninative.inc\n'
@@ -320,6 +321,11 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                                      default_cfgfile)
     if not autoconfig_dt:
         override_string += 'CONFIG_DISABLE:pn-device-tree = "1"\n'
+    dt_xsct_ws = get_config_value('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',
+                                  default_cfgfile)
+    if dt_xsct_ws:
+        override_string += 'XSCTH_WS:pn-device-tree = "%s"\n' % dt_xsct_ws
+
     dt_overlay = get_config_value('CONFIG_SUBSYSTEM_DTB_OVERLAY',
                                   default_cfgfile)
     if dt_overlay:
@@ -348,7 +354,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         override_string += 'KERNEL_INCLUDE:append:pn-device-tree = " %s"\n' \
                            % dt_include_dir
     dt_openamp_dtsi = get_config_value('CONFIG_SUBSYSTEM_ENABLE_OPENAMP_DTSI',
-                                        default_cfgfile)
+                                       default_cfgfile)
     if dt_openamp_dtsi:
         override_string += 'ENABLE_OPENAMP_DTSI = "1"\n'
 
@@ -405,12 +411,12 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if soc_family in ['zynqmp']:
         override_string += '\n# PetaLinux tool PMUFW variables\n'
         pmufw_bspcompiler_flags = get_config_value('CONFIG_SUBSYSTEM_PMUFW_BSPCOMPILER_FLAGS',
-                                                    default_cfgfile)
+                                                   default_cfgfile)
         pmufw_bspcompiler_flagset = get_config_value('CONFIG_SUBSYSTEM_PMUFW_BSPCOMPILER_FLAGSSET',
-                                                    default_cfgfile)
+                                                     default_cfgfile)
         if pmufw_bspcompiler_flagset:
             override_string += 'YAML_BSP_COMPILER_FLAGS:append:pn-pmu-firmware = " %s"' \
-                                % pmufw_bspcompiler_flags
+                % pmufw_bspcompiler_flags
         override_string += '\n'
 
     is_uboot_dtb = get_config_value('CONFIG_SUBSYSTEM_UBOOT_EXT_DTB',
@@ -451,7 +457,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         override_string += 'DEVICE_TREE_NAME = "system.dtb"\n'
     override_string += 'BOOTMODE = "generic"\n'
     override_string += 'BOOTFILE_EXT = ""\n'
-    #Use MACHINE as override due to u-boot-xlnx-scr has $soc_family-$soc_variant overrides
+    # Use MACHINE as override due to u-boot-xlnx-scr has $soc_family-$soc_variant overrides
     override_string += 'RAMDISK_IMAGE:${MACHINE} = "rootfs.cpio.gz.u-boot"\n'
     override_string += 'RAMDISK_IMAGE1:${MACHINE} = "ramdisk.cpio.gz.u-boot"\n'
     override_string += 'KERNEL_IMAGE:${MACHINE} = "%s"\n' \
@@ -620,7 +626,10 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
 
     override_string += '\n# deploy class variables\n'
     override_string += 'INHERIT += "plnx-deploy"\n'
-    override_string += 'PLNX_DEPLOY_DIR = "${TOPDIR}/images/linux"\n'
+    plnx_deploydir = get_config_value(
+        'CONFIG_PLNX_IMAGES_LOCATION', default_cfgfile)
+    if plnx_deploydir:
+        override_string += 'PLNX_DEPLOY_DIR = "%s"\n' % plnx_deploydir
     dtb_deployname = get_config_value(
         'CONFIG_SUBSYSTEM_IMAGES_ADVANCED_AUTOCONFIG_DTB_IMAGE_NAME', default_cfgfile)
     override_string += 'PACKAGE_DTB_NAME = "%s"\n' % dtb_deployname

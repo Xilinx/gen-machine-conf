@@ -195,8 +195,8 @@ def main():
     optional_args.add_argument('--debug', help='Output debug information on console',
                                default=False, action='store_true')
     optional_args.add_argument('--add-rootfsconfig', help='Specify a file with list of '
-                                'package names to add into rootfs menu entry',
-                                metavar='')
+                               'package names to add into rootfs menu entry',
+                               metavar='')
     parser._action_groups.append(optional_args)
     args = parser.parse_args()
 
@@ -315,14 +315,14 @@ def main():
     if hw_flow == 'sdt':
         run_dtprocessor(args, hw_file)
         logger.info('Update bblayers.conf file for SDT')
-        #Check meta-xilinx-tools in bblayers.conf and remove
+        # Check meta-xilinx-tools in bblayers.conf and remove
         file_str = '/meta-xilinx-tools$'
         found = search_strin_file(os.path.join(
             os.environ['BUILDDIR'], 'conf', 'bblayers.conf'), file_str)
         if found:
             command = 'bitbake-layers remove-layer meta-xilinx-tools'
             run_cmd(command, os.getcwd(), args.logfile)
-        #Check meta-xilinx-standalone-experimental layer and add
+        # Check meta-xilinx-standalone-experimental layer and add
         standlone_exp_layer = os.path.realpath(os.path.join(
             base_dir, '../../meta-xilinx-standalone-experimental'))
         if os.path.isdir(standlone_exp_layer):

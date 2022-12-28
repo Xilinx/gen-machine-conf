@@ -455,6 +455,12 @@ config SUBSYSTEM_MACHINE_NAME
          This is used to create board related nodes.
          Change this only when you also change the corresponding hardware design.
          Change of hardware design or Machine_name between same architecture is allowed
+
+config SUBSYSTEM_DT_XSCT_WORKSPACE
+	string "Device-tree XSCT workspace"
+	help
+	  Provide the location to use as Device-tree XSCT workspace location.
+
 if SUBSYSTEM_AUTOCONFIG_DEVICE__TREE
 config SUBSYSTEM_EXTRA_DT_FILES
 	string "Extra dts/dtsi files"
@@ -1218,6 +1224,11 @@ config DEVTOOL_WORKSPACE_LOCATION
 	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
 		${TOPDIR} will not be functional.
 endmenu
+
+config PLNX_IMAGES_LOCATION
+	string "PetaLinux Deploy Directory"
+	help
+	  Specify the PetaLinux deploy directory to place the generated build artifacts.
 
 menu "Parallel thread execution"
 
