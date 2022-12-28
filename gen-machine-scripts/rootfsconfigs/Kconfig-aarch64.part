@@ -4532,6 +4532,19 @@ config libtirpc-dev
 	 help
 	
 endmenu
+menu "wolfssl"
+config wolfssl
+	bool "wolfssl"
+	help
+	Lightweight Embedded SSL/TLS Library
+
+config tune-features-crypto
+	bool "crypto"
+	default y
+	depends on wolfssl
+	help
+
+endmenu
 menu "openssl " 
 config openssl  
 	 bool "openssl"
