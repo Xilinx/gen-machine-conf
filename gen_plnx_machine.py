@@ -222,7 +222,6 @@ def generate_kernel_cfg(args):
 
 
 def generate_plnx_config(args, machine_conf_file, hw_flow):
-    import glob
     logger.info('Generating plnxtool conf file')
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
@@ -253,14 +252,29 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if tmp_dir:
         override_string += 'TMPDIR = "%s"\n' % tmp_dir
         if hw_flow == 'sdt':
-            base = os.path.normpath(args.output + os.sep + os.pardir)
-            proot = os.path.normpath(base + os.sep + os.pardir)
-            uninative_path = os.path.join(
-                proot, "components", "yocto", "downloads", "uninative")
-            uninative_file = glob.glob(uninative_path + '/*/')
             override_string += 'BASE_TMPDIR = "%s-multiconfig"\n' % tmp_dir
-            override_string += 'include conf/distro/include/yocto-uninative.inc\n'
-            override_string += 'UNINATIVE_URL = "file://%s"\n' % uninative_file[0]
+
+    if hw_flow == 'sdt':
+        override_string += '# yocto-uninative.inc required for SDT flow\n'
+        override_string += 'include conf/distro/include/yocto-uninative.inc\n'
+    # AUTO add local uninative tarball if exists, to support no network case.
+    # CONFIG_SITE variable exported in case of extensible SDK only
+    if 'CONFIG_SITE' in os.environ.keys():
+        config_site = os.environ['CONFIG_SITE']
+        sdk_path = os.path.dirname(config_site)
+        if os.path.exists(sdk_path):
+            import glob
+            uninative_path = os.path.join(sdk_path, 'downloads', 'uninative')
+            # Check for exact x86_64-nativesdk file
+            uninative_file = glob.glob(
+                uninative_path + '/*/x86_64-nativesdk-libc*')
+            if uninative_file:
+                uninative_dir = os.path.dirname(uninative_file[0])
+                # Add trainling slash if not present
+                if not uninative_dir.endswith(os.path.sep):
+                    uninative_dir += os.path.sep
+                override_string += 'UNINATIVE_URL = "file://%s"\n' % uninative_dir
+
     bb_no_network = get_config_value('CONFIG_YOCTO_BB_NO_NETWORK',
                                      default_cfgfile)
     if bb_no_network:
