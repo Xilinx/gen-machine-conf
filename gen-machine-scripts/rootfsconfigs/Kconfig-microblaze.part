@@ -1842,12 +1842,6 @@ config imagefeature-debug-tweaks
         bool "debug-tweaks"
         help
 
-config auto-login
-        bool "auto-login"
-        select imagefeature-debug-tweaks
-        help
-        Select this option to enable autologin on system bootup.
-
 choice
         prompt "Init-manager"
         default Init-manager-sysvinit
