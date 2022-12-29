@@ -46,8 +46,6 @@ def read_packages(xilinx_arch):
             package_feed_archs = line_str.split('=')[1]
             packages['package_feed_archs'] = re.sub(
                 r'"|\]|\\', r'', package_feed_archs).rstrip("'")
-        elif re.search("auto-login", line_str):
-            packages['autologin'] = 1
         else:
             if re.search("=y'\]", line_str):
                 line_str = line_str.split('_')[1]
@@ -175,11 +173,6 @@ def update_cfg(cfg_file, xilinx_arch):
             ' '.join(packages['image_classes']) + '"\n'
         cfg_file.write(image_class)
 
-    # Add autologin variable
-    autologin = 0
-    if 'autologin' in packages.keys():
-        autologin = 1
-    cfg_file.write('\nIMAGE_AUTOLOGIN = "' + str(autologin) + '"\n\n')
     # Add Init_manager variable
     if 'Init_manager' in packages.keys():
         init_managerstr = 'INIT_MANAGER = "' + \
