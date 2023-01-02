@@ -247,6 +247,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     tmp_dir = get_config_value('CONFIG_TMP_DIR_LOCATION', default_cfgfile)
     override_string += '# PetaLinux Tool Auto generated file\n'
     override_string += '\n# Generic variables\n'
+    override_string += generate_mirrors(args, arch)
     override_string += '\nMACHINE = "%s"\n' % machine_conf_file
 
     if tmp_dir:

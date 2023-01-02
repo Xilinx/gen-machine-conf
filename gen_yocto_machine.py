@@ -8,7 +8,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from gen_config import *
+from xilinx_mirrors import *
 
 
 def generate_yocto_machine(args, hw_flow):

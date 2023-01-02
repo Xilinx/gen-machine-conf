@@ -30,6 +30,7 @@ def update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow):
     machine_conf_path = os.path.join(args.output, machine_conf_file +
                                      '.conf')
     plnx_conf_path = os.path.join(args.output, plnx_conf_file)
+    site_conf_path = os.path.join(args.output, 'site.conf')
 
     if 'BUILDDIR' in os.environ.keys():
         builddir = os.environ['BUILDDIR']
@@ -60,9 +61,17 @@ def update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow):
             if hw_flow == 'sdt':
                 localconf_strs += ['include conf/sdt-auto.conf']
             if args.petalinux:
+                conf_dir = os.path.join(builddir, 'conf')
                 # Copy plnxtool.conf file to ${TOPDIR}/conf directory
-                shutil.copy2(plnx_conf_path, builddir + '/conf/')
+                shutil.copy2(plnx_conf_path, conf_dir)
                 localconf_strs += ['include conf/plnxtool.conf']
+                # Copy site.conf file to ${TOPDIR}/conf directory
+                if os.path.isfile(site_conf_path) and \
+                        not os.path.exists(os.path.join(conf_dir, 'site.conf')):
+                    shutil.copy2(site_conf_path,
+                                 os.path.join(builddir, 'conf'))
+                    # Remove site.conf from output directory
+                    os.remove(site_conf_path)
             for file_str in localconf_strs:
                 found = search_strin_file(local_conf, file_str)
                 if not found:
