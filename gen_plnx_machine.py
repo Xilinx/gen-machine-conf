@@ -241,6 +241,15 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     # above generated ${MACHINE}-${DEVICE_ID} as Yocto MACHINE.
     soc_family = args.soc_family
 
+    import yaml
+    if hw_flow == 'xsct':
+        plnx_syshw_file = os.path.join(args.output, 'plnx_syshw_data')
+    else:
+        plnx_syshw_file = os.path.join(args.output, 'petalinux_config.yaml')
+    with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
+        plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
+    plnx_syshw_file_f.close()
+
     # Variable for constructing plnxtool.conf file.
     override_string = ''
 
@@ -260,11 +269,11 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         override_string += 'include conf/distro/include/yocto-uninative.inc\n'
     # AUTO add local uninative tarball if exists, to support no network case.
     # CONFIG_SITE variable exported in case of extensible SDK only
+    import glob
     if 'CONFIG_SITE' in os.environ.keys():
         config_site = os.environ['CONFIG_SITE']
         sdk_path = os.path.dirname(config_site)
         if os.path.exists(sdk_path):
-            import glob
             uninative_path = os.path.join(sdk_path, 'downloads', 'uninative')
             # Check for exact x86_64-nativesdk file
             uninative_file = glob.glob(
@@ -651,8 +660,23 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     fit_deployname = get_config_value(
         'CONFIG_SUBSYSTEM_UIMAGE_NAME', default_cfgfile)
     override_string += 'PACKAGE_FITIMG_NAME = "%s"\n' % fit_deployname
-    override_string += 'EXTRA_FILESLIST:append = " %s:config"\n' % os.path.join(
-        args.output, 'config')
+
+    # Get design name from xsa
+    design_name = ''
+    if 'hw_design_name' in plnx_syshw_data.keys():
+        design_name = plnx_syshw_data['hw_design_name']
+    is_overlay = get_config_value(
+        'CONFIG_SUBSYSTEM_DTB_OVERLAY', default_cfgfile)
+    bitfile_name = 'system.bit'
+    if is_overlay == 'y' and design_name:
+        bitfile_name = design_name + '.bit'
+
+    bitfile = glob.glob(os.path.dirname(args.hw_description) + '/*.bit')
+    extra_files = '%s:config' % os.path.join(args.output, 'config')
+    if bitfile:
+        extra_files += ' %s:%s' % (bitfile[0], bitfile_name)
+
+    override_string += 'EXTRA_FILESLIST:append = " %s"\n' % extra_files
 
     override_string += '\n#Below variables helps to add bbappend changes when this file included\n'
     override_string += 'WITHIN_PLNX_FLOW = "1"\n'
