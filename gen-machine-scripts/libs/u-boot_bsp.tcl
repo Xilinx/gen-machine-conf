@@ -585,7 +585,7 @@ proc uboot_common {fid kconfig_fid} {
 
 /* Boot Argument Buffer Size */
 #define CONFIG_SYS_MAXARGS     32      /* max number of command args */
-#define CONFIG_SYS_LONGHELP
+#define CONFIG_SYS_LONGHELP 1
 
 "
 	} elseif {[string equal -nocase $cpu_arch "armv7"] == 1} {

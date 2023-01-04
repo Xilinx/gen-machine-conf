@@ -16,13 +16,13 @@ microblaze:
                 uboot_header: XILINX_PVR
         define:
             IP_NAME:
-                uboot_header: MICROBLAZE_V5 CONFIG_CMD_IRQ
+                uboot_header: MICROBLAZE_V5
                 uboot_config: CONFIG_DM CONFIG_SYS_MALLOC_F CONFIG_SYS_GENERIC_BOARD
         define_chk_1:
             CONFIG.C_USE_DCACHE:
-                uboot_header: CONFIG_DCACHE
+                uboot_config: CONFIG_DCACHE
             CONFIG.C_USE_ICACHE:
-                uboot_header: CONFIG_ICACHE
+                uboot_config: CONFIG_ICACHE
 
 # list for uboot config.mk file
 # HW_VER USE_BARREL USE_DIV USE_HW_MUL USE_PCMP_INSTR USE_FPU
