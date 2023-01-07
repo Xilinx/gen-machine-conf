@@ -12,7 +12,6 @@ from xilinx_mirrors import *
 
 
 def generate_yocto_machine(args, hw_flow):
-    logger.info('Generating machine conf file')
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
     if not os.path.isfile(default_cfgfile):
@@ -88,6 +87,11 @@ def generate_yocto_machine(args, hw_flow):
     machine_conf_path = os.path.join(args.output, machine_conf_file + '.conf')
     machine_override = machine_conf_file
 
+    # Generate the yocto machine if config file changed.
+    if validate_hashfile(args, 'SYSTEM_CONF', default_cfgfile, update=False) and \
+            os.path.exists(machine_conf_path):
+        return machine_conf_file
+    logger.info('Generating machine conf file')
     # Variable for constructing ${MACHINE}.conf files.
     machine_override_string = ''
 

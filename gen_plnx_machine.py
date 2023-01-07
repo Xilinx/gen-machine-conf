@@ -222,9 +222,9 @@ def generate_kernel_cfg(args):
 
 
 def generate_plnx_config(args, machine_conf_file, hw_flow):
-    logger.info('Generating plnxtool conf file')
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
+    default_rfsfile = os.path.join(args.output, 'rootfs_config')
     if not os.path.isfile(default_cfgfile):
         logger.error('Failed to generate .conf file, Unable to find config'
                      ' file at: %s' % args.output)
@@ -236,6 +236,12 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     global plnx_conf_path
     plnx_conf_file = 'plnxtool.conf'
     plnx_conf_path = os.path.join(args.output, plnx_conf_file)
+    # Generate the plnxtool.conf if config/rootfs_config changed
+    if validate_hashfile(args, 'SYSTEM_CONF', default_cfgfile, update=False) and \
+            validate_hashfile(args, 'RFS_CONF', default_rfsfile, update=False) and \
+            os.path.exists(plnx_conf_path):
+        return plnx_conf_file
+    logger.info('Generating plnxtool conf file')
 
     # Create a PetaLinux tool configuration file(plnxtool.conf) which set's
     # above generated ${MACHINE}-${DEVICE_ID} as Yocto MACHINE.
@@ -695,4 +701,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
            plnx_conf_path, soc_family)
     run_cmd(cmd, args.output, args.logfile)
 
+    # Update config and rootfs_config file hash if changed
+    validate_hashfile(args, 'SYSTEM_CONF', default_cfgfile)
+    validate_hashfile(args, 'RFS_CONF', default_rfsfile)
     return plnx_conf_file

@@ -58,10 +58,38 @@ base_dir = os.path.dirname(__file__)
 scripts_dir = os.path.join(base_dir, 'gen-machine-scripts')
 
 
+def get_filehashvalue(filename):
+    import mmap
+    import hashlib
+    method = hashlib.sha256()
+    with open(filename, "rb") as f:
+        try:
+            with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+                for chunk in iter(lambda: mm.read(8192), b''):
+                    method.update(chunk)
+        except ValueError:
+            # You can't mmap() an empty file so silence this exception
+            pass
+    return method.hexdigest()
+
+
+def validate_hashfile(args, macro, infile, update=True):
+    statistics_file = os.path.join(args.output, '.statistics')
+    old_hashvalue = get_config_value(macro, statistics_file)
+    new_hashvalue = get_filehashvalue(infile)
+    if old_hashvalue != new_hashvalue:
+        if update:
+            update_config_value(macro, new_hashvalue, statistics_file)
+        return False
+    return True
+
+
 def update_config_value(macro, value, filename):
-    with open(filename, 'r') as file_data:
-        lines = file_data.readlines()
-    file_data.close()
+    lines = []
+    if os.path.exists(filename):
+        with open(filename, 'r') as file_data:
+            lines = file_data.readlines()
+        file_data.close()
 
     with open(filename, 'w') as file_data:
         for line in lines:
@@ -76,9 +104,11 @@ def update_config_value(macro, value, filename):
 
 
 def get_config_value(macro, filename, Type='bool', end_macro='=y'):
-    with open(filename, 'r') as file_data:
-        lines = file_data.readlines()
-    file_data.close()
+    lines = []
+    if os.path.exists(filename):
+        with open(filename, 'r') as file_data:
+            lines = file_data.readlines()
+        file_data.close()
     value = ''
     if Type == 'bool':
         for line in lines:
@@ -386,6 +416,11 @@ def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
     if hw_flow == 'xsct':
         ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
         flashinfo_file = os.path.join(output, 'flash_parts.txt')
+        # No need to run if system conf file(config) is doesnot change
+        if validate_hashfile(args, 'SYSTEM_CONF', default_cfgfile, update=False) and \
+                os.path.exists(flashinfo_file):
+            return 0
+
         with open(flashinfo_file, 'w') as fp:
             pass
         cmd = 'xsct -sdx -nodisp %s/petalinux_hsm.tcl get_flash_width_parts %s %s %s %s' % \
@@ -441,7 +476,6 @@ def run_cmd(command, out_dir, logfile, shell=False):
 
 # Rootfs configs starts
 def add_rootfs_configs(args, default_cfgfile):
-    logger.info('Generating kconfig for rootfs')
     arch = get_config_value('CONFIG_SUBSYSTEM_ARCH_',
                             default_cfgfile, 'choice', '=y').lower()
     # template files for rootfs
@@ -477,9 +511,13 @@ def add_rootfs_configs(args, default_cfgfile):
     if not os.path.isfile(rfsKconfig_part):
         shutil.copy2(template_Kconfig, rfsKconfig_part)
     shutil.copy2(user_cfg, rootfs_cfgdir)
-    cmd = 'python3 %s --generate_kconfig %s %s' \
-        % (rfsconfig_py, user_cfg, rootfs_cfgdir)
-    run_cmd(cmd, args.output, args.logfile)
+    # No need to run if user_rootfsconfig doesnot changes
+    if not validate_hashfile(args, 'USER_RFS_CFG', user_cfg) or \
+            not os.path.exists(rfsKconfig_user):
+        logger.info('Generating kconfig for rootfs')
+        cmd = 'python3 %s --generate_kconfig %s %s' \
+            % (rfsconfig_py, user_cfg, rootfs_cfgdir)
+        run_cmd(cmd, args.output, args.logfile)
     rfsKconfig_str = Kconfig_arch.format(args.soc_family)
     with open(rfsKconfig_part, 'r', encoding='utf-8') as rfskconfig_part_f:
         rfskconfig_part_data = rfskconfig_part_f.read()
@@ -510,7 +548,6 @@ def get_hw_description(args, hw_flow):
         logger.error('Unsupported soc_family: %s' % soc_family)
         sys.exit(255)
 
-    logger.info('Generating Kconfig for project')
     # XSCT command to read the hw file and generate syshw file
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     if hw_flow == 'xsct':
@@ -525,7 +562,12 @@ def get_hw_description(args, hw_flow):
         ipinfo_file = os.path.join(scripts_dir, 'data/sdt_ipinfo.yaml')
         plnx_syshw_file = os.path.join(output, 'petalinux_config.yaml')
     ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
-    run_cmd(cmd, output, args.logfile, shell=True)
+
+    # Generate Kconfig.syshw only when hw_file changes
+    if not validate_hashfile(args, 'HW_FILE', hw_description) or \
+            not os.path.exists(Kconfig_syshw):
+        logger.info('Generating Kconfig for project')
+        run_cmd(cmd, output, args.logfile, shell=True)
     Kconfig_part = os.path.join(scripts_dir, 'configs/Kconfig.part')
 
     for file_path in [Kconfig_part, ipinfo_file, plnx_syshw_file, Kconfig_syshw]:
