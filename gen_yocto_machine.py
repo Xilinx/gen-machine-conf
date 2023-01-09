@@ -111,10 +111,6 @@ def generate_yocto_machine(args, hw_flow):
                                % (machine_conf_file, machine_conf_file)
     machine_override_string += '#### Regular settings follow\n'
 
-    machine_override_string += '\n# Required generic machine inclusion\n'
-    machine_override_string += 'require conf/machine/%s-generic.conf\n' % \
-                               req_conf_file
-
     # Variable used for Vivado XSA path, name using local file or subversion
     # path
     if hw_flow == 'xsct':
@@ -298,20 +294,6 @@ def generate_yocto_machine(args, hw_flow):
                                              default_cfgfile)
         machine_override_string += 'XSCTH_PROC:pn-fs-boot = "%s"\n' % processor_ip_name
 
-    machine_features = ''
-    is_fpga_manager = get_config_value(
-        'CONFIG_SUBSYSTEM_FPGA_MANAGER', default_cfgfile)
-    if is_fpga_manager == 'y':
-        machine_features = ' fpga-overlay'
-
-    if check_ip('vdu', default_cfgfile):
-        machine_features += ' vdu'
-
-    if machine_features:
-        machine_override_string += '\n# Yocto MACHINE_FEATURES Variable\n'
-        machine_override_string += 'MACHINE_FEATURES += "%s"\n' % (
-            machine_features.strip())
-
     machine_override_string += '\n# Yocto KERNEL Variables\n'
     # Additional kernel make command-line arguments
     if soc_family == 'microblaze':
@@ -385,6 +367,27 @@ def generate_yocto_machine(args, hw_flow):
         machine_override_string += 'SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"\n'
         machine_override_string += 'YAML_SERIAL_CONSOLE_BAUDRATE = "%s"\n' \
                                    % baudrate
+
+    # Variables that changes based on hw design or board specific requirement must be
+    # defined before calling the required inclusion file else pre-expansion value
+    # defined in respective generic machine conf will be set.
+    machine_override_string += '\n# Required generic machine inclusion\n'
+    machine_override_string += 'require conf/machine/%s-generic.conf\n' % \
+        req_conf_file
+
+    machine_features = ''
+    is_fpga_manager = get_config_value(
+        'CONFIG_SUBSYSTEM_FPGA_MANAGER', default_cfgfile)
+    if is_fpga_manager == 'y':
+        machine_features = ' fpga-overlay'
+
+    if check_ip('vdu', default_cfgfile):
+        machine_features += ' vdu'
+
+    if machine_features:
+        machine_override_string += '\n# Yocto MACHINE_FEATURES Variable\n'
+        machine_override_string += 'MACHINE_FEATURES += "%s"\n' % (
+            machine_features.strip())
 
     machine_override_string += '\n#### No additional settings should be after '\
         'the Postamble\n'
