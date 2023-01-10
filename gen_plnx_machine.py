@@ -567,9 +567,9 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                                             default_cfgfile)
         ubi_part_name = get_config_value('CONFIG_SUBSYSTEM_UBI_PART_NAME',
                                          default_cfgfile)
-        override_string += 'MKUBIFS_ARGS = "%s\n"' % ubi_mubifs_args
-        override_string += 'UBINIZE_ARGS = "%s\n"' % ubi_ubinize_args
-        override_string += 'UBI_VOLNAME = "%s\n"' % ubi_part_name
+        override_string += 'MKUBIFS_ARGS = "%s"\n' % ubi_mubifs_args
+        override_string += 'UBINIZE_ARGS = "%s"\n' % ubi_ubinize_args
+        override_string += 'UBI_VOLNAME = "%s"\n' % ubi_part_name
 
     provides_name = get_config_value('CONFIG_SUBSYSTEM_INITRAMFS_IMAGE_NAME',
                                      default_cfgfile)
