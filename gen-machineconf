@@ -47,7 +47,7 @@ def update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow):
                 xsapath = os.path.join(builddir, 'xsa', machine_conf_file)
                 if not os.path.exists(xsapath):
                     os.makedirs(xsapath)
-                shutil.copy2(args.hw_description, xsapath)
+                shutil.copy2(args.hw_file, xsapath)
 
             # Copy Yocto machine configuration file to ${TOPDIR}/conf/machine
             # directory.
@@ -115,11 +115,12 @@ def validate_hwfile(args):
         logger.error(
             'Only .xsa file or System Device-tree directory supported.')
         sys.exit(255)
+    hw_description = os.path.abspath(hw_description)
     return hw_ext, hw_description
 
 
 # Run dtprocessor.sh to generate the dtb files using lopper
-def run_dtprocessor(args, hw_file):
+def run_dtprocessor(args):
     builddir = ''
     if 'BUILDDIR' in os.environ.keys():
         builddir = os.environ['BUILDDIR']
@@ -144,7 +145,7 @@ def run_dtprocessor(args, hw_file):
         os.remove(sdtauto_conf)
     logger.info('Executing dt-processor.sh script')
     cmd = "bash -c 'source %s;source %s -c %s -s %s -l %s -P %s'" % (
-        sdt_envscript, dt_procscript, conf_dir, hw_file, sdtauto_conf, sdtipinfo)
+        sdt_envscript, dt_procscript, conf_dir, args.hw_file, sdtauto_conf, sdtipinfo)
     run_cmd(cmd, os.getcwd(), args.logfile, shell=True)
     if not os.path.isfile(plnx_syshw_file):
         logger.error('Failed to generate petalinux_config.yaml')
@@ -220,6 +221,7 @@ def main():
     args.hw_description = os.path.realpath(args.hw_description)
     # validate the given hw file
     hw_flow, hw_file = validate_hwfile(args)
+    args.hw_file = hw_file
 
     args.logfile = os.path.join(args.output, 'gen-machineconf.log')
     if os.path.exists(args.logfile):
@@ -322,7 +324,7 @@ def main():
         logger.debug('Using conf/mconf from : %s' % conf_exe)
 
     if hw_flow == 'sdt':
-        run_dtprocessor(args, hw_file)
+        run_dtprocessor(args)
         logger.info('Update bblayers.conf file for SDT')
         # Check meta-xilinx-tools in bblayers.conf and remove
         file_str = '/meta-xilinx-tools$'

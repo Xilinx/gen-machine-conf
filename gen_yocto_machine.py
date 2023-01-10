@@ -117,8 +117,7 @@ def generate_yocto_machine(args, hw_flow):
         machine_override_string += '\n# Add system XSA\n'
         machine_override_string += 'HDF_EXT = "xsa"\n'
         machine_override_string += 'HDF_BASE = "file://"\n'
-        machine_override_string += 'HDF_PATH = "%s"\n' % \
-                                   os.path.abspath(args.hw_description)
+        machine_override_string += 'HDF_PATH = "%s"\n' % args.hw_file
 
     # Set Tune Features for MicroBlaze
     if soc_family == 'microblaze':

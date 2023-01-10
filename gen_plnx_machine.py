@@ -401,7 +401,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                 os.makedirs(auto_uboot_dir)
             logger.info('Generating u-boot configuration files')
             cmd = 'xsct -sdx -nodisp %s/petalinux_hsm_bridge.tcl -c %s -a u-boot_bsp -hdf %s -o %s -data %s' % \
-                (scripts_dir, default_cfgfile, os.path.abspath(args.hw_description),
+                (scripts_dir, default_cfgfile, os.path.abspath(args.hw_file),
                     auto_uboot_dir, os.path.join(scripts_dir, 'data'))
             run_cmd(cmd, args.output, args.logfile)
 
@@ -677,7 +677,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if is_overlay == 'y' and design_name:
         bitfile_name = design_name + '.bit'
 
-    bitfile = glob.glob(os.path.dirname(args.hw_description) + '/*.bit')
+    bitfile = glob.glob(os.path.dirname(args.hw_file) + '/*.bit')
     extra_files = '%s:config' % os.path.join(args.output, 'config')
     if bitfile:
         extra_files += ' %s:%s' % (bitfile[0], bitfile_name)

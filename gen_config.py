@@ -424,7 +424,7 @@ def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
         with open(flashinfo_file, 'w') as fp:
             pass
         cmd = 'xsct -sdx -nodisp %s/petalinux_hsm.tcl get_flash_width_parts %s %s %s %s' % \
-            (scripts_dir, default_cfgfile, ipinfo_file, os.path.abspath(args.hw_description),
+            (scripts_dir, default_cfgfile, ipinfo_file, args.hw_file,
              flashinfo_file)
         run_cmd(cmd, output, args.logfile)
 
@@ -533,7 +533,6 @@ def add_rootfs_configs(args, default_cfgfile):
 
 
 def get_hw_description(args, hw_flow):
-    hw_description = os.path.abspath(args.hw_description)
     output = os.path.abspath(args.output)
     soc_family = args.soc_family
     menuconfig = args.menuconfig
@@ -552,7 +551,7 @@ def get_hw_description(args, hw_flow):
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     if hw_flow == 'xsct':
         cmd = 'xsct -sdx -nodisp %s/hw-description.tcl plnx_gen_hwsysconf %s %s' % \
-            (scripts_dir, hw_description, Kconfig_syshw)
+            (scripts_dir, args.hw_file, Kconfig_syshw)
         ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
         plnx_syshw_file = os.path.join(output, 'plnx_syshw_data')
     elif hw_flow == 'sdt':
@@ -564,7 +563,7 @@ def get_hw_description(args, hw_flow):
     ipinfo_file = os.path.join(scripts_dir, 'data/ipinfo.yaml')
 
     # Generate Kconfig.syshw only when hw_file changes
-    if not validate_hashfile(args, 'HW_FILE', hw_description) or \
+    if not validate_hashfile(args, 'HW_FILE', args.hw_file) or \
             not os.path.exists(Kconfig_syshw):
         logger.info('Generating Kconfig for project')
         run_cmd(cmd, output, args.logfile, shell=True)
