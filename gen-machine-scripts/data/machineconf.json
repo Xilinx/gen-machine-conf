@@ -93,12 +93,12 @@
 		"dt-boardfile": ""
 	},
 	"xilinx-k26-kr": {
-		"machine-overrides": "kria:k26-smk",
+		"machine-overrides": "kria:k26-smk:k26-kr",
 		"dt-boardfile": "zynqmp-sm-k26-reva",
 		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
 	},
 	"xilinx-k26-kv": {
-		"machine-overrides": "kria:k26-smk",
+		"machine-overrides": "kria:k26-smk:k26-kv",
 		"dt-boardfile": "zynqmp-sm-k26-reva",
 		"extra-yocto-vars": ["EXTRA_IMAGEDEPENDS += \"board-id-data\""]
 	},
