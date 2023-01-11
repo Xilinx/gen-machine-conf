@@ -223,9 +223,11 @@ def generate_yocto_machine(args, hw_flow):
                                               default_cfgfile)
         atf_bl33_load = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE',
                                          default_cfgfile)
-        machine_override_string += 'EXTRA_OEMAKE:append:pn-arm-trusted-firmware'\
-                                   ' = " %s PRELOADED_BL33_BASE=%s"\n' \
-                                   % (atf_extra_settings, atf_bl33_load)
+        if atf_extra_settings:
+            machine_override_string += 'EXTRA_OEMAKE:append:pn-arm-trusted-firmware'\
+                                       ' = " %s"\n' % atf_extra_settings
+        if atf_bl33_load:
+            machine_override_string += 'TFA_BL33_LOAD = "%s"\n' % atf_bl33_load
 
     if soc_family == 'versal':
         machine_override_string += '\n# Yocto PLM variables\n'
