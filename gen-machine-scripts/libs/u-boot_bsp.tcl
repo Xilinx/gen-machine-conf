@@ -15,12 +15,12 @@ proc uboot_memory_config args {
 
 	set size "0x400000"
 
-	# Set the SYS_TEXT_BASE
+	# Set the TEXT_BASE
 	set mem_base [dict get $kconfig_dict memory baseaddr]
 	set uboot_offset [dict get $kconfig_dict memory "u__boot_textbase_offset"]
 	set uboot_textbase [format "0x%08x" [expr $mem_base + $uboot_offset]]
 	if {[string equal -nocase $cpu_arch "armv7"] == 1} {
-		uboot_set_kconfig_value $kconfig_fid CONFIG_SYS_TEXT_BASE ${uboot_textbase}
+		uboot_set_kconfig_value $kconfig_fid CONFIG_TEXT_BASE ${uboot_textbase}
 		uboot_conf_define $fid CONFIG_SYS_LOAD_ADDR   "[dict get $kconfig_dict memory baseaddr] /* default load address */"
 	} elseif {[string equal -nocase $cpu_arch "armv8"] == 1} {
 		uboot_conf_define $fid CONFIG_SYS_LOAD_ADDR "([dict get $kconfig_dict memory baseaddr] + ${uboot_offset}) /* default load address */"
@@ -47,7 +47,7 @@ proc uboot_memory_config args {
 	puts $fid "\n/* Size of malloc() pool */"
 	if {[string equal -nocase $cpu_arch "microblaze"] == 1} {
 		puts $fid "\n/* stack */"
-		uboot_conf_define $fid CONFIG_SYS_INIT_SP_OFFSET "(CONFIG_SYS_TEXT_BASE - CONFIG_SYS_MALLOC_F_LEN)"
+		uboot_conf_define $fid CONFIG_SYS_INIT_SP_OFFSET "(CONFIG_TEXT_BASE - CONFIG_SYS_MALLOC_F_LEN)"
 		puts $fid "\n/* No of_control support yet*/"
 	}
 
@@ -949,9 +949,9 @@ proc uboot_config_mk_gen {fid kconfig_fid} {
 	set uboot_offset [dict get $kconfig_dict memory "u__boot_textbase_offset"]
 	set uboot_textbase [format "0x%08x" [expr $mem_base + $uboot_offset]]
 	puts $fid "TEXT_BASE = $uboot_textbase"
-	puts $fid "CONFIG_SYS_TEXT_BASE = $uboot_textbase\n"
+	puts $fid "CONFIG_TEXT_BASE = $uboot_textbase\n"
 
-	uboot_set_kconfig_value $kconfig_fid SYS_TEXT_BASE $uboot_textbase
+	uboot_set_kconfig_value $kconfig_fid TEXT_BASE $uboot_textbase
 	# set compiler flags for microblaze
 	set cpu_arch [get_sw_proc_arch $target_cpu]
 	if {[string equal -nocase $cpu_arch "microblaze"] == 1} {
