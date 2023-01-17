@@ -331,7 +331,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     override_string += '\n# PetaLinux tool linux-xlnx variables\n'
     override_string += add_remote_sources('linux-xlnx', 'LINUX__KERNEL')
     override_string += add_external_sources('linux-xlnx', 'LINUX__KERNEL')
-    override_string += 'RDEPENDS:${KERNEL_PACKAGE_NAME}-base = ""\n'
+    override_string += 'RRECOMMENDS:${KERNEL_PACKAGE_NAME}-base = ""\n'
     kernel_config = get_config_value('CONFIG_SUBSYSTEM_LINUX_CONFIG_TARGET',
                                      default_cfgfile)
     if kernel_config and kernel_config.lower() != 'auto':
