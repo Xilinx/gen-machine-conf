@@ -4538,9 +4538,8 @@ config wolfssl
 	help
 	Lightweight Embedded SSL/TLS Library
 
-config tune-features-crypto
+config default-tune-crypto
 	bool "crypto"
-	default y
 	depends on wolfssl
 	help
 

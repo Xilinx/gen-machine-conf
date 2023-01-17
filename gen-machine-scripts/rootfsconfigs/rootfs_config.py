@@ -66,9 +66,9 @@ def read_packages(xilinx_arch):
                 elif re.search("Init-manager-", line_str):
                     line_str = line_str.replace('Init-manager-', '')
                     packages['Init_manager'] = line_str
-                elif re.search("tune-features-", line_str):
-                    line_str = line_str.replace('tune-features-', '')
-                    packages['tune_features'] = line_str
+                elif re.search("default-tune-", line_str):
+                    line_str = line_str.replace('default-tune-', '')
+                    packages['default_tune'] = line_str
                 elif re.search("imagefeature-", line_str):
                     line_str = line_str.replace('imagefeature-', '')
                     packages.setdefault('image_features', []).append(line_str)
@@ -179,10 +179,9 @@ def update_cfg(cfg_file, xilinx_arch):
             packages['Init_manager'] + '"\n\n'
         cfg_file.write(init_managerstr)
     # Add Tune_feature variable
-    if 'tune_features' in packages.keys():
-        tune_featuresstr = 'TUNE_FEATURES:append = " ' + \
-            packages['tune_features'] + '"\n\n'
-        cfg_file.write(tune_featuresstr)
+    if 'default_tune' in packages.keys():
+        default_tunestr = 'DEFAULTTUNE = "cortexa72-cortexa53-crypto"\n'
+        cfg_file.write(default_tunestr)
     # Add common features into bb file
     if 'image_features' in packages.keys():
         cfg_file.write('COMMON_FEATURES:pn-petalinux-image-minimal = "\\\n')

@@ -1474,11 +1474,6 @@ config wolfssl
 	 help
 	 Lightweight Embedded SSL/TLS Library
 
-config tune-features-crypto
-	 bool "crypto"
-	 depends on wolfssl
-	 help
-
 endmenu
 menu "openssl " 
 config openssl  
