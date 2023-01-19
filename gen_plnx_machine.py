@@ -270,9 +270,6 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         if hw_flow == 'sdt':
             override_string += 'BASE_TMPDIR = "%s-multiconfig"\n' % tmp_dir
 
-    if hw_flow == 'sdt':
-        override_string += '# yocto-uninative.inc required for SDT flow\n'
-        override_string += 'include conf/distro/include/yocto-uninative.inc\n'
     # AUTO add local uninative tarball if exists, to support no network case.
     # CONFIG_SITE variable exported in case of extensible SDK only
     import glob
@@ -290,7 +287,20 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                 if not uninative_dir.endswith(os.path.sep):
                     uninative_dir += os.path.sep
                 override_string += 'UNINATIVE_URL = "file://%s"\n' % uninative_dir
-
+            if hw_flow == 'sdt':
+                # Adding yocto-uninative.inc content due to getting multiple warnings
+                poky_uninative_file = os.path.join(sdk_path, 'layers', 'poky', 'meta',
+                                                   'conf', 'distro', 'include', 'yocto-uninative.inc')
+                if os.path.exists(poky_uninative_file):
+                    with open(poky_uninative_file, 'r') as file_data:
+                        lines = file_data.readlines()
+                        for line in lines:
+                            line = line.strip()
+                            if line.startswith('#') or line.startswith('UNINATIVE_URL'):
+                                continue
+                            else:
+                                override_string += '%s\n' % line
+                    file_data.close()
     bb_no_network = get_config_value('CONFIG_YOCTO_BB_NO_NETWORK',
                                      default_cfgfile)
     if bb_no_network:
