@@ -569,8 +569,6 @@ proc uboot_common {fid kconfig_fid} {
 #define CONFIG_ENV_VARS_UBOOT_CONFIG
 #define CONFIG_ENV_OVERWRITE	/* Allow to overwrite the u-boot environment variables */
 
-#define CONFIG_LMB
-
 /* FDT support */
 #define CONFIG_DISPLAY_BOARDINFO_LATE
 
