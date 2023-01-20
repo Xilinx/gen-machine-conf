@@ -335,7 +335,7 @@ if {[string equal -nocase $function "u-boot_bsp"]} {
 	# copy device tree out of here
 	foreach tmpdts {skeleton.dtsi versal.dtsi zynq-7000.dtsi zynqmp.dtsi \
 		pcw.dtsi pl.dtsi zynqmp-clk-ccf.dtsi versal-clk.dtsi \
-		versal-net-ipp-rev1.9.dtsi \
+		versal-net.dtsi versal-net-clk-ccf.dtsi versal-net-clk.dtsi \
 		} {
 		if {[file exists "${out_dir}/${tmpdts}"]} {
 			lappend dtsifile "${tmpdts}"
@@ -343,7 +343,7 @@ if {[string equal -nocase $function "u-boot_bsp"]} {
 				[string equal -nocase "zynq-7000.dtsi" ${tmpdts}] \
 				|| [string equal -nocase "zynqmp.dtsi" ${tmpdts}] \
 				|| [string equal -nocase "versal.dtsi" ${tmpdts}] \
-				|| [string equal -nocase "versal-net-ipp-rev1.9.dtsi" ${tmpdts}] \
+				|| [string equal -nocase "versal-net.dtsi" ${tmpdts}] \
 				} {
 				create_soc_mapping_from_dts_file ${out_dir}/${tmpdts}
 			}
