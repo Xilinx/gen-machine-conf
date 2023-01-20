@@ -5598,6 +5598,17 @@ config iso-codes-dev
 	 help
 	
 endmenu
+menu "inetutils-tftpd "
+config inetutils-tftpd
+	 bool "inetutils-tftpd"
+	 help
+         Utility to configure tftp server and client
+
+config inetutils-tftpd-dbg
+	 bool "inetutils-tftpd"
+	 help
+
+endmenu
 menu "json-c " 
 config json-c  
 	 bool "json-c"
