@@ -277,7 +277,9 @@ def main():
             sys.exit(255)
 
     # Check mconf utilities
-    if args.native_sysroot:
+    if shutil.which('mconf') and shutil.which('conf'):
+        pass
+    elif args.native_sysroot:
         if not os.path.isdir(args.native_sysroot):
             logger.error('Native sysroot path doesnot exists: %s'
                          % args.native_sysroot)
