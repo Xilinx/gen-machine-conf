@@ -6,6 +6,7 @@
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
 #
+# SPDX-License-Identifier: MIT
 
 import logging
 import sys

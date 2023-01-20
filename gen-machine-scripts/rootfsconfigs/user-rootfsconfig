@@ -1,3 +1,8 @@
+# Copyright (C) 2021-2022, Xilinx, Inc.  All rights reserved.
+# Copyright (C) 2022, Advanced Micro Devices, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
 #Note: Mention Each package in individual line
 #These packages will get added into rootfs menu entry
 
