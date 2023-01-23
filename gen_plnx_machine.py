@@ -618,6 +618,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                    'arm-trusted-firmware', 'u-boot-xlnx-scr',
                    'qemu-devicetrees', 'extract-cdo'],
     }
+    imagedepends_remove = ['virtual/boot-bin']
     is_imgsel = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_IMG_SEL',
                                  default_cfgfile)
     is_uboot_dtb = get_config_value('CONFIG_SUBSYSTEM_UBOOT_EXT_DTB',
@@ -631,26 +632,35 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                                  default_cfgfile)
     if not is_fsboot and 'virtual/fsboot' in imagedepends[soc_family]:
         imagedepends[soc_family].remove('virtual/fsboot')
+        imagedepends_remove.append('virtual/fsboot')
     if not is_fsboot and 'virtual/elfrealloc' in imagedepends[soc_family]:
         imagedepends[soc_family].remove('virtual/elfrealloc')
+        imagedepends_remove.append('virtual/elfrealloc')
     is_fsbl = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_BOOTLOADER_AUTO_FSBL',
                                default_cfgfile)
     if not is_fsbl and 'virtual/fsbl' in imagedepends[soc_family]:
         imagedepends[soc_family].remove('virtual/fsbl')
+        imagedepends_remove.append('virtual/fsbl')
     is_pmufw = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_PMU_FIRMWARE',
                                 default_cfgfile)
     if not is_pmufw and 'virtual/pmu-firmware' in imagedepends[soc_family]:
         imagedepends[soc_family].remove('virtual/pmu-firmware')
+        imagedepends_remove.append('virtual/pmu-firmware')
     is_plm = get_config_value(
         'CONFIG_SUBSYSTEM_COMPONENT_PLM', default_cfgfile)
     if not is_plm and 'virtual/plm' in imagedepends[soc_family]:
         imagedepends[soc_family].remove('virtual/plm')
+        imagedepends_remove.append('virtual/plm')
     is_psmfw = get_config_value('CONFIG_SUBSYSTEM_COMPONENT_PSM_FIRMWARE',
                                 default_cfgfile)
     if not is_psmfw and 'virtual/psm-firmware' in imagedepends[soc_family]:
         imagedepends[soc_family].remove('virtual/psm-firmware')
+        imagedepends_remove.append('virtual/psm-firmware')
     override_string += 'EXTRA_IMAGEDEPENDS:append = " %s"\n' \
                        % ' '.join(imagedepends[soc_family])
+    if imagedepends_remove:
+        override_string += 'EXTRA_IMAGEDEPENDS:remove = "%s"\n' \
+            % ' '.join(imagedepends_remove)
     override_string += 'SPL_BINARY = ""\n'
     if is_imgsel:
         override_string += 'PACKAGES_LIST:append = " imgsel"'
