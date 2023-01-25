@@ -449,6 +449,7 @@ proc get_ip_property {ip bank prop} {
 proc create_soc_mapping_from_dts_file {zynq_soc_dtsi} {
 	set fp [open $zynq_soc_dtsi r]
 	set file_data [read $fp]
+	regsub -all ",\n" $file_data {,} file_data
 	set data [split $file_data "\n"]
 	set node_level -1
 	foreach line $data {
