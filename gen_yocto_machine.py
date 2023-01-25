@@ -361,9 +361,15 @@ def generate_yocto_machine(args, hw_flow):
             'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', default_cfgfile)
         serial_no = ''
         if no_alias == 'y':
-            serial_no = serialname.lower().split(serialipname + '_')[1]
-            serial_console = serial_console[:-1]
-            serial_console = serial_console + serial_no
+            if "_" in serialname:
+                serial_no = serialname.lower().split(serialipname + '_')[1]
+                serial_console = serial_console[:-1]
+                serial_console = serial_console + serial_no
+            else:
+                tmp = re.findall('[0-9]+', serialname)
+                serial_no = tmp[0]
+                serial_console = serial_console[:-1]
+                serial_console = serial_console + serial_no
         machine_override_string += 'SERIAL_CONSOLES = "%s"\n' % serial_console
         machine_override_string += 'SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"\n'
         machine_override_string += 'YAML_SERIAL_CONSOLE_BAUDRATE = "%s"\n' \

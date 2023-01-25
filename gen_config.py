@@ -215,7 +215,11 @@ def get_sysconsole_bootargs(default_cfgfile, soc_family, soc_variant):
         'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', default_cfgfile)
     serial_no = ''
     if no_alias == 'y':
-        serial_no = serialname.lower().split(serialipname + '_')[1]
+        if "_" in serialname:
+            serial_no = serialname.lower().split(serialipname + '_')[1]
+        else:
+            tmp = re.findall('[0-9]+', serialname)
+            serial_no = tmp[0]
     if serial_no:
         serial_devfile = '%s%s' % (serial_devfile[:-1], serial_no)
     baudrate = get_config_value(
