@@ -134,6 +134,14 @@ def run_dtprocessor(args):
     sdtipinfo = os.path.join(scripts_dir, 'data', 'sdt_ipinfo.yaml')
     sdt_envscript = os.path.join(
         args.sdt_sysroot, 'environment-setup-x86_64-petalinux-linux')
+
+    # Run dt-processor.sh only if HW_FILE changed and
+    # no petalinux_config.yaml found and
+    # no build/conf/dtb found
+    if validate_hashfile(args, 'HW_FILE', args.hw_file, update=False) and \
+            os.path.exists(os.path.join(conf_dir, 'dtb')) and \
+            os.path.exists(plnx_syshw_file):
+        return
     dt_procscript = os.path.join(args.sdt_sysroot, 'dt-processor.sh')
     if not os.path.isfile(dt_procscript):
         logger.error('No environment-setup-x86_64-petalinux-linux file found '

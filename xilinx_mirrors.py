@@ -135,7 +135,7 @@ def generate_mirrors(args, arch):
         local_sstate_url = ''
 
     mirrors_string += '# Sstate mirror settings\n'
-    mirrors_string += 'SSTATE_MIRRORS = " \\\n%s%s"' % (
+    mirrors_string += 'SSTATE_MIRRORS = " \\\n%s%s"\n' % (
         local_sstate_url, network_sstate_url)
 
     generate_siteconf(args, arch, xilinx_network)
