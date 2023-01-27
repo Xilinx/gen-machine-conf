@@ -551,6 +551,22 @@ config SUBSYSTEM_ENABLE_OPENAMP_DTSI
      Enable this config to automatically add OpenAmp device tree nodes (openamp.dtsi)
      to the final system.dtb
 
+if !SUBSYSTEM_ARCH_ARM
+config SUBSYSTEM_ENABLE_XEN_HW_DTSI
+	bool "Enable xen hardware dtsi"
+	default n
+	help
+	 Enable this config to automatically add Xen hardware related
+	 device tree nodes (xen.dtsi) to the final system.dtb
+
+config SUBSYSTEM_ENABLE_XEN_QEMU_DTSI
+	bool "Enable xen QEMU dtsi"
+	default n
+	help
+	 Enable this config to automatically add Xen qemu related
+	 device tree nodes (xen-qemu.dtsi) to the final system.dtb
+
+endif
 endif
 
 config SUBSYSTEM_ENABLE_NO_ALIAS

@@ -399,6 +399,16 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if dt_openamp_dtsi:
         override_string += 'ENABLE_OPENAMP_DTSI = "1"\n'
 
+    dt_xenhw_dtsi = get_config_value('CONFIG_SUBSYSTEM_ENABLE_XEN_HW_DTSI',
+                                     default_cfgfile)
+    if dt_xenhw_dtsi:
+        override_string += 'ENABLE_XEN_DTSI = "1"\n'
+
+    dt_xenqemu_dtsi = get_config_value('CONFIG_SUBSYSTEM_ENABLE_XEN_QEMU_DTSI',
+                                       default_cfgfile)
+    if dt_xenqemu_dtsi:
+        override_string += 'ENABLE_XEN_QEMU_DTSI = "1"\n'
+
     override_string += '\n# PetaLinux tool U-boot variables\n'
     override_string += add_remote_sources('u-boot-xlnx', 'U__BOOT')
     override_string += add_external_sources('u-boot-xlnx', 'U__BOOT')
@@ -586,6 +596,11 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                                      default_cfgfile)
     rootfs_initrd = get_config_value('CONFIG_SUBSYSTEM_ROOTFS_INITRD',
                                      default_cfgfile)
+    xen_enabled = get_config_value(
+        'CONFIG_', default_rfsfile, 'asterisk', '.+xen.+')
+    if xen_enabled:
+        override_string += '\nIMAGE_PLNX_XEN_DEPLOY = "1"\n'
+
     if rootfs_initrd:
         override_string += '\nINITRAMFS_IMAGE = "%s"\n' % provides_name
 
@@ -603,6 +618,11 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
             soc_family, rootfs_types)
 
     if re.search('initramfs', provides_name):
+        if xen_enabled:
+            logger.warning('xen enabled, please disable switch_root by changing '
+                           'petalinux-initramfs-image to petalinux-image-minimal \n'
+                           'using petalinux-config -> Image packaging configuration'
+                           '-> INITRAMFS/INITRD Image name. If not, you may see a build failure')
         override_string += 'INITRAMFS_FSTYPES = "cpio.gz cpio.gz.u-boot tar.gz"\n'
         override_string += 'IMAGE_FSTYPES:pn-${INITRAMFS_IMAGE}:%s = "${INITRAMFS_FSTYPES}"\n' \
                            % (soc_family)
