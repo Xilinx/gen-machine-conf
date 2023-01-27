@@ -1,9 +1,8 @@
-# Copyright (C) 2021-2022, Xilinx, Inc.  All rights reserved.
-# Copyright (C) 2022, Advanced Micro Devices, Inc.  All rights reserved.
-#
-# SPDX-License-Identifier: MIT
-#
-#
+###### Copyright (C) 2021-2022, Xilinx, Inc.  All rights reserved.
+###### Copyright (C) 2022, Advanced Micro Devices, Inc.  All rights reserved.
+
+###### SPDX-License-Identifier: MIT
+
 # gen-machine-conf
 
 This repo provides support to generate machine conf and plnxtool.conf 
