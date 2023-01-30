@@ -5605,7 +5605,7 @@ config inetutils-tftpd
          Utility to configure tftp server and client
 
 config inetutils-tftpd-dbg
-	 bool "inetutils-tftpd"
+	 bool "inetutils-tftpd-dbg"
 	 help
 
 endmenu
