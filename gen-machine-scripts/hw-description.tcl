@@ -465,6 +465,14 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 				}
 			} elseif {"${has_bank}" == "y" && "${banks_property}" != ""} {
 				set bankcount [hsi get_property ${banks_property} ${hd}]
+				if { "${ipname}" == "axi_emc" } {
+					set bankcount_emc [llength [hsi list_property ${hd} CONFIG.C_S_AXI_MEM*_BASEADDR]]
+					set bank_baseaddr_property [lindex [get_ip_property_info bank_baseaddr ${bankinfo}] 0]
+					set bank_highaddr_property [lindex [get_ip_property_info bank_highaddr ${bankinfo}] 0]
+					set bank_type_property [lindex [get_ip_property_info bank_type ${bankinfo}] 0]
+					set bankcount $bankcount_emc
+				}
+
 				for {set i 0} {$i < ${bankcount}} {incr i} {
 					set idmap [list "${bankidreplacement}" ${i}]
 					set basestrmap [string map ${idmap} "${bank_baseaddr_property}"]
