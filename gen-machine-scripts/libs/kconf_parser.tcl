@@ -49,7 +49,7 @@ proc read_config {} {
 	global target_cpu def_ip_list
 
 	# check list
-	set lookup_list "processor memory serial timer reset_gpio flash ethernet sd rtc sata i2c usb"
+	set lookup_list "processor memory serial reset_gpio flash ethernet"
 	foreach line [lsearch -regexp -all -inline $data "^CONFIG_SUBSYSTEM_.*_SELECT=y"] {
 		foreach lookup_string $lookup_list {
 			eval "global ${lookup_string}_dict"

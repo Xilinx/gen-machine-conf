@@ -15,37 +15,15 @@ spi_flash:
             IP_NAME:
                 sys_property: SYS_FLASH_TYPE SPI
 
-    call_once:
-        uboot_header: gen_jffs2_config
 
 axi_quad_spi:
     var_count: spiflash_count
     ip_type: spi_flash
     flash_type: spi
-    call_once:
-        uboot_header: gen_axi_qspi_clk spi_flash_get_cs
     hsm:
-        config:
-            CONFIG.C_BASEADDR:
-                uboot_header: XILINX_SPI_FLASH_BASEADDR
-            CONFIG.C_HIGHADDR:
-                uboot_header: XILINX_SPI_FLASH_HIGHADDR
-            CONFIG.C_SCK_RATIO:
-                uboot_header: XILINX_SPI_FLASH_SCK_RATIO
-        get_clk:
-            CONFIG.C_SCK_RATIO:
-                uboot_header: XILINX_SPI_FLASH_ACLK
         define:
             CONFIG.C_BASEADDR:
                 uboot_config: CONFIG_XILINX_SPI
-
-        custom_define:
-            IP_NAME:
-                uboot_header: XILINX_SPI_FLASH_MAX_FREQ	(XILINX_SPI_FLASH_ACLK / XILINX_SPI_FLASH_SCK_RATIO)
-            CONFIG.C_BASEADDR:
-                uboot_header: CONFIG_SYS_SPI_BASE	XILINX_SPI_FLASH_BASEADDR
-            CONFIG.C_SCK_RATIO:
-                uboot_header: CONFIG_ENV_SPI_MAX_HZ	XILINX_SPI_FLASH_MAX_FREQ
 
 # common setting for flashs
 nor_flash:
@@ -53,9 +31,6 @@ nor_flash:
         define:
             IP_NAME:
                 uboot_config: CONFIG_SYS_FLASH_USE_BUFFER_WRITE CONFIG_SYS_FLASH_CFI CONFIG_FLASH_CFI_DRIVER CONFIG_CMD_FLASH CONFIG_CMD_IMLS CONFIG_MTD_NOR_FLASH CONFIG_MTD_DEVICE
-        define_1:
-            IP_NAME:
-                uboot_header: CONFIG_SYS_MAX_FLASH_BANKS
         custom_define_1:
             IP_NAME:
                 sys_property: SYS_FLASH_TYPE NOR
@@ -63,90 +38,18 @@ axi_emc:
     ip_type: nor_flash
     flash_type: nor
     hsm:
-        config:
-            CONFIG.C_S_AXI_MEM%bn%_BASEADDR:
-                uboot_header: CONFIG_SYS_FLASH_BASE
-                sys_property: SYS_FLASH_BASE
-            CONFIG.C_MEM%bn%_WIDTH:
-                sys_property: SYS_FLASH_WIDTH
-        config_value_plus_1:
-            CONFIG.C_S_AXI_MEM%bn%_HIGHADDR:
-                sys_property: SYS_FLASH_END
-        custom_define:
-            NAME:
-                uboot_header: CONFIG_SYS_MAX_FLASH_SECT	2048
         define:
             IP_NAME:
                 uboot_config: CONFIG_SYS_FLASH_PROTECTION
-                uboot_header: CONFIG_SYS_FLASH_EMPTY_INFO
 ps7_qspi:
     var_count: spiflash_count
     ip_type: spi_flash
     flash_type: spi
-    hsm:
-        config:
-            CONFIG.C_QSPI_CLK_FREQ_HZ:
-                uboot_header:  XILINX_PS7_QSPI_CLK_FREQ_HZ
-        custom_define:
-#            CONFIG.C_S_AXI_BASEADDR:
-#                uboot_header: XILINX_SPI_FLASH_CS 0
-            CONFIG.C_QSPI_CLK_FREQ_HZ:
-                uboot_header: CONFIG_SF_DEFAULT_SPEED	(XILINX_PS7_QSPI_CLK_FREQ_HZ / 4)
-#            IP_NAME:
-#                uboot_header: CONFIG_ENV_SPI_MODE	XILINX_SPI_FLASH_CS
-
-        define:
-            IP_NAME:
-                uboot_config: CONFIG_ZYNQ_QSPI CONFIG_SF_DUAL_FLASH
-# Dual
-        primary_custom_define_chk_2:
-            CONFIG.C_QSPI_MODE:
-                sys_property: SYS_FLASH_WIDTH 8
-# Single
-        primary_custom_define_chk_0:
-            CONFIG.C_QSPI_MODE:
-                sys_property: SYS_FLASH_WIDTH 4
-# other two mode is missing
-
 
 psu_qspi:
     var_count: spiflash_count
     ip_type: spi_flash
     flash_type: spi
-    hsm:
-        config:
-            CONFIG.C_QSPI_CLK_FREQ_HZ:
-                uboot_header:  XILINX_PS8_QSPI_CLK_FREQ_HZ
-        custom_define:
-            CONFIG.C_QSPI_CLK_FREQ_HZ:
-                uboot_header: CONFIG_SF_DEFAULT_SPEED   (XILINX_PS8_QSPI_CLK_FREQ_HZ / 4)
-
-        define:
-            IP_NAME:
-                uboot_header: CONFIG_MTD_PARTITIONS CONFIG_SPI_FLASH_MTD
-                uboot_config: CONFIG_SPI_GENERIC CONFIG_CMD_UBI CONFIG_ZYNQMP_GQSPI CONFIG_RBTREE CONFIG_CMD_UBIFS CONFIG_LZO
-        custom_define:
-            IP_NAME:
-                uboot_config: CONFIG_MTD_UBI_WL_THRESHOLD=4096
-        custom_define:
-            NAME:
-                uboot_config: CONFIG_MTD_UBI_BEB_LIMIT=0
-# Dual
-        primary_custom_define_chk_2:
-            CONFIG.C_QSPI_MODE:
-                sys_property: SYS_FLASH_WIDTH 8
-        define_chk_2:
-            CONFIG.C_QSPI_MODE:
-                uboot_config: CONFIG_SF_DUAL_FLASH
-
-# Single
-        primary_custom_define_chk_0:
-            CONFIG.C_QSPI_MODE:
-                sys_property: SYS_FLASH_WIDTH 4
-# other two mode is missing
-
-    call_once:
-        uboot_header: gen_jffs2_config
 
 psv_pmc_qspi:
     var_count: spiflash_count
@@ -172,79 +75,19 @@ ps7_spi:
     var_count: spiflash_count
     ip_type: spi_flash
     flash_type: spi
-    hsm:
-        define:
-            IP_NAME:
-                uboot_config: CONFIG_SPI_FLASH_SST CONFIG_ZYNQ_SPI
-    call_once:
-        uboot_header: gen_jffs2_config
 
 nand_flash:
-    hsm:
-        define:
-            IP_NAME:
-                uboot_header: CONFIG_SYS_NAND_SELF_INIT CONFIG_CMD_NAND_LOCK_UNLOCK CONFIG_SYS_NAND_ONFI_DETECTION
-                uboot_config: CONFIG_CMD_NAND CONFIG_NAND CONFIG_MTD_DEVICE
-        custom_define_1:
-            IP_NAME:
-                sys_property: SYS_FLASH_TYPE NAND
+    ip_type: nand_flash
+    flash_type: nand
+
 ps7_nand:
     ip_type: nand_flash
     flash_type: nand
-    hsm:
-        define:
-            IP_NAME:
-                uboot_header: CONFIG_NAND_ZYNQ CONFIG_CMD_NAND_LOCK_UNLOCK
-
-        define_1:
-            IP_NAME:
-                uboot_header: CONFIG_SYS_MAX_NAND_DEVICE
 
 psu_nand:
     ip_type: nand_flash
     flash_type: nand
-    hsm:
-        define:
-            IP_NAME:
-                uboot_config: CONFIG_MTD_RAW_NAND CONFIG_CMD_UBI CONFIG_NAND_ARASAN CONFIG_CMD_NAND_LOCK_UNLOCK CONFIG_RBTREE CONFIG_CMD_UBIFS CONFIG_LZO CONFIG_MTD_DEVICE
-                uboot_header: CONFIG_MTD_PARTITIONS
-        custom_define:
-            IP_NAME:
-                uboot_config: CONFIG_MTD_UBI_WL_THRESHOLD=4096
-        custom_define:
-            NAME:
-                uboot_config: CONFIG_MTD_UBI_BEB_LIMIT=0
-        define_1:
-            IP_NAME:
-                uboot_header: CONFIG_SYS_MAX_NAND_DEVICE
 
 ps7_sram:
     ip_type: nor_flash
     flash_type: nor
-    hsm:
-        config:
-            CONFIG.C_S_AXI_BASEADDR:
-                uboot_header: CONFIG_SYS_FLASH_BASE
-        config_value_plus_1:
-            CONFIG.C_S_AXI_HIGHADDR:
-                uboot_header: XILINX_PS7_NOR_FLASH_HIGHADDR
-        custom_define:
-#FIX CONFIG_SYS_FLASH_SIZE
-            CONFIG.C_S_AXI_BASEADDR:
-                uboot_header: CONFIG_SYS_FLASH_SIZE	(XILINX_PS7_NOR_FLASH_HIGHADDR - CONFIG_SYS_FLASH_BASE)
-            CONFIG.C_S_AXI_HIGHADDR:
-                uboot_header: CONFIG_SYS_MAX_FLASH_SECT 512
-
-            IP_NAME:
-                uboot_header: CONFIG_FLASH_SHOW_PROGRESS	10
-            NAME:
-                uboot_header: CONFIG_SYS_FLASH_ERASE_TOUT	1000
-            VLNV:
-                uboot_header: CONFIG_SYS_FLASH_WRITE_TOUT	5000
-        undefine:
-            IP_NAME:
-                uboot_header: CONFIG_SYS_FLASH_EMPTY_INFO
-                uboot_config: CONFIG_SYS_FLASH_PROTECTION
-        define:
-            IP_NAME:
-                uboot_header: CONFIG_ZYNQ_M29EW_WB_HACK

@@ -18,7 +18,6 @@ mig_7series:
 axi_noc:
     ip_type: main_memory
 
-#FIXME: support multi-bank
 axi_s6_ddrx:
     ip_type: main_memory_multibank
 

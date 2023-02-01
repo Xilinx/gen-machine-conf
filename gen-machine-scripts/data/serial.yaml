@@ -5,30 +5,13 @@
 #
 ###
 ### UART
-#FIXME: multi serial fix
 axi_uart16550:
     ip_type: uart
     var_count: uartfull_count
     hsm:
-        primary_custom_define:
-            CONFIG.C_BASEADDR:
-                uboot_header: CONFIG_SYS_NS16550_COM1	((XILINX_UART16550_BASEADDR & ~0xF) + 0x1000)
-            IP_NAME:
-                uboot_header: CONFIG_SYS_NS16550_REG_SIZE	-4
-            NAME:
-                uboot_header: CONSOLE_ARG	"console=console=ttyS0,115200\0"
         primary_define:
             IP_NAME:
-                uboot_header: CONFIG_SYS_NS16550_SERIAL
                 uboot_config: CONFIG_SYS_NS16550
-        primary_define_1:
-            IP_NAME:
-                uboot_header: CONFIG_CONS_INDEX
-        custom_define:
-            CONFIG.C_BASEADDR:
-                uboot_header: ESERIAL%uartfull_count%	"eserial%uartfull_count%=setenv stdout eserial%uartfull_count%;setenv stdin eserial%uartfull_count%\0"
-    call_once:
-        uboot_header: gen_uartns_define
 
 uartlite:
     var_count: uartlite_count
@@ -37,88 +20,11 @@ uartlite:
             CONFIG.C_BASEADDR:
                 uboot_config: CONFIG_XILINX_UARTLITE
 
-        custom_define:
-            CONFIG.C_BASEADDR:
-                uboot_header: TTYUL%uartlite_count%	"ttyUL%uartlite_count%=setenv stdout ttyUL%uartlite_count%;setenv stdin ttyUL%uartlite_count%\0"
-        primary_custom_define:
-            CONFIG.C_BASEADDR:
-                uboot_header: SERIAL_MULTI	"serial=setenv stdout serial;setenv stdin serial\0" "stdin=ttyUL0\0" "stdout=ttyUL0\0"
-            CONFIG.C_HIGHADDR:
-    # fixme: user per ip based to get buadrate
-                uboot_header: CONSOLE_ARG "console=console=ttyUL%uartlite_count%,115200\0"
-#"
-uart:
-    var_count: uartfull_count
-    hsm:
-        primary_custom_define:
-            NAME:
-                uboot_header: SERIAL_MULTI  "serial=setenv stdout serial;setenv stdin serial\0"
-
 axi_uartlite:
     var_count: uartlite_count
     ip_type: uartlite
-    hsm:
-        config:
-            CONFIG.C_BASEADDR:
-                uboot_header: XILINX_UARTLITE_BASEADDR~uartlite_count~
-        primary_config:
-            CONFIG.C_BAUDRATE:
-                uboot_header: CONFIG_BAUDRATE
-# mdm is not working properly
+
 mdm:
     var_count: uartlite_count
     ip_type: uartlite
-    hsm:
-        config:
-            CONFIG.C_BASEADDR:
-                uboot_header: XILINX_UARTLITE_BASEADDR~uartlite_count~
-        primary_custom_define:
-            CONFIG.C_BASEADDR:
-                uboot_header: CONFIG_BAUDRATE	115200
 
-ps7_uart:
-    var_count: uart_count ps_uart_count
-    ip_type: uart
-    hsm:
-        primary_define:
-            IP_NAME:
-                uboot_config: CONFIG_ZYNQ_SERIAL CONFIG_DEBUG_UART CONFIG_DEBUG_UART_ZYNQ CONFIG_DEBUG_UART_ANNOUNCE
-        custom_define:
-            CONFIG.C_S_AXI_BASEADDR:
-                uboot_header: PSSERIAL%ps_uart_count%	"psserial%ps_uart_count%=setenv stdout ttyPS%ps_uart_count%;setenv stdin ttyPS%ps_uart_count%\0"
-        primary_custom_define:
-            NAME:
-                uboot_header: SERIAL_MULTI	"serial=setenv stdout serial;setenv stdin serial\0"
-            IP_NAME:
-                uboot_header: CONSOLE_ARG	"console=console=ttyPS0,115200\0"
-        config:
-            CONFIG.C_S_AXI_BASEADDR:
-                uboot_config: CONFIG_DEBUG_UART_BASE
-            CONFIG.C_UART_CLK_FREQ_HZ:
-                uboot_config: CONFIG_DEBUG_UART_CLOCK
-
-psu_uart:
-    var_count: uart_count ps_uart_count
-    ip_type: uart
-    hsm:
-        primary_define:
-            IP_NAME:
-                uboot_config: CONFIG_ZYNQ_SERIAL CONFIG_DEBUG_UART CONFIG_DEBUG_UART_ZYNQ CONFIG_DEBUG_UART_ANNOUNCE
-        custom_define:
-            CONFIG.C_S_AXI_BASEADDR:
-                uboot_header: PSSERIAL%ps_uart_count%	"psserial%ps_uart_count%=setenv stdout ttyPS%ps_uart_count%;setenv stdin ttyPS%ps_uart_count%\0"
-        primary_custom_define:
-            NAME:
-                uboot_header: SERIAL_MULTI	"serial=setenv stdout serial;setenv stdin serial\0"
-            IP_NAME:
-                uboot_header: CONSOLE_ARG	"console=console=ttyPS0,115200\0"
-        config:
-            CONFIG.C_S_AXI_BASEADDR:
-                uboot_config: CONFIG_DEBUG_UART_BASE
-            CONFIG.C_UART_CLK_FREQ_HZ:
-                uboot_config: CONFIG_DEBUG_UART_CLOCK
-
-uart:
-    var_count: uart_count
-    call_once:
-        uboot_header: uart_get_baudrate

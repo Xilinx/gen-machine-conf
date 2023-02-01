@@ -23,35 +23,3 @@ selected_device:
             PACKET: bool y
             UNIX: bool y
             INET: bool y
-    pmufw_enable:
-        is_valid_and:
-            SUBSYSTEM_PMUFW_POWER_KERNEL_CONFIGURATION_ENABLE: y
-        linux_kernel_properties:
-            SUSPEND: bool y
-            PM_WAKELOCKS: bool y
-            PM: bool y
-            CPU_IDLE: bool y
-            ARM_CPUIDLE: bool y
-            CPU_FREQ: bool y
-            CPU_FREQ_DEFAULT_GOV_USERSPACE: bool y
-            CPU_FREQ_GOV_USERSPACE: bool y
-            COMMON_CLK_ZYNQMP: bool y
-            SOC_XILINX_ZYNQMP: bool y
-            ZYNQMP_PM_DOMAINS: bool y
-            PM_SLEEP: bool y
-    pmufw_disable:
-        is_valid_and:
-            SUBSYSTEM_PMUFW_POWER_KERNEL_CONFIGURATION_DISABLE: y
-        linux_kernel_properties:
-            SUSPEND: bool n
-            PM_WAKELOCKS: bool n
-            PM: bool n
-            CPU_IDLE: bool n
-            ARM_CPUIDLE: bool n
-            CPU_FREQ: bool n
-            CPU_FREQ_DEFAULT_GOV_USERSPACE: bool n
-            CPU_FREQ_GOV_USERSPACE: bool n
-            COMMON_CLK_ZYNQMP: bool n
-            SOC_XILINX_ZYNQMP: bool n
-            ZYNQMP_PM_DOMAINS: bool n
-            PM_SLEEP: bool n

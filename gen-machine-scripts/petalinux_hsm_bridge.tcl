@@ -307,7 +307,7 @@ variable function
 
 arg_parse
 load_hw_desc_file $hw_desc_file
-foreach fn "processor intc memory serial timer reset_gpio flash ethernet sd sata i2c usb rtc misc" {
+foreach fn "processor intc memory serial reset_gpio flash ethernet" {
 	eval "variable ${fn}_dict {[simple_yaml_parser ${db_dir}/${fn}.yaml]}"
 	eval "set temp_dict \$${fn}_dict"
 	debug "petalinux_hsm_bridge" "temp_dict : $temp_dict"
