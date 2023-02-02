@@ -266,12 +266,12 @@ def get_soc_variant(soc_family, output):
     if soc_family == 'zynqmp':
         if device_id.endswith('ev') or device_id.endswith('k26'):
             soc_variant = 'ev'
-        elif device_id.endswith('eg'):
+        elif device_id.endswith('eg') or device_id.endswith('k24'):
             soc_variant = 'eg'
         elif device_id.endswith('dr'):
             soc_variant = 'dr'
-        else:
-            soc_variant = 'eg'
+        elif device_id.endswith('cg'):
+            soc_variant = 'cg'
     elif soc_family == 'versal':
         if device_id.startswith('xcvm'):
             soc_variant = 'prime'
@@ -281,6 +281,10 @@ def get_soc_variant(soc_family, output):
             soc_variant = 'ai-edge'
         elif device_id.startswith('xcvn'):
             soc_variant = 'net'
+        elif device_id.startswith('xcvp'):
+            soc_variant = 'premium'
+        elif device_id.startswith('xcvh'):
+            soc_variant = 'hbm'
     return soc_variant
 
 
