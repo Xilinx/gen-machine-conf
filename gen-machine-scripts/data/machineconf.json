@@ -89,7 +89,7 @@
         "dt-boardfile": ""
     },
 	"xilinx-k24-som": {
-		"machine-overrides": "kria",
+		"machine-overrides": "kria:k24",
 		"dt-boardfile": ""
 	},
 	"xilinx-k26-kr": {
