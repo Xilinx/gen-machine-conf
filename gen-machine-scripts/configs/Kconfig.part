@@ -1250,6 +1250,11 @@ config PLNX_IMAGES_LOCATION
 	help
 	  Specify the PetaLinux deploy directory to place the generated build artifacts.
 
+config MC_PLNX_IMAGES_LOCATION
+        string "PetaLinux Multiconfig Deploy Directory"
+        help
+          Specify the PetaLinux multiconfig deploy directory to place the generated build artifacts.
+
 menu "Parallel thread execution"
 
 config YOCTO_BB_NUMBER_THREADS
@@ -1324,6 +1329,146 @@ config YOCTO_BUILDTOOLS_EXTENDED
 	help
 	 Enabling this option to use the gcc and other libraries from $PETALINUX/components/yocto/buildtools_extended/
 	 Use this option on a machine that does not meet the minimal gcc, Git, tar, and Python requirements.
+
+if SUBSYSTEM_SDT_FLOW
+
+menu "multiconfig targets"
+
+if SYSTEM_ZYNQMP
+
+config YOCTO_BBMC_CORTEXA53_0_ZYNQMP_FSBL_BAREMETAL
+        bool "cortexa53-0-zynqmp-fsbl-baremetal"
+        default y
+        help
+         Enabling this option will build the a53 processor0 baremetal fsbl.
+
+config YOCTO_BBMC_CORTEXA53_0_ZYNQMP_BAREMETAL
+        bool "cortexa53-0-zynqmp-baremetal"
+        default y
+        help
+         Enabling this option will build the a53 processor0 baremetal applications.
+
+config YOCTO_BBMC_CORTEXA53_0_ZYNQMP_FREERTOS
+        bool "cortexa53-0-zynqmp-freertos"
+        default y
+        help
+         Enabling this option will build the a53 processor0 freertos.
+
+config YOCTO_BBMC_CORTEXA53_1_ZYNQMP_BAREMETAL
+        bool "cortexa53-1-zynqmp-baremetal"
+        default y
+        help
+         Enabling this option will build the a53 processor1 baremetal applications.
+
+config YOCTO_BBMC_CORTEXA53_1_ZYNQMP_FREERTOS
+        bool "cortexa53-1-zynqmp-freertos"
+        default y
+        help
+         Enabling this option will build the a53 processor1 freertos.
+
+config YOCTO_BBMC_CORTEXA53_2_ZYNQMP_BAREMETAL
+        bool "cortexa53-2-zynqmp-baremetal"
+        default y
+        help
+         Enabling this option will build the a53 processor2 applications.
+
+config YOCTO_BBMC_CORTEXA53_2_ZYNQMP_FREERTOS
+        bool "cortexa53-2-zynqmp-freertos"
+        default y
+        help
+         Enabling this option will build the a53 processor2 freertos.
+
+config YOCTO_BBMC_CORTEXA53_3_ZYNQMP_BAREMETAL
+        bool "cortexa53-3-zynqmp-baremetal"
+        default y
+        help
+         Enabling this option will build the a53 processor3 baremetal applications.
+
+config YOCTO_BBMC_CORTEXA53_3_ZYNQMP_FREERTOS
+        bool "cortexa53-3-zynqmp-freertos"
+        default y
+ help
+         Enabling this option will build the a53 processor3 freertos
+
+config YOCTO_BBMC_CORTEXR5_0_ZYNQMP_FSBL_BAREMETAL
+        bool "cortexr5-0-zynqmp-fsbl-baremetal"
+        default y
+        help
+         Enabling this option will build the r5 processor0 baremetal fsbl.
+
+config YOCTO_BBMC_CORTEXR5_0_ZYNQMP_BAREMETAL
+        bool "cortexr5-0-zynqmp-baremetal"
+        default y
+        help
+         Enabling this option will build the r5 processor0 baremetal applications.
+
+config YOCTO_BBMC_CORTEXR5_0_ZYNQMP_FREERTOS
+        bool "cortexr5-0-zynqmp-freertos"
+        default y
+        help
+         Enabling this option will build the r5 processor0 freertos applications.
+
+config YOCTO_BBMC_MICROBLAZE_0_PMU
+        bool "microblaze-0-pmu"
+        default y
+        help
+         Enabling this option will build microblaze pmu application.
+endif
+
+if SYSTEM_VERSAL
+
+config YOCTO_BBMC_CORTEXA72_0_VERSAL_BAREMETAL
+        bool "cortexa72-0-versal-baremetal"
+        default y
+        help
+         Enabling this option will build a72 versal baremetal applications for processor0.
+
+config YOCTO_BBMC_CORTEXA72_0_VERSAL_FREERTOS
+        bool "cortexa72-0-versal-freertos"
+        default y
+        help
+         Enabling this option will build a72 versal freertos applications for processor0.
+
+config YOCTO_BBMC_CORTEXA72_1_VERSAL_BAREMETAL
+        bool "cortexa72-1-versal-baremetal"
+        default y
+        help
+         Enabling this option will build a72 versal baremetal applications for processor1.
+
+config YOCTO_BBMC_CORTEXA72_1_VERSAL_FREERTOS
+        bool "cortexa72-1-versal-freertos"
+        default y
+        help
+         Enabling this option will build a72 versal freertos applications for processor1.
+
+config YOCTO_BBMC_MICROBLAZE_0_PMC
+        bool "microblaze-0-pmc"
+	default y
+        help
+         Enabling this option will build microblaze pmc application.
+
+config YOCTO_BBMC_MICROBLAZE_0_PSM
+        bool "microblaze-0-psm"
+        default y
+        help
+         Enabling this option will build microblaze psm application.
+
+config YOCTO_BBMC_CORTEXR5_0_VERSAL_BAREMETAL
+        bool "cortexr5-0-versal-baremetal"
+        default y
+        help
+         Enabling this option will build the r5 processor0 baremetal applications.
+
+config YOCTO_BBMC_CORTEXR5_0_VERSAL_FREERTOS
+        bool "cortexr5-0-versal-freertos"
+        default y
+        help
+         Enabling this option will build the r5 processor0 freertos applications.
+endif
+
+endmenu
+
+endif
 
 menu "User Layers"
 
