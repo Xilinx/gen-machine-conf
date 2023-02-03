@@ -270,6 +270,54 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         override_string += 'TMPDIR = "%s"\n' % tmp_dir
         if hw_flow == 'sdt':
             override_string += 'BASE_TMPDIR = "%s-multiconfig"\n' % tmp_dir
+    if hw_flow == 'sdt':
+        targets = ''
+        if soc_family == "zynqmp":
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_0_ZYNQMP_FSBL_BAREMETAL', default_cfgfile):
+                targets += 'cortexa53-0-zynqmp-fsbl-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_0_ZYNQMP_BAREMETAL', default_cfgfile):
+                targets += 'cortexa53-0-zynqmp-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_0_ZYNQMP_FREERTOS', default_cfgfile):
+                targets += 'cortexa53-0-zynqmp-freertos '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_1_ZYNQMP_BAREMETAL', default_cfgfile):
+                targets += 'cortexa53-1-zynqmp-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_1_ZYNQMP_FREERTOS', default_cfgfile):
+                targets += 'cortexa53-1-zynqmp-freertos '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_2_ZYNQMP_BAREMETAL', default_cfgfile):
+                targets += 'cortexa53-2-zynqmp-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_2_ZYNQMP_FREERTOS', default_cfgfile):
+                targets += 'cortexa53-2-zynqmp-freertos '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_3_ZYNQMP_BAREMETAL', default_cfgfile):
+                targets += 'cortexa53-3-zynqmp-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA53_3_ZYNQMP_FREERTOS', default_cfgfile):
+                targets += 'cortexa53-3-zynqmp-freertos '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXR5_0_ZYNQMP_FSBL_BAREMETAL', default_cfgfile):
+                targets += 'cortexr5-0-zynqmp-fsbl-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXR5_0_ZYNQMP_BAREMETAL', default_cfgfile):
+                targets += 'cortexr5-0-zynqmp-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXR5_0_ZYNQMP_FREERTOS', default_cfgfile):
+                targets += 'cortexr5-0-zynqmp-freertos '
+            if get_config_value('CONFIG_YOCTO_BBMC_MICROBLAZE_0_PMU', default_cfgfile):
+                targets += 'microblaze-0-pmu'
+        if soc_family == "versal":
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA72_0_VERSAL_BAREMETAL', default_cfgfile):
+                targets += 'cortexa72-0-versal-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA72_0_VERSAL_FREERTOS', default_cfgfile):
+                targets += 'cortexa72-0-versal-freertos '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA72_1_VERSAL_BAREMETAL', default_cfgfile):
+                targets += 'cortexa72-1-versal-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXA72_1_VERSAL_FREERTOS', default_cfgfile):
+                targets += 'cortexa72-1-versal-freertos '
+            if get_config_value('CONFIG_YOCTO_BBMC_MICROBLAZE_0_PMC', default_cfgfile):
+                targets += 'microblaze-0-pmc '
+            if get_config_value('CONFIG_YOCTO_BBMC_MICROBLAZE_0_PSM', default_cfgfile):
+                targets += 'microblaze-0-psm '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXR5_0_VERSAL_BAREMETAL', default_cfgfile):
+                targets += 'cortexr5-0-versal-baremetal '
+            if get_config_value('CONFIG_YOCTO_BBMC_CORTEXR5_0_VERSAL_FREERTOS', default_cfgfile):
+                targets += 'cortexr5-0-versal-freertos '
+        override_string += '# targets to build the multi artifacts\n'
+        override_string += 'BBMULTICONFIG = "%s"\n' % targets
 
     # AUTO add local uninative tarball if exists, to support no network case.
     # CONFIG_SITE variable exported in case of extensible SDK only
@@ -701,6 +749,10 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
         'CONFIG_PLNX_IMAGES_LOCATION', default_cfgfile)
     if plnx_deploydir:
         override_string += 'PLNX_DEPLOY_DIR = "%s"\n' % plnx_deploydir
+    mc_plnx_deploydir = get_config_value(
+        'CONFIG_MC_PLNX_IMAGES_LOCATION', default_cfgfile)
+    if mc_plnx_deploydir:
+        override_string += 'MC_PLNX_DEPLOY_DIR = "%s"\n' % mc_plnx_deploydir
     dtb_deployname = get_config_value(
         'CONFIG_SUBSYSTEM_IMAGES_ADVANCED_AUTOCONFIG_DTB_IMAGE_NAME', default_cfgfile)
     override_string += 'PACKAGE_DTB_NAME = "%s"\n' % dtb_deployname
