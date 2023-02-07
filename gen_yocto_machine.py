@@ -11,6 +11,33 @@
 from xilinx_mirrors import *
 
 
+def check_machineconf_exists(args, machine_name):
+    bbpaths = []
+    machine_file = 'conf/machine/%s.conf' % machine_name
+    bitbake = shutil.which('bitbake')
+    if not bitbake:
+        logger.debug('Skip machineconf check as no bitbake found')
+        return False
+
+    cmd = 'bitbake -e'
+    stdout, stderr = run_cmd(cmd, os.getcwd(), args.logfile)
+    # Read BBPATH from bitbake env
+    for line in stdout.splitlines():
+        if line.startswith('BBPATH'):
+            vbbpaths = line.split('=')[1].replace('"', '')
+            if vbbpaths:
+                bbpaths += vbbpaths.split(':')
+
+    for path in bbpaths:
+        currname = os.path.join(path, machine_file)
+        if os.access(currname, os.R_OK):
+            # Skip if its build dir as it is creating multiple machines.
+            if os.path.normpath(path) == os.path.normpath(os.environ['BUILDDIR']):
+                continue
+            return True
+    return False
+
+
 def generate_yocto_machine(args, hw_flow):
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
@@ -39,9 +66,9 @@ def generate_yocto_machine(args, hw_flow):
     # Get SOC_Family from the xsa device_id for machine generic required
     # inclusion metadata file.
     if device_id.startswith('xcvn'):
-        req_conf_file = 'versal-net'
+        req_conf_file = 'versal-net-generic'
     else:
-        req_conf_file = soc_family
+        req_conf_file = soc_family + '-generic'
 
     # Machine conf json file
     import json
@@ -78,8 +105,11 @@ def generate_yocto_machine(args, hw_flow):
                                         machinejson_data[machine_conf_file]['extra-yocto-vars'])
     else:
         # Check if machine name from sysconfig is generic machine
-        # Append device_id if its a generic machine
-        if yocto_machine_name in machinejson_data['generic-machines']:
+        # or part of layers if yes include that instead of generic machine
+        # Append device_id to yocto_machine_name
+        if yocto_machine_name in machinejson_data['generic-machines'] \
+                or check_machineconf_exists(args, yocto_machine_name):
+            req_conf_file = yocto_machine_name
             if device_id:
                 machine_conf_file += '-' + device_id
             else:
@@ -379,7 +409,7 @@ def generate_yocto_machine(args, hw_flow):
     # defined before calling the required inclusion file else pre-expansion value
     # defined in respective generic machine conf will be set.
     machine_override_string += '\n# Required generic machine inclusion\n'
-    machine_override_string += 'require conf/machine/%s-generic.conf\n' % \
+    machine_override_string += 'require conf/machine/%s.conf\n' % \
         req_conf_file
 
     machine_features = ''
