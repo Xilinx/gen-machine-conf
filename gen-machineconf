@@ -25,6 +25,66 @@ def search_strin_file(filename, string):
     return str_found
 
 
+def add_user_layers(args):
+    bb_layers = []
+    proot = ''
+    builddir = ''
+    default_cfgfile = os.path.join(args.output, 'config')
+
+    # Return if sysconf doesnot modified
+    bitbake_layers = shutil.which('bitbake-layers')
+    if 'BUILDDIR' in os.environ.keys():
+        builddir = os.environ['BUILDDIR']
+
+    if not bitbake_layers or not builddir or not \
+            'UPDATE_USER_LAYERS' in os.environ.keys():
+        logger.debug(
+            'Skip adding layers as no bitbake-layers or builddir found')
+        return
+    layers_list = '%s/conf/layerslist' % builddir
+    old_layers = []
+    if os.path.exists(layers_list):
+        with open(layers_list, 'r') as layers_list_f:
+            old_layers = layers_list_f.read().splitlines()
+
+    if 'PROOT' in os.environ.keys() and args.petalinux:
+        proot = os.environ['PROOT']
+        bb_layers += os.path.join(proot, 'project-spec', 'meta-user').split()
+
+    layer_cnt = 0
+    while True:
+        # Read layers from configs
+        user_layer = get_config_value(
+            'CONFIG_USER_LAYER_%s' % layer_cnt, default_cfgfile)
+        if not user_layer:
+            break
+        if proot:
+            user_layer = user_layer.replace('${PROOT}', proot)
+        bb_layers += user_layer.split()
+        layer_cnt += 1
+
+    # Get the layers which to be add
+    add_layers = list(set(bb_layers).difference(old_layers))
+    # Get the layers which to be removed
+    remove_layers = list(set(old_layers).difference(bb_layers))
+
+    if add_layers:
+        logger.info('Adding user layers')
+    with open(layers_list, 'a') as layers_list_f:
+        for layer in add_layers:
+            if os.path.isdir(layer):
+                logger.debug('Adding layer: %s' % layer)
+                command = 'bitbake-layers -F add-layer %s' % (layer)
+                run_cmd(command, builddir, args.logfile)
+                layers_list_f.write(layer + '\n')
+
+    for layer in remove_layers:
+        cmd = 'sed -i "\|%s|d"  "%s"' % (layer, layers_list)
+        run_cmd(cmd, os.getcwd(), args.logfile, shell=True)
+        cmd = 'sed -i "\|%s|d"  "%s/conf/bblayers.conf"' % (layer, builddir)
+        run_cmd(cmd, os.getcwd(), args.logfile, shell=True)
+
+
 def update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow):
     builddir = ''
     machine_conf_path = os.path.join(args.output, machine_conf_file +
@@ -361,6 +421,7 @@ def main():
     if args.hw_description:
         get_hw_description(args, hw_flow)
 
+    add_user_layers(args)
     machine_conf_file = generate_yocto_machine(args, hw_flow)
     plnx_conf_file = generate_plnx_config(args, machine_conf_file, hw_flow)
     update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow)
