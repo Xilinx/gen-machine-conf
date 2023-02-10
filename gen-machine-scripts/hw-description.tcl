@@ -261,26 +261,29 @@ proc plnx_gen_conf_processor {mapping kconfprefix} {
 		"${cpuchoicesstr}" \
 		"endchoice"]
 	if {[llength ${armknamelist}] > 0} {
-		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
-		"config SUBSYSTEM_ARCH_ARM" \
+		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
+		"config SUBSYSTEM_ENABLE_ARCHARM" \
 		"bool" \
 		"default y" \
+		"select SUBSYSTEM_ARCH_ARM" \
 		"depends on " \
 		[join ${armknamelist} " ||"] ]
 	}
 	if {[llength ${mbknamelist}] > 0} {
-		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
-		"config SUBSYSTEM_ARCH_MICROBLAZE" \
+		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
+		"config SUBSYSTEM_ENABLE_ARCHMB" \
 		"bool" \
 		"default y" \
+		"select SUBSYSTEM_ARCH_MICROBLAZE" \
 		"depends on " \
 		[join ${mbknamelist} " ||"] ]
 	}
 	if {[llength ${aarch64namelist}] > 0} {
-		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
-		"config SUBSYSTEM_ARCH_AARCH64" \
+		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
+		"config SUBSYSTEM_ENABLE_ARCH64" \
 		"bool" \
 		"default y" \
+		"select SUBSYSTEM_ARCH_AARCH64" \
 		"depends on " \
 		[join ${aarch64namelist} " ||"] ]
 	}

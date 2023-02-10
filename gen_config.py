@@ -450,7 +450,7 @@ def run_menuconfig(Kconfig, cfgfile, ui, out_dir, component):
             raise Exception(stdout)
     else:
         logger.info('Menuconfig %s' % (component))
-        cmd = 'env KCONFIG_CONFIG=%s mconf %s' % (cfgfile, Kconfig)
+        cmd = 'env KCONFIG_CONFIG=%s mconf -s %s' % (cfgfile, Kconfig)
         logger.debug('Running CMD: %s' % cmd)
         try:
             subprocess.check_call(cmd.split(), cwd=out_dir)

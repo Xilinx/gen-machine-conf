@@ -422,7 +422,6 @@ endmenu
 
 source ./Kconfig.syshw
 
-if !SUBSYSTEM_HARDWARE_AUTO
 choice
 	prompt "System Architecture"
 	default SUBSYSTEM_ARCH_ARM
@@ -442,7 +441,6 @@ config SUBSYSTEM_ARCH_MICROBLAZE
 	help
 	  Choose this option to specify MicroBlaze as the SUBSYSTEM architecture
 endchoice
-endif
 
 config SUBSYSTEM_ENDIAN_LITTLE
 	bool
