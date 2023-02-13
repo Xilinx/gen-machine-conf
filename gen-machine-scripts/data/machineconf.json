@@ -87,15 +87,15 @@
         ]
     },
     "xilinx-k24-kd": {
-        "machine-overrides": "kria:k24:k24-kd",
+        "machine-overrides": "kria:k24-kria:k24-kd",
         "dt-boardfile": ""
     },
     "xilinx-k24-kv": {
-        "machine-overrides": "kria:k24:k24-kv",
+        "machine-overrides": "kria:k24-kria:k24-kv",
         "dt-boardfile": ""
     },
     "xilinx-k24-som": {
-        "machine-overrides": "kria:k24",
+        "machine-overrides": "kria:k24-kria:k24-sm",
         "dt-boardfile": ""
     },
     "xilinx-k26-kr": {
