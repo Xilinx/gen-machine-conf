@@ -1129,21 +1129,6 @@ config lrzsz-dev
 	 help
 	
 endmenu
-menu "mailx " 
-config mailx  
-	 bool "mailx"
-	 help
-	 mailx is the traditional command-line-mode mail user agent
-	
-config mailx-dbg  
-	 bool "mailx-dbg"
-	 help
-	
-config mailx-dev  
-	 bool "mailx-dev"
-	 help
-	
-endmenu
 menu "minicom " 
 config minicom  
 	 bool "minicom"
@@ -2248,21 +2233,6 @@ config perl-pod
 	 help
 	
 endmenu
-menu "python3-nose "
-config python3-nose
-	 bool "python3-nose"
-	 help
-	 Extends Python3 unittest to make testing easier
-	
-config python3-nose-dbg
-	 bool "python3-nose-dbg"
-	 help
-	
-config python3-nose-dev
-	 bool "python3-nose-dev"
-	 help
-	
-endmenu
 menu "python3-numpy "
 config python3-numpy
 	 bool "python3-numpy"
@@ -3178,10 +3148,6 @@ config libgcrypt-dbg
 	
 config libgcrypt-dev  
 	 bool "libgcrypt-dev"
-	 help
-	
-config dumpsexp-dev  
-	 bool "dumpsexp-dev"
 	 help
 	
 endmenu
@@ -4636,37 +4602,6 @@ config which-dbg
 	 bool "which-dbg"
 	 help
 	
-endmenu
-menu "xrt"
-config xrt
-    bool "xrt"
-    help
-    Xilinx Runtime Library
-
-config xrt-dev
-    bool "xrt-dev"
-    help
-
-config xrt-dbg
-    bool "xrt-dbg"
-    help
-
-endmenu
-
-menu "zocl"
-config zocl
-    bool "zocl"
-    help
-    Zynq Opencl Library
-
-config zocl-dev
-    bool "zocl-dev"
-    help
-
-config zocl-dbg
-    bool "zocl-dbg"
-    help
-
 endmenu
 menu "opencl-clhpp"
 config opencl-clhpp-dev
@@ -7220,21 +7155,6 @@ config xf86-input-evdev-dev
 	 help
 	
 endmenu
-menu "xf86-input-keyboard " 
-config xf86-input-keyboard  
-	 bool "xf86-input-keyboard"
-	 help
-	 X.Org X server -- keyboard input driver
-	
-config xf86-input-keyboard-dev  
-	 bool "xf86-input-keyboard-dev"
-	 help
-	
-config xf86-input-keyboard-dbg  
-	 bool "xf86-input-keyboard-dbg"
-	 help
-	
-endmenu
 menu "xf86-input-mouse " 
 config xf86-input-mouse  
 	 bool "xf86-input-mouse"
@@ -8024,25 +7944,6 @@ config gnome-common-dbg
 	
 config gnome-common-dev  
 	 bool "gnome-common-dev"
-	 help
-	
-endmenu
-menu "gnome-desktop3 " 
-config gnome-desktop3  
-	 bool "gnome-desktop3"
-	 help
-	 GNOME library for reading .desktop files
-	
-config gnome-desktop3-dbg  
-	 bool "gnome-desktop3-dbg"
-	 help
-	
-config gnome-desktop3-dev  
-	 bool "gnome-desktop3-dev"
-	 help
-	
-config libgnome-desktop3  
-	 bool "libgnome-desktop3"
 	 help
 	
 endmenu

@@ -1636,9 +1636,6 @@ config libstdcPLUSPLUS-dev
 	
 endmenu
 menu "glibc-xilinx " 
-config catchsegv  
-	 bool "catchsegv"
-	 help
 	
 config nscd  
 	 bool "nscd"
@@ -1670,10 +1667,6 @@ config tzcode
 	
 config libmemusage  
 	 bool "libmemusage"
-	 help
-	
-config libsegfault  
-	 bool "libsegfault"
 	 help
 	
 endmenu
