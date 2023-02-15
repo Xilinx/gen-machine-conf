@@ -53,7 +53,7 @@ This repo depends on:
 	URI: https://github.com/Xilinx/meta-petalinux
 
 
-	branch: master or xilinx current release version (e.g. hosister)
+	branch: master or xilinx current release version (e.g. langdale)
 
 ## PetaLinux/Yocto XSA to Machine conf file generation using gen-machineconf tool
 
