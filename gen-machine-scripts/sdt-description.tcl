@@ -228,26 +228,29 @@ proc plnx_gen_conf_processor {mapping kconfprefix} {
 		"${cpuchoicesstr}" \
 		"endchoice"]
 	if {[llength ${armknamelist}] > 0} {
-		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
-		"config SUBSYSTEM_ARCH_ARM" \
+		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
+		"config SUBSYSTEM_ENABLE_ARCHARM" \
 		"bool" \
 		"default y" \
+		"select SUBSYSTEM_ARCH_ARM" \
 		"depends on " \
 		[join ${armknamelist} " ||"] ]
 	}
 	if {[llength ${mbknamelist}] > 0} {
-		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
-		"config SUBSYSTEM_ARCH_MICROBLAZE" \
+		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
+		"config SUBSYSTEM_ENABLE_ARCHMB" \
 		"bool" \
 		"default y" \
+		"select SUBSYSTEM_ARCH_MICROBLAZE" \
 		"depends on " \
 		[join ${mbknamelist} " ||"] ]
 	}
 	if {[llength ${aarch64namelist}] > 0} {
-		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
-		"config SUBSYSTEM_ARCH_AARCH64" \
+		set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s%s\n" "${kconfstr}" \
+		"config SUBSYSTEM_ENABLE_ARCH64" \
 		"bool" \
 		"default y" \
+		"select SUBSYSTEM_ARCH_AARCH64" \
 		"depends on " \
 		[join ${aarch64namelist} " ||"] ]
 	}
@@ -1071,7 +1074,7 @@ proc plnx_gen_conf_reset_gpio {mapping kconfprefix cpuname cpuslaves} {
 	return ${retrstgpios}
 }
 
-proc plnx_get_conf_flash_partition {prefix flashname bankid advdepends} {
+proc plnx_get_conf_flash_partition {prefix flashname bankid advdepends flash_prefix} {
 	set partitionstr ""
 	set choicestr ""
 	set flashipname ""
@@ -1088,20 +1091,30 @@ proc plnx_get_conf_flash_partition {prefix flashname bankid advdepends} {
 		"bool \"${flashname}${bankprompt}\""]
 	set defaultlist {}
 	global current_arch
-	if {"${current_arch}" == "arm" || "${current_arch}" == "aarch64"} {
-		lappend defaultlist [list boot 0x400000]
-		lappend defaultlist [list kernel 0x1400000]
-		lappend defaultlist [list bootenv 0x400000]
+	if {[llength ${flash_prefix}]} {
+		set flash_prefix "${flash_prefix}-"
+	}
+	if {"${current_arch}" == "aarch64"} {
+		lappend defaultlist [list ${flash_prefix}boot 0x400000]
+		lappend defaultlist [list ${flash_prefix}kernel 0x1400000]
+		lappend defaultlist [list ${flash_prefix}bootenv 0x400000]
 		if {[string match -nocase "*nand*" $flashname]} {
-			lappend defaultlist [list device-tree 0x400000]
-			lappend defaultlist [list rootfs 0x3C00000]
+			lappend defaultlist [list ${flash_prefix}device-tree 0x400000]
+			lappend defaultlist [list ${flash_prefix}rootfs 0x3C00000]
 		}
-		#puts "flashname: ${flashname}"
+	} elseif {"${current_arch}" == "arm"} {
+		lappend defaultlist [list ${flash_prefix}boot 0x500000]
+		lappend defaultlist [list ${flash_prefix}kernel 0xA80000]
+		lappend defaultlist [list ${flash_prefix}bootenv 0x20000]
+		if {[string match -nocase "*nand*" $flashname]} {
+			lappend defaultlist [list ${flash_prefix}device-tree 0x400000]
+			lappend defaultlist [list ${flash_prefix}rootfs 0x3C00000]
+		}
 	} elseif {"${current_arch}" == "microblaze"} {
-		lappend defaultlist [list fpga 0x400000]
-		lappend defaultlist [list boot 0x40000]
-		lappend defaultlist [list bootenv 0x20000]
-		lappend defaultlist [list kernel 0x600000]
+		lappend defaultlist [list ${flash_prefix}fpga 0x400000]
+		lappend defaultlist [list ${flash_prefix}boot 0x40000]
+		lappend defaultlist [list ${flash_prefix}bootenv 0x20000]
+		lappend defaultlist [list ${flash_prefix}kernel 0x600000]
 	}
 	for {set i 0} {${i} < 20} {incr i} {
 		set defaultmap [lindex ${defaultlist} ${i}]
@@ -1182,8 +1195,8 @@ proc plnx_gen_conf_flash {mapping kconfprefix cpuname cpuslaves} {
 					continue
 				}
 				set kname [plnx_fix_kconf_name ${hd}]
-				set flash_type [lindex ${m} 1]
-				# TODO: add psu flash support
+				set flash_type [get_ip_property_info "flash_type" "${m}"]
+				set flash_prefix [get_ip_property_info "flash_prefix" "${m}"]
 				if {"${ipname}" == "axi_emc"} {
 					set banks_property [lindex [get_ip_property_info number_of_banks ${devinfo}] 0]
 					set bankinfo [get_ip_property_info bank_property ${devinfo}]
@@ -1204,7 +1217,7 @@ proc plnx_gen_conf_flash {mapping kconfprefix cpuname cpuslaves} {
 						}
 						set bankbaseaddr [lindex [get_ip_property_info bank_baseaddr ${flashinfo}] 0]
 						set bankhighaddr [lindex [get_ip_property_info bank_highaddr ${flashinfo}] 0]
-						set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${hd}" "${i}" "${flashkconfprefix}_ADVANCED_AUTOCONFIG"]
+						set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${hd}" "${i}" "${flashkconfprefix}_ADVANCED_AUTOCONFIG" "${flash_prefix}"]
 						set choicestr [format "%s%s" "${choicestr}" [lindex ${strlist} 0]]
 						set partitionsstr [format "%s\n%s\n" "${partitionsstr}" [lindex ${strlist} 1]]
 						set flashipname [format "%s\n%s\n" "${flashipname}" [lindex ${strlist} 2]]
@@ -1231,7 +1244,7 @@ proc plnx_gen_conf_flash {mapping kconfprefix cpuname cpuslaves} {
 					} else {
 						set cs_bits 0
 					}
-					set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${name}" "" "${flashkconfprefix}_ADVANCED_AUTOCONFIG"]
+					set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${hd}" "" "${flashkconfprefix}_ADVANCED_AUTOCONFIG" "${flash_prefix}"]
 					set choicestr [format "%s%s" "${choicestr}" [lindex ${strlist} 0]]
 					set partitionsstr [format "%s\n%s\n" "${partitionsstr}" [lindex ${strlist} 1]]
 					set flashipname [format "%s\n%s\n" "${flashipname}" [lindex ${strlist} 2]]
@@ -1246,14 +1259,14 @@ proc plnx_gen_conf_flash {mapping kconfprefix cpuname cpuslaves} {
 					#if {"${nor_cs}" == "0"} {
 					#	continue
 					#}
-					set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${name}" "" "${flashkconfprefix}_ADVANCED_AUTOCONFIG"]
+					set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${hd}" "" "${flashkconfprefix}_ADVANCED_AUTOCONFIG" "${flash_prefix}"]
 					set choicestr [format "%s%s" "${choicestr}" [lindex ${strlist} 0]]
 					set partitionsstr [format "%s\n%s\n" "${partitionsstr}" [lindex ${strlist} 1]]
 					set flashipname [format "%s\n%s\n" "${flashipname}" [lindex ${strlist} 2]]
 					set flashnode [list "${hd}_bankless" [list device_type ${devicetype}] [list ip_name ${ipname}]]
 					lappend retflashs ${flashnode}
 				} else {
-					set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${hd}" "" "${flashkconfprefix}_ADVANCED_AUTOCONFIG"]
+					set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${hd}" "" "${flashkconfprefix}_ADVANCED_AUTOCONFIG" "${flash_prefix}"]
 					set choicestr [format "%s%s" "${choicestr}" [lindex ${strlist} 0]]
 					set partitionsstr [format "%s\n%s\n" "${partitionsstr}" [lindex ${strlist} 1]]
 					set flashipname [format "%s\n%s\n" "${flashipname}" [lindex ${strlist} 2]]

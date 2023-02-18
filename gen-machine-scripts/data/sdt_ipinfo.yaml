@@ -39,15 +39,6 @@ microblaze:
               - pmc-microblaze
               - psm-microblaze
     device_type: processor
-    linux_kernel_properties:
-        XILINX_MICROBLAZE0_FAMILY: CONFIG.C_FAMILY string
-        XILINX_MICROBLAZE0_USE_MSR_INSTR: CONFIG.C_USE_MSR_INSTR int
-        XILINX_MICROBLAZE0_USE_PCMP_INSTR: CONFIG.C_USE_PCMP_INSTR int
-        XILINX_MICROBLAZE0_USE_BARREL: CONFIG.C_USE_BARREL int
-        XILINX_MICROBLAZE0_USE_DIV: CONFIG.C_USE_DIV int
-        XILINX_MICROBLAZE0_USE_HW_MUL: CONFIG.C_USE_HW_MUL int
-        XILINX_MICROBLAZE0_USE_FPU: CONFIG.C_USE_FPU int
-        XILINX_MICROBLAZE0_HW_VER: VLNV string
 
 ps7_ddr:
     device_type: memory
@@ -116,4 +107,69 @@ psu_qspi:
               - xlnx,zynqmp-qspi-1.0
             - enum:
               - xlnx,versal-qspi-1.0
-    device_type: spi
+    device_type: flash
+    flash_type: spi
+    flash_prefix: qspi
+
+psv_pmc_qspi:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+             - enum:
+               - xlnx,versal-qspi-1.0
+             - enum:
+               - xlnx,zynqmp-qspi-1.0
+    device_type: flash
+    flash_type: spi
+    flash_prefix: qspi
+
+psv_pmc_qspi_ospi:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+             - enum:
+               - xlnx,versal-ospi-1.0
+             - enum:
+               - xlnx,zynqmp-ospi-1.0
+    device_type: flash
+    flash_type: spi
+    flash_prefix: spi0
+
+psx_pmc_qspi:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+             - enum:
+               - xlnx,versal-qspi-1.0
+             - enum:
+               - xlnx,zynqmp-qspi-1.0
+    device_type: flash
+    flash_type: spi
+    flash_prefix: qspi
+
+psx_pmc_qspi_ospi:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+             - enum:
+               - xlnx,versal-ospi-1.0
+             - enum:
+               - xlnx,zynqmp-ospi-1.0
+    device_type: flash
+    flash_type: spi
+    flash_prefix: spi0
+
+axi_quad_spi:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+             - enum:
+               - xlnx,xps-spi-2.00.a
+    device_type: flash
+    flash_type: spi
+    flash_prefix: spi0
