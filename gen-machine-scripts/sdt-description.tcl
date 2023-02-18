@@ -38,16 +38,10 @@ proc plnx_fix_kconf_name {name} {
 }
 
 proc is_connect_to_end_from_source {srchd endname {end_pin_type ""} {pin_name "*"}} {
-	#puts "srchd : $srchd endname : $endname end_pin_type : $end_pin_type pin_name : $pin_name"
 	set srcname [hsi get_property NAME ${srchd}]
 	set searchednames [list ${srcname}]
-	#puts "srcname : $srcname searchednames : $searchednames"
 	set out_pins [hsi get_pins -filter "DIRECTION==O && NAME=~${pin_name}" -of_objects ${srchd}]
-
-	#puts "srcname : $srcname searchednames : $searchednames out_pins : $out_pins"
 	set sink_pins [hsi::utils::get_sink_pins ${out_pins}]
-	#set sink_pins [hsi::utils::get_sink_pins [hsi get_pins -filter "DIRECTION==O && NAME=~${pin_name}" -of_objects ${srchd}]]
-	#puts "sink_pins : $sink_pins"
 	while {[llength ${sink_pins}] > 0} {
 		set out_cells {}
 		foreach s ${sink_pins} {
@@ -155,13 +149,11 @@ proc plnx_gen_conf_processor {mapping kconfprefix} {
 	set plnxinfofile "${workingdir}/petalinux_config.yaml"
 	set plnxinfolist [get_ipinfo "${plnxinfofile}"]
 	foreach m ${mapping} {
-		puts " m : ${m}"
 		set index  0
 		set ipname [lindex ${m} 0]
 		set devinfo [get_ip_device_info processor ${m}]
 		set archmapping [lindex [get_ip_property_info arch ${devinfo}] 0]
 
-		puts "${plnxinfolist}"
 		foreach p ${plnxinfolist} {
 			set processor [lindex [lindex ${p} 1] 0]
 			set ip_name [lindex [lindex [lindex ${p} 1] 2] 1]
@@ -196,7 +188,6 @@ proc plnx_gen_conf_processor {mapping kconfprefix} {
 		set cpuname [lindex [split ${cpu} ":"] 0]
 		foreach p ${plnxinfolist} {
 			set ipname [lindex [lindex [lindex ${p} 1] 2] 1]
-			#set slaves_list [ lindex [lindex ${p} 1] [lsearch ${p} "*slaves_string*"] 3]
 			set slaves_list [ lindex [lindex ${p} 1] 3]
 		}
 		set kname  ${cpuname}
@@ -213,7 +204,6 @@ proc plnx_gen_conf_processor {mapping kconfprefix} {
 		set cpudata [list "${cpuname}" [list arch ${arch_mapping}] [list ip_name ${ipname}] ${slaves_list}]
 		lappend retcpus ${cpudata}
 	}
-	#puts "retcpus : $retcpus"
 	if { "${cpuchoicesstr}" == "" } {
 		puts stderr [format "%s\n%s\n%s\n" "No CPU can be found in the system."\
 					"Please review your hardware system."\
@@ -346,7 +336,6 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 		set ipname [lindex ${m} 0]
 		set devinfo [get_ip_device_info memory ${m}]
 		set has_bank [lindex [get_ip_property_info has_bank ${devinfo}] 0]
-		puts "ipname: $ipname, devinfo: $devinfo, has_bank: $has_bank"
 		if { "${has_bank}" == "y" } {
 			set banks_property [lindex [get_ip_property_info number_of_banks ${devinfo}] 0]
 			set bankinfo [get_ip_property_info bank_property ${devinfo}]
@@ -357,14 +346,11 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 			set bank_baseaddr_property [lindex [get_ip_property_info bank_baseaddr ${bankinfo}] 0]
 			set bank_highaddr_property [lindex [get_ip_property_info bank_highaddr ${bankinfo}] 0]
 			set bank_type_property [lindex [get_ip_property_info bank_type ${bankinfo}] 0]
-			#puts "ipname=${ipname} bank_baseaddr_property=${bank_baseaddr_property} bank_highaddr_property=${bank_highaddr_property}"
-			#puts "bankidreplacement=${bankidreplacement} banks_property=${banks_property} bank_type_property=${bank_type_property} bankidreplacement=${bankidreplacement}"
 		} else {
 			set banks_property ""
 			set bank_baseaddr_property [lindex [get_ip_property_info baseaddr ${devinfo}] 0]
 			set bank_highaddr_property [lindex [get_ip_property_info highaddr ${devinfo}] 0]
 			set bank_enabled_property ""
-			#puts "ipname=${ipname} bank_baseaddr_property=${bank_baseaddr_property} bank_highaddr_property=${bank_highaddr_property}"
 		}
 		foreach p ${plnxinfolist} {
 			set slaves [lindex [lindex ${p} 1] 4]
@@ -375,7 +361,6 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 			set ip_instance [lindex [lindex ${meminfo} 0] 0]
 			set new_ip_instance [string trim $ip_instance "0123456789"]
 			set hds [lsearch -all -inline -subindices -index 0 ${meminfo} *${new_ip_instance}*]
-			#puts "slaves: $slaves mem_ip: $meminfo hds:$hds ip_name:$ip_name dev_type:$new_ip_instance"
 			foreach hd ${hds} {
 				if {"${ip_name}" != "" && "${ipname}" != "${ip_name}"} {
 					continue
@@ -537,7 +522,6 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 		set is_baudrate_editable [lindex [get_ip_property_info baudrate_editable ${devinfo}] 0]
 		set baseaddr_property [lindex [get_ip_property_info baseaddr ${devinfo}] 0]
 		set is_config_uart_property [lindex [get_ip_property_info is_serial_property ${devinfo}] 0]
-		#puts "ipname:$ipname devinfo:$devinfo baudrateproperty:$baudrateproperty hcbaudrate:$hcbaudrate is_baudrate_editable:$is_baudrate_editable baseaddr_property:$baseaddr_property is_config_uart_property:$is_config_uart_property"
 		foreach p ${plnxinfolist} {
 			set slaves [lindex [lindex ${p} 1] 4]
 			set cpuname [lindex [lindex [lindex ${p} 1] 2] 1]
@@ -547,7 +531,6 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 			set ip_instance [lindex [lindex ${serialinfo} 0] 0]
 			set new_ip_instance [string trim $ip_instance "0123456789"]
 			set hds [lsearch -all -inline -subindices -index 0 ${serialinfo} *${new_ip_instance}*]
-			#puts "slaves: $slaves serial_ip: $serialinfo hds:$hds ip_name:$ip_name dev_type:$new_ip_instance"
 			foreach hd ${hds} {
 				if {"${ip_name}" != "" && "${ipname}" != "${ip_name}"} {
 					continue
@@ -572,8 +555,6 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 				} else {
 					set baudrates($kname) {600 9600 28800 115200 230400 460800 921600}
 				}
-				#lappend choicestr [format "%s %s" "${choicestr}" \
-					"${hd}"]
 				lappend choicestr "${hd}"
 				if { "${baseaddr_property}" != "" } {
 					set serialnode [list "${hd}" [list device_type ${devicetype}] [list ip_name ${ipname}] [list baseaddr ${uart_baseaddr}]]
@@ -719,7 +700,6 @@ proc plnx_gen_conf_ethernet {mapping kconfprefix cpuname cpuslaves} {
 			set ip_instance [lindex [lindex ${ethernetinfo} 0] 0]
 			set new_ip_instance [string trim $ip_instance "0123456789"]
 			set hds [lsearch -all -inline -subindices -index 0 ${ethernetinfo} *${new_ip_instance}*]
-			#puts "slaves: $slaves ethernet_ip: $ethernetinfo hds:$hds ip_name:$ip_name dev_type:$new_ip_instance"
 			foreach hd ${hds} {
 				if {"${ip_name}" != "" && "${ipname}" != "${ip_name}"} {
 					continue
@@ -1037,7 +1017,6 @@ proc plnx_gen_conf_reset_gpio {mapping kconfprefix cpuname cpuslaves} {
 	set plnxinfofile "${workingdir}/petalinux_config.yaml"
 	set plnxinfolist [get_ipinfo "${plnxinfofile}"]
 	foreach m ${mapping} {
-		#puts "devinfo: $resetinfo"
 		set ipname [lindex ${m} 0]
 		foreach p ${plnxinfolist} {
 			set slaves [ lindex [lindex ${p} 1] 4]
@@ -1186,7 +1165,6 @@ proc plnx_gen_conf_flash {mapping kconfprefix cpuname cpuslaves} {
 			set ip_instance [lindex [lindex ${flashinfo} 0] 0]
 			set new_ip_instance [string trim $ip_instance "0123456789"]
 			set hds [lsearch -all -inline -subindices -index 0 ${flashinfo} *${new_ip_instance}*]
-			#puts "slaves: $slaves flash_ip: $flashinfo hds:$hds ip_name:$ip_name dev_type:$new_ip_instance"
 			foreach hd ${hds} {
 				if {"${ip_name}" != "" && "${ipname}" != "${ip_name}"} {
 					continue
@@ -1251,14 +1229,6 @@ proc plnx_gen_conf_flash {mapping kconfprefix cpuname cpuslaves} {
 					set flashnode [list "${hd}_bankless" [list device_type ${devicetype}] [list ip_name ${ipname}]]
 					lappend retflashs ${flashnode}
 				} elseif {"${ipname}" == "ps7_sram"} {
-					#if {"${name}" == "ps7_sram_0"} {
-					#	set nor_cs [hsi get_property CONFIG.C_NOR_CHIP_SEL0 [hsi get_cell -hier "ps7_smcc_0"]]
-					#} else {
-					#	set nor_cs [hsi get_property CONFIG.C_NOR_CHIP_SEL1 [hsi get_cell -hier "ps7_smcc_0"]]
-					#}
-					#if {"${nor_cs}" == "0"} {
-					#	continue
-					#}
 					set strlist [plnx_get_conf_flash_partition "${flashkconfprefix}" "${hd}" "" "${flashkconfprefix}_ADVANCED_AUTOCONFIG" "${flash_prefix}"]
 					set choicestr [format "%s%s" "${choicestr}" [lindex ${strlist} 0]]
 					set partitionsstr [format "%s\n%s\n" "${partitionsstr}" [lindex ${strlist} 1]]
@@ -1314,9 +1284,7 @@ proc plnx_gen_conf_images_location {kconfigprefix sds flashes} {
 	set imageconfigprefix "${kconfigprefix}IMAGES_ADVANCED_AUTOCONFIG_"
 	set imagesmap {}
 	# name arch flash/sd_only flash_part_name image_name prompt
-	#lappend imagesmap [list fpga {} {} fpga "microblaze:system.bin" "fpga bitstream BIN file"]
 	lappend imagesmap [list boot {} {} boot "microblaze:u-boot-s.bin arm:BOOT.BIN aarch64:BOOT.BIN" "boot image"]
-	#lappend imagesmap [list fpga {} {} fpga "arm:system.bin" "fpga bitstream BIN file"]
 	lappend imagesmap [list bootenv {} {} bootenv "" "u-boot env partition"]
 	lappend imagesmap [list kernel {} {flash sd ethernet} kernel image.ub "kernel image"]
 	lappend imagesmap [list jffs2 {} {flash} jffs2 "rootfs.jffs2" "jffs2 rootfs image"]
@@ -1357,9 +1325,6 @@ proc plnx_gen_conf_images_location {kconfigprefix sds flashes} {
 			set mindex [lsearch ${valid_media} ${m}]
 			set valid_media [lreplace ${valid_media} ${mindex} ${mindex}]
 		}
-		#if {[llength ${valid_media}] <= 0} {
-		#	continue
-		#}
 
 		set imagestr [format "%s\n\t%s\n" "${imagestr}" \
 			"menu \"${commentprompt} settings\""]
@@ -1462,7 +1427,6 @@ proc get_ipinfo {ipinfofile} {
 		}
 		set line [gets ${ipinfof}]
 		incr linenum
-		#regsub -all {\s+} $line { } line
 		if { [regexp "^#.*" $line matched] == 1 || \
 			[regexp "^\s+#.*" $line matched] == 1 || \
 			[string compare -nocase [string trim $line] ""] <= 0 } {
@@ -1472,7 +1436,6 @@ proc get_ipinfo {ipinfofile} {
 		if { [regexp {^(    )*[A-Za-z0-9_]+:.*} "${line}" matched] == 1} {
 			set tmpline [string map {: " "} ${trimline}]
 			set indent_level [regexp -all "(    )" ${line}]
-			#puts "value tmpline=${tmpline} indent_level=${indent_level} previous_indent_level=${previous_indent_level}"
 			if {${indent_level} < ${previous_indent_level}} {
 				for {set i ${indent_level}} {${i} <= ${previous_indent_level}} {incr i} {
 					set ipinfodata "${ipinfodata}\}"
@@ -1489,11 +1452,8 @@ proc get_ipinfo {ipinfofile} {
 			set previous_indent_level ${indent_level}
 		}
 	}
-	#puts "ipinfodata ${ipinfodata}"
 	set ip_list {}
 	eval set ip_list "\{${ipinfodata}\}"
-	#set iplistlen [llength ${ip_list}]
-	#puts "ip_list=${ip_list} length=${iplistlen}"
 	return "${ip_list}"
 }
 
@@ -1554,24 +1514,9 @@ proc plnx_gen_hwsysconf {args} {
 	if { "${syshwconfname}" == "" } {
 		error "No output kconfig file is specified."
 	}
-	#if { [catch {openhw "${hdf}"} res] } {
-	#	error "Failed to open hardware design from ${hdf}"
-	#}
 	if { [catch {open "${syshwconfname}" w} kconffile] } {
 		error "Failed to open output Kconfig file ${syshwconfname}"
 	}
-	#global plnx_data
-	#if { [catch {open "plnx_syshw_data" w} plnx_data] } {
-	#	error "Failed to open output Kconfig data file ${plnx_data}"
-	#}
-
-	# getting device_id from hw file
-	#set current_design [hsi get_property DEVICE [hsi current_hw_design]]
-	#plnx_output_data "device_id $current_design"
-
-	# getting bitfile name from hw file
-	#set bitfile_name [hsi get_property NAME [hsi current_hw_design]]
-	#plnx_output_data "hw_design_name $bitfile_name"
 
 	global plnx_kconfig
 	set plnx_kconfig ${kconffile}
@@ -1589,12 +1534,9 @@ proc plnx_gen_hwsysconf {args} {
 
 	set cpumapping [get_devices_nodes [lindex ${mapping} 0]]
 
-	#puts "mapping : $mapping"
-	#puts "cpumapping : $cpumapping"
 	set retcpus [plnx_gen_conf_processor ${cpumapping} "${hwkconfprefix}"]
 	global current_arch
 	set cpus_nodes {processor}
-	#puts "retcpus : $retcpus"
 	foreach c [lreplace ${retcpus} 0 0] {
 		set cpuname [lindex ${c} 0]
 		set cpuarch [lindex [get_ip_property_info "arch" ${c}] 0]
@@ -1602,7 +1544,6 @@ proc plnx_gen_hwsysconf {args} {
 		set current_arch ${cpuarch}
 		set cpuipname [lindex [get_ip_property_info "ip_name" ${c}] 0]
 		set cpuslaves [get_ip_property_info "slaves_strings" ${c}]
-		#puts "cpuname : $cpuname cpuarch : $cpuarch cpukname : $cpukname current_arch : $current_arch cpuipname : $cpuipname cpuslaves : $cpuslaves"
 		plnx_output_kconfig "if ${hwkconfprefix}PROCESSOR_${cpukname}_SELECT"
 		set retsd {}
 		set retflash {}
@@ -1626,19 +1567,9 @@ proc plnx_gen_hwsysconf {args} {
 		plnx_gen_conf_images_location ${hwkconfprefix} ${retsd} ${retflash}
 		plnx_output_kconfig "endif"
 		global plnx_ips_record
-		#foreach s [split ${cpuslaves}] {
-		#	if { [lsearch -index 0 ${retslaves} "${s}"] < 0 } {
-		#		set sipname [hsi get_property IP_NAME [hsi get_cell -hier "${s}"]]
-		#		lappend retslaves [list ${s} [list ip_name ${sipname}]]
-		#	}
-		#}
-		#lappend c ${retslaves}
-		#lappend cpus_nodes ${c}
 	}
 	plnx_output_kconfig "endif"
-	#plnx_output_data ${cpus_nodes}
 	close ${kconffile}
-	#close ${plnx_data}
 }
 
 proc plnx_shift {ls} {
