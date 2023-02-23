@@ -1197,21 +1197,6 @@ config lrzsz-dev
 	 help
 	
 endmenu
-menu "mailx " 
-config mailx  
-	 bool "mailx"
-	 help
-	 mailx is the traditional command-line-mode mail user agent
-	
-config mailx-dbg  
-	 bool "mailx-dbg"
-	 help
-	
-config mailx-dev  
-	 bool "mailx-dev"
-	 help
-	
-endmenu
 menu "minicom " 
 config minicom  
 	 bool "minicom"
@@ -2375,21 +2360,6 @@ config perl-dev
 	 help
 	
 endmenu
-menu "python3-nose "
-config python3-nose
-	 bool "python3-nose"
-	 help
-	 Extends Python3 unittest to make testing easier
-	
-config python3-nose-dbg
-	 bool "python3-nose-dbg"
-	 help
-	
-config python3-nose-dev
-	 bool "python3-nose-dev"
-	 help
-	
-endmenu
 menu "python3-numpy "
 config python3-numpy
 	 bool "python3-numpy"
@@ -3237,10 +3207,6 @@ config libgcrypt
 	 bool "libgcrypt"
 	 help
 	 General purpose cryptographic library based on the code from GnuPG
-	
-config dumpsexp-dev  
-	 bool "dumpsexp-dev"
-	 help
 	
 config libgcrypt-dbg  
 	 bool "libgcrypt-dbg"
@@ -5121,20 +5087,20 @@ config cryptodev-linux-dbg
 	 help
 	
 endmenu
-menu "dstat " 
-config dstat  
-	 bool "dstat"
+menu "dool "
+config dool
+	 bool "dool"
 	 help
 	 versatile resource statics tool
-	
-config dstat-dev  
-	 bool "dstat-dev"
+
+config dool-dev
+	 bool "dool-dev"
 	 help
-	
-config dstat-dbg  
-	 bool "dstat-dbg"
+
+config dool-dbg
+	 bool "dool-dbg"
 	 help
-	
+
 endmenu
 menu "encodings " 
 config encodings  
@@ -7578,21 +7544,6 @@ config xf86-input-evdev-dev
 	 help
 	
 endmenu
-menu "xf86-input-keyboard " 
-config xf86-input-keyboard  
-	 bool "xf86-input-keyboard"
-	 help
-	 X.Org X server -- keyboard input driver
-	
-config xf86-input-keyboard-dev  
-	 bool "xf86-input-keyboard-dev"
-	 help
-	
-config xf86-input-keyboard-dbg  
-	 bool "xf86-input-keyboard-dbg"
-	 help
-	
-endmenu
 menu "xf86-input-mouse " 
 config xf86-input-mouse  
 	 bool "xf86-input-mouse"
@@ -8458,25 +8409,6 @@ config gnome-common-dbg
 	 help
 	
 endmenu
-menu "gnome-desktop3 " 
-config gnome-desktop3  
-	 bool "gnome-desktop3"
-	 help
-	 GNOME library for reading .desktop files
-	
-config gnome-desktop3-dbg  
-	 bool "gnome-desktop3-dbg"
-	 help
-	
-config gnome-desktop3-dev  
-	 bool "gnome-desktop3-dev"
-	 help
-	
-config libgnome-desktop3  
-	 bool "libgnome-desktop3"
-	 help
-	
-endmenu
 menu "gnome-themes-extra "
 config gnome-themes-extra-dev
 	 bool "gnome-themes-extra-dev"
@@ -9021,7 +8953,7 @@ config packagegroup-petalinux-benchmarks
 		lsof 
 		babeltrace 
 		sysstat 
-		dstat 
+		dool
 		dhrystone 
 		linpack 
 		whetstone 
