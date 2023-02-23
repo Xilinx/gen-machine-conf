@@ -9590,6 +9590,17 @@ config imagefeature-debug-tweaks
         bool "debug-tweaks"
         help
 
+config imagefeature-empty-root-password
+	bool "empty-root-password"
+	help
+	    Select this option to enable support for no root passwrd
+
+config imagefeature-serial-autologin-root
+	bool "serial-autologin-root"
+	select imagefeature-empty-root-password
+	help
+    Select this option to enable autologin to root on serial consoles.This will work in conjunction with empty-root-password will automatically login as root on the serial console.This of course opens up a security hole if the serial console is potentially accessible to an attacker so use with caution.
+
 choice
 	prompt "Init-manager"
 	default Init-manager-systemd
