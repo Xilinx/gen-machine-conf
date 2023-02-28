@@ -2645,10 +2645,6 @@ config cairo-script-interpreter
 	 bool "cairo-script-interpreter"
 	 help
 	
-config cairo-perf-utils  
-	 bool "cairo-perf-utils"
-	 help
-	
 config cairo-dbg  
 	 bool "cairo-dbg"
 	 help
