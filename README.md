@@ -17,13 +17,16 @@ For more details follow the OE community patch submission guidelines, as describ
 https://www.openembedded.org/wiki/Commit_Patch_Message_Guidelines
 https://www.openembedded.org/wiki/How_to_submit_a_patch_to_OpenEmbedded
 
-When creating patches, please use below format.
+> **Note:** When creating patches, please use below format. To follow best practice,
+> if you have more than one patch use `--cover-letter` option while generating the
+> patches. Edit the 0000-cover-letter.patch and change the title and top of the
+> body as appropriate.
 
 **Syntax:**
-`git format-patch -s --subject "gen-machine-conf][<release-version>][PATCH" -1`
+`git format-patch -s --subject-prefix="gen-machine-conf][<BRANCH_NAME>][PATCH" -1`
 
 **Example:**
-`git format-patch -s --subject "gen-machine-conf][rel-v2023.1][PATCH" -1`
+`git format-patch -s --subject-prefix="gen-machine-conf][xlnx_rel_v2023.1][PATCH" -1`
 
 **Maintainers:**
 
@@ -40,24 +43,34 @@ When creating patches, please use below format.
 
 This repo depends on:
 
-	URI: https://git.openembedded.org/bitbake
-
-	URI: https://git.openembedded.org/openembedded-core
+	URI: https://git.yoctoproject.org/poky
 	layers: meta, meta-poky
+	branch: langdale
 
-	URI: https://git.yoctoproject.org/meta-xilinx
-	layers: meta-xilinx-microblaze, meta-xilinx-bsp, meta-xilinx-core,
-		meta-xilinx-pynq, meta-xilinx-contrib, meta-xilinx-standalone,
-		meta-xilinx-vendor.
+	URI: https://git.openembedded.org/meta-openembedded
+	layers: meta-oe, meta-perl, meta-python, meta-filesystems, meta-gnome,
+            meta-multimedia, meta-networking, meta-webserver, meta-xfce,
+            meta-initramfs.
+	branch: langdale
+
+	URI:
+        https://git.yoctoproject.org/meta-xilinx (official version)
+        https://github.com/Xilinx/meta-xilinx (development and amd xilinx release)
+	layers: meta-xilinx-core, meta-xilinx-microblaze, meta-xilinx-bsp,
+            meta-xilinx-standalone, meta-xilinx-vendor.
+	branch: langdale or amd xilinx release version (e.g. rel-v2023.1)
+
+	URI:
+        https://git.yoctoproject.org/meta-xilinx-tools (official version)
+        https://github.com/Xilinx/meta-xilinx-tools (development and amd xilinx release)
+	branch: langdale or amd xilinx release version (e.g. rel-v2023.1)
 
 	URI: https://github.com/Xilinx/meta-petalinux
-
-
-	branch: master or xilinx current release version (e.g. langdale)
+	branch: langdale or amd xilinx release version (e.g. rel-v2023.1)
 
 ## PetaLinux/Yocto XSA to Machine conf file generation using gen-machineconf tool
 
-This layer supports PetaLinux/Yocto XSA to Machine conf file generation using 
+This repo supports PetaLinux/Yocto XSA to Machine conf file generation using
 gen-machineconf tool. Below is the gen-machineconf tool usage and examples.
 
 * gen-machineconf usage:
@@ -90,51 +103,45 @@ optional arguments:
 
 ```
 
-* Microblaze gen-machineconf example:
+> **NOTE:** You can find the default BSP machine conf file names at `<gen-machine-conf>/gen-machine-scripts/data/machineconf.json`
+
+* MicroBlaze:
 
 ```bash
 # Custom xsa method
 $ gen-machineconf --soc-family microblaze --hw-description /<PATH_TO_CUSTOM_XSA>/kc705-microblazeel/system.xsa --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
 
 # BSP method:
-$ gen-machineconf --soc-family microblaze --hw-description /<PATH_TO_HDF_EXAMPLES>/hdf-examples/kc705-microblazeel/system.xsa --machine-name kc705-microblazeel --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
-
+$ gen-machineconf --soc-family microblaze --hw-description /<PATH_TO_HDF_ARTIFACTORY>/kc705-microblazeel/system.xsa --machine-name kc705-microblazeel --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
 ```
-NOTE: You can find the default BSP machine conf file names at <gen-machine-conf>/gen-machine-scripts/data/machineconf.json
 
-* Zynq-7000 gen-machineconf example:
+* Zynq-7000:
 
 ```bash
 # Custom xsa method
 $ gen-machineconf --soc-family zynq --hw-description /<PATH_TO_CUSTOM_XSA>/zc702-zynq7/system.xsa --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
 
 # BSP method:
-$ gen-machineconf --soc-family zynq --hw-description /<PATH_TO_HDF_EXAMPLES>/hdf-examples/zc702-zynq7/system.xsa --machine-name zc702-zynq7 --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
-
+$ gen-machineconf --soc-family zynq --hw-description /<PATH_TO_HDF_ARTIFACTORY>/zc702-zynq7/system.xsa --machine-name zc702-zynq7 --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
 ```
-NOTE: You can find the default BSP machine conf file names at <gen-machine-conf>/gen-machine-scripts/data/machineconf.json
 
-* ZynqMP gen-machineconf example:
+* ZynqMP:
 
 ```bash
 # Custom xsa method
 $ gen-machineconf --soc-family zynqmp --hw-description /<PATH_TO_CUSTOM_XSA>/zcu106-zynqmp/system.xsa --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
 
 # BSP method:
-$ gen-machineconf --soc-family zynqmp --hw-description /<PATH_TO_HDF_EXAMPLES>/hdf-examples/zcu106-zynqmp/system.xsa --machine-name zcu106-zynqmp --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
-
+$ gen-machineconf --soc-family zynqmp --hw-description /<PATH_TO_HDF_ARTIFACTORY>/zcu106-zynqmp/system.xsa --machine-name zcu106-zynqmp --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
 ```
-NOTE: You can find the default BSP machine conf file names at <gen-machine-conf>/gen-machine-scripts/data/machineconf.json
 
-* Versal gen-machineconf example:
+* Versal:
 
 ```bash
 # Custom xsa method
 $ gen-machineconf --soc-family versal --hw-description /<PATH_TO_CUSTOM_XSA>/vck190-versal/system.xsa --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
 
 # BSP method:
-$ gen-machineconf --soc-family versal --hw-description /<PATH_TO_HDF_EXAMPLES>/hdf-examples/vck190-versal/system.xsa --machine-name vck190-versal --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
-
+$ gen-machineconf --soc-family versal --hw-description /<PATH_TO_HDF_ARTIFACTORY>/vck190-versal/system.xsa --machine-name vck190-versal --xsct-tool /<PETALINUX_INSTALLATION_DIR>/tools/xsct
 ```
-NOTE: You can find the default BSP machine conf file names at <gen-machine-conf>/gen-machine-scripts/data/machineconf.json
 
