@@ -309,9 +309,10 @@ def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
             'CONFIG_SUBSYSTEM_ETHERNET_', default_cfgfile, 'choice', '_SELECT=y')
         nfsdir = get_config_value(
             'CONFIG_SUBSYSTEM_NFSROOT_DIR', default_cfgfile)
-        # petalinux-find-ipaddr TODO auto assign IP if AUTO
         nfsserverip = get_config_value(
             'CONFIG_SUBSYSTEM_NFSSERVER_IP', default_cfgfile)
+        cmd = '%s/petalinux-find-ipaddr %s' % (scripts_dir, nfsserverip)
+        nfsserverip = run_cmd(cmd, output, args.logfile)[0].strip()
         use_dhcp = get_config_value(
             'CONFIG_SUBSYSTEM_ETHERNET_%s_USE_DHCP' % ethdevname, default_cfgfile)
         static_ip = get_config_value(
