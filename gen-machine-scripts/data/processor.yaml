@@ -9,6 +9,20 @@ microblaze:
         config:
             CONFIG.C_FSL_LINKS:
                 uboot_config: XILINX_FSL_LINKS
+            CONFIG.C_USE_BARREL:
+                uboot_config: XILINX_MICROBLAZE0_USE_BARREL
+            CONFIG.C_USE_DIV:
+                uboot_config: XILINX_MICROBLAZE0_USE_DIV
+            CONFIG.C_USE_PCMP_INSTR:
+                uboot_config: XILINX_MICROBLAZE0_USE_PCMP_INSTR
+            CONFIG.C_USE_HW_MUL:
+                uboot_config: XILINX_MICROBLAZE0_USE_HW_MUL
+            CONFIG.C_DCACHE_BYTE_SIZE:
+                uboot_config: XILINX_MICROBLAZE0_DCACHE_SIZE
+            CONFIG.C_CACHE_BYTE_SIZE:
+                uboot_config: XILINX_MICROBLAZE0_ICACHE_SIZE
+            CONFIG.C_PVR:
+                uboot_config: XILINX_MICROBLAZE0_PVR
         define:
             IP_NAME:
                 uboot_config: CONFIG_DM CONFIG_SYS_MALLOC_F CONFIG_SYS_GENERIC_BOARD
@@ -17,35 +31,3 @@ microblaze:
                 uboot_config: CONFIG_DCACHE
             CONFIG.C_USE_ICACHE:
                 uboot_config: CONFIG_ICACHE
-
-# list for uboot config.mk file
-# HW_VER USE_BARREL USE_DIV USE_HW_MUL USE_PCMP_INSTR USE_FPU
-        config_chk_1_str:
-            CONFIG.C_USE_BARREL:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-barrel-shift
-            CONFIG.C_USE_DIV:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-soft-div
-            CONFIG.USE_HW_MUL:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-multiply-high
-            CONFIG.C_USE_PCMP_INSTR:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-pattern-compare
-            CONFIG.C_USE_FPU:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mhard-float
-        config1_chk_1_str:
-            CONFIG.C_USE_HW_MUL:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-soft-mul
-        config_chk_0_str:
-            CONFIG.C_USE_BARREL:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-barrel-shift
-            CONFIG.C_USE_DIV:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-soft-div
-            CONFIG.C_USE_HW_MUL:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-soft-mul
-            CONFIG.C_USE_PCMP_INSTR:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-pattern-compare
-        config_chk_2_str:
-            CONFIG.C_USE_HW_MUL:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mxl-multiply-high
-        config1_chk_2_str:
-            CONFIG.C_USE_HW_MUL:
-                uboot_configmk: PLATFORM_CPPFLAGS += -mno-xl-soft-mul
