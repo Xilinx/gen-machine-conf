@@ -368,7 +368,7 @@ def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
     elif rootfs_type == 'EXT4':
         sdrootdev = get_config_value(
             'CONFIG_SUBSYSTEM_SDROOT_DEV', default_cfgfile)
-        bootargs = 'root=%s rw rootwait' % sdrootdev
+        bootargs = 'root=%s ro rootwait' % sdrootdev
 
     ethdevname = get_config_value(
         'CONFIG_SUBSYSTEM_ETHERNET_', default_cfgfile, 'choice', '_SELECT=y')
