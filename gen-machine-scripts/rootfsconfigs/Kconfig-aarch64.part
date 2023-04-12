@@ -9506,15 +9506,19 @@ config package-feed-uris
 
 	Ex: https://example.com/packagerepos/release https://example.com/packagerepos/updates
 
+	Note: Keep this option as empty will use the petalinux.xilinx.com as default in package-feed-uri.
+
 config package-feed-archs
         string "package-feed-archs"
         help
-        specifies the package architectures used as part of the package feed URIs during the bui        ld.The PACKAGE_FEED_ARCHS variable is appended to the final package feed URI.
+        specifies the package architectures used as part of the package feed URIs during the build.The PACKAGE_FEED_ARCHS variable is appended to the final package feed URI.
         ex: package-feed-uris = "https://example.com/packagerepos/release"
         package-feed-archs = "noarch arch64 zynqmp"
         final uris:https://example.com/packagerepos/release/noarch
                    https://example.com/packagerepos/release/arch64
                    https://example.com/packagerepos/release/zynqmp
+
+	Note: Keep this option as empty will set default generated archs based on the platform in package-feed-archs.
 
 endif
 
