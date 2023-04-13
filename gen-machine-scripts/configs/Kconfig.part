@@ -1261,6 +1261,11 @@ config YOCTO_BB_NUMBER_THREADS
 	help
 	By default bitbake calculates the number of cores in pc
 
+config YOCTO_BB_NUMBER_PARSE_THREADS
+	string "sets number of bb threads (BB_NUMBER_PARSE_THREADS)"
+	help
+	Sets the number of threads BitBake uses when parsing. By default bitbake calculates the number of threads is equal to the number of cores in pc
+
 config YOCTO_PARALLEL_MAKE
 	string "sets number of parallel make -j (PARALLEL_MAKE)"
 	help
