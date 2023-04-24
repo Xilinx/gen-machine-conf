@@ -315,9 +315,12 @@ def main():
             stdout, stderr = run_cmd(command, os.getcwd(), args.logfile)
             sdk_xsct = ''
             for line in stdout.splitlines():
-                if line.decode('utf-8').startswith('XILINX_SDK_TOOLCHAIN'):
-                    xilinx_xsct_tool = line.decode(
-                        'utf-8').split('=')[1].replace('"', '')
+                try:
+                    line = line.decode('utf-8')
+                except AttributeError:
+                    pass
+                if line.startswith('XILINX_SDK_TOOLCHAIN'):
+                    xilinx_xsct_tool = line.split('=')[1].replace('"', '')
             if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
                 logger.error('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
                              ' please set a valid one, or' % xilinx_xsct_tool)
