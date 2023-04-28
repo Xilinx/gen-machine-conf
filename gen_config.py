@@ -1,5 +1,5 @@
 # Copyright (C) 2021-2022, Xilinx, Inc.  All rights reserved.
-# Copyright (C) 2022, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2022-2023, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
@@ -52,6 +52,12 @@ config SUBSYSTEM_SDT_FLOW
         default y
         help
 
+'''
+
+Kconfig_multitarget = '''
+config YOCTO_BBMC_{0}
+        bool "{1}"
+        default y
 '''
 
 base_dir = os.path.dirname(__file__)
@@ -542,6 +548,7 @@ def add_rootfs_configs(args, default_cfgfile):
 
 
 def get_hw_description(args, hw_flow):
+    builddir = os.environ.get('BUILDDIR', '')
     output = os.path.abspath(args.output)
     soc_family = args.soc_family
     menuconfig = args.menuconfig
@@ -605,6 +612,15 @@ def get_hw_description(args, hw_flow):
     Kconfig_soc_family = soc_family.upper()
     Kconfig_str = start_menu.format(Kconfig_soc_family, output)
     if hw_flow == 'sdt':
+        if builddir:
+            bbmulticonfig = get_config_value(
+                'BBMULTICONFIG',
+                os.path.join(builddir, 'conf', 'sdt-auto.conf'), 'asterisk', '=')
+            Kconfig_str += "menu \"Multiconfig Targets\""
+            for config in bbmulticonfig.split():
+                Kconfig_str += Kconfig_multitarget.format(
+                    config.upper().replace("-", "_"), config)
+            Kconfig_str += "endmenu"
         Kconfig_str += Kconfig_sdt
     if soc_variant:
         Kconfig_soc_variant = soc_variant.upper()
