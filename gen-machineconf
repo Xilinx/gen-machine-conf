@@ -264,9 +264,10 @@ def main():
     optional_args.add_argument('--sdt-sysroot', metavar='', help='Native '
                                'sysroot path to use lopper utilities.')
     optional_args.add_argument('--menuconfig', help='UI menuconfig option '
-                               'to update configuration.'
+                               'to update configuration(default is project).'
                                '\nproject - To update System Level configurations '
                                '\nrootfs  - To update Rootfs configurations',
+                               nargs='?', const='project',
                                choices=['project', 'rootfs'])
     optional_args.add_argument('--petalinux', help='Update the build/local.conf file '
                                'with generated .conf files.', action='store_true')
