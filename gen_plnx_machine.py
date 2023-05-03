@@ -634,8 +634,6 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                            'using petalinux-config -> Image packaging configuration'
                            '-> INITRAMFS/INITRD Image name. If not, you may see a build failure')
         override_string += 'INITRAMFS_FSTYPES = "cpio.gz cpio.gz.u-boot tar.gz"\n'
-        override_string += 'IMAGE_FSTYPES:pn-${INITRAMFS_IMAGE}:%s = "${INITRAMFS_FSTYPES}"\n' \
-                           % (soc_family)
 
     override_string += '\n#Add EXTRA_IMAGEDEPENDS\n'
     imagedepends = {
