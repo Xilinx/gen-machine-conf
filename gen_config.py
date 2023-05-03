@@ -128,6 +128,11 @@ def get_config_value(macro, filename, Type='bool', end_macro='=y'):
             if line.startswith(macro) and line.endswith(end_macro):
                 value = line.replace(macro, '').replace(end_macro, '')
                 break
+    elif Type == 'choicelist':
+        for line in lines:
+            line = line.strip()
+            if line.startswith(macro) and line.endswith(end_macro):
+                value += ' ' + line.replace(macro, '').replace(end_macro, '')
     elif Type == 'asterisk':
         for line in lines:
             line = line.strip()
