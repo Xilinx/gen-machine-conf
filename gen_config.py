@@ -519,7 +519,8 @@ def run_cmd(command, out_dir, logfile, shell=False):
     stdout, stderr = process.communicate()
 
     if process.returncode != 0:
-        raise Exception(stderr.decode("utf-8"))
+        raise Exception('\n%s\n%s' %
+                        (stdout.decode('utf-8'), stderr.decode('utf-8')))
     else:
         if not stdout is None:
             stdout = stdout.decode("utf-8")
