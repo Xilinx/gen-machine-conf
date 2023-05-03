@@ -358,10 +358,10 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                                       default_cfgfile)
     if bb_num_threads:
         override_string += 'BB_NUMBER_THREADS = "%s"\n' % bb_num_threads
-    bb_num_parse_threads = get_config_value('CONFIG_YOCTO_BB_NUMBER_PARSE_THREADS' ,
-                                     default_cfgfile)
+    bb_num_parse_threads = get_config_value('CONFIG_YOCTO_BB_NUMBER_PARSE_THREADS',
+                                            default_cfgfile)
     if bb_num_parse_threads:
-       override_string += 'BB_NUMBER_PARSE_THREADS = "%s"\n' % bb_num_parse_threads
+        override_string += 'BB_NUMBER_PARSE_THREADS = "%s"\n' % bb_num_parse_threads
 
     parallel_make = get_config_value('CONFIG_YOCTO_PARALLEL_MAKE',
                                      default_cfgfile)
