@@ -151,11 +151,7 @@ def generate_yocto_machine(args, hw_flow):
 
     # Set Tune Features for MicroBlaze
     if soc_family == 'microblaze':
-        hw_ver = get_mb_hwversion(default_cfgfile)
-        if not hw_ver:
-            hw_ver = '11.0'
-        tune_settings = 'microblaze v%s barrel-shift pattern-compare reorder ' \
-                        'divide-hard multiply-high' % hw_ver
+        tune_settings = get_tunefeatures(soc_family, default_cfgfile)
         # MicroBlaze Tune features Settings
         machine_override_string += '\n# MicroBlaze Tune features Settings\n'
         machine_override_string += 'TUNE_FEATURES:tune-microblaze = "%s"\n' \

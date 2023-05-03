@@ -177,17 +177,52 @@ def get_ipproperty(device_name, default_cfgfile, prop='ip_name'):
     return ''
 
 
-def get_mb_hwversion(default_cfgfile):
+def get_processor_property(default_cfgfile, prop):
     processor = get_config_value(
         'CONFIG_SUBSYSTEM_PROCESSOR_', default_cfgfile, 'choice', '_SELECT=y')
     global slaves_dict
+    linux_kernel_properties = ''
     if 'linux_kernel_properties' in plnx_syshw_data['processor'][processor].keys():
         linux_kernel_properties = plnx_syshw_data['processor'][processor]['linux_kernel_properties']
-        if 'XILINX_MICROBLAZE0_HW_VER' in linux_kernel_properties.keys():
-            return linux_kernel_properties['XILINX_MICROBLAZE0_HW_VER'].split(' ')[0]
-        else:
-            return ''
+    if linux_kernel_properties and prop in linux_kernel_properties.keys():
+        return linux_kernel_properties[prop].split(' ')[0]
     return ''
+
+
+Tunefeatures = {
+    'XILINX_MICROBLAZE0_USE_PCMP_INSTR': {'1': 'pattern-compare'},
+    'XILINX_MICROBLAZE0_USE_BARREL': {'1': 'barrel-shift'},
+    'XILINX_MICROBLAZE0_USE_DIV': {'1': 'divide-hard'},
+    'XILINX_MICROBLAZE0_USE_HW_MUL': {'1': 'multiply-low', '2': 'multiply-high'},
+    'XILINX_MICROBLAZE0_USE_FPU': {'1': 'fpu-hard', '2': 'fpu-hard-extended', 'default': 'fpu-soft'},
+    'XILINX_MICROBLAZE0_ENDIANNESS': {'!1': 'bigendian'},
+    'XILINX_MICROBLAZE0_DATASIZE': {'64': '64-bit'},
+    'XILINX_MICROBLAZE0_USE_REORDER_INSTR': {'!0': 'reorder'},
+    'XILINX_MICROBLAZE0_AREA_OPTIMIZED': {'2': 'frequency-optimized'}
+}
+
+
+def get_tunefeatures(soc_family, default_cfgfile):
+    processor = get_config_value(
+        'CONFIG_SUBSYSTEM_PROCESSOR_', default_cfgfile, 'choice', '_SELECT=y')
+    tune_features = [soc_family]
+    hwversion = get_processor_property(
+        default_cfgfile, 'XILINX_MICROBLAZE0_HW_VER')
+    if hwversion:
+        hwversion = 'v%s' % hwversion
+        tune_features += [hwversion]
+    for feature in Tunefeatures.keys():
+        param_value = get_processor_property(default_cfgfile, feature)
+        add_key = False
+        for key in Tunefeatures[feature].keys():
+            if key == param_value or (key.startswith('!') and key[1:] != param_value):
+                tune_features += [Tunefeatures[feature][key]]
+                add_key = True
+        # Add default one from dict if key doesnot match
+        if not add_key and 'default' in Tunefeatures[feature].keys():
+            tune_features += [Tunefeatures[feature]['default']]
+
+    return ' '.join(tune_features)
 
 
 def check_ip(prop, default_cfgfile):
