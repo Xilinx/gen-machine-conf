@@ -63,12 +63,16 @@ def generate_yocto_machine(args, hw_flow):
     if 'device_id' in plnx_syshw_data.keys():
         device_id = plnx_syshw_data['device_id']
 
-    # Get SOC_Family from the xsa device_id for machine generic required
-    # inclusion metadata file.
-    if device_id.startswith('xcvn'):
-        req_conf_file = 'versal-net-generic'
+    soc_variant = get_config_value('CONFIG_SUBSYSTEM_VARIANT_%s'
+                                   % soc_family.upper(),
+                                   default_cfgfile, 'choice').lower()
+
+    # Include soc_variant specific generic machine if soc_variant found
+    # if not, include soc_family machine file.
+    if soc_variant:
+        req_conf_file = '%s-%s-generic' % (soc_family, soc_variant)
     else:
-        req_conf_file = soc_family + '-generic'
+        req_conf_file = '%s-generic' % (soc_family)
 
     # Machine conf json file
     import json
@@ -157,14 +161,9 @@ def generate_yocto_machine(args, hw_flow):
         machine_override_string += 'TUNE_FEATURES:tune-microblaze = "%s"\n' \
                                    % tune_settings
 
-    soc_variant = get_config_value('CONFIG_SUBSYSTEM_VARIANT_%s'
-                                   % soc_family.upper(),
-                                   default_cfgfile, 'choice').lower()
     if soc_variant == 'ev' and soc_family == 'zynqmp':
         machine_override_string += 'MACHINE_HWCODECS = "libomxil-xlnx"\n'
         machine_override_string += 'IMAGE_FEATURES += "hwcodecs"\n'
-    if soc_variant:
-        machine_override_string += 'SOC_VARIANT = "%s"\n' % soc_variant
 
     # Update machine conf file with yocto variabls from json file
     if json_yocto_vars:
