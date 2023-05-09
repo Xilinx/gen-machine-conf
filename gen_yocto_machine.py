@@ -11,33 +11,6 @@
 from xilinx_mirrors import *
 
 
-def check_machineconf_exists(args, machine_name):
-    bbpaths = []
-    machine_file = 'conf/machine/%s.conf' % machine_name
-    bitbake = shutil.which('bitbake')
-    if not bitbake:
-        logger.debug('Skip machineconf check as no bitbake found')
-        return False
-
-    cmd = 'bitbake -e'
-    stdout, stderr = run_cmd(cmd, os.getcwd(), args.logfile)
-    # Read BBPATH from bitbake env
-    for line in stdout.splitlines():
-        if line.startswith('BBPATH'):
-            vbbpaths = line.split('=')[1].replace('"', '')
-            if vbbpaths:
-                bbpaths += vbbpaths.split(':')
-
-    for path in bbpaths:
-        currname = os.path.join(path, machine_file)
-        if os.access(currname, os.R_OK):
-            # Skip if its build dir as it is creating multiple machines.
-            if os.path.normpath(path) == os.path.normpath(os.environ['BUILDDIR']):
-                continue
-            return True
-    return False
-
-
 def generate_yocto_machine(args, hw_flow):
     global default_cfgfile
     default_cfgfile = os.path.join(args.output, 'config')
@@ -67,12 +40,17 @@ def generate_yocto_machine(args, hw_flow):
                                    % soc_family.upper(),
                                    default_cfgfile, 'choice').lower()
 
+    # Include user given machine if INCLUDE_MACHINE_NAME set
+    req_conf_file = get_config_value('CONFIG_YOCTO_INCLUDE_MACHINE_NAME',
+                                     default_cfgfile)
+
     # Include soc_variant specific generic machine if soc_variant found
     # if not, include soc_family machine file.
-    if soc_variant:
-        req_conf_file = '%s-%s-generic' % (soc_family, soc_variant)
-    else:
-        req_conf_file = '%s-generic' % (soc_family)
+    if not req_conf_file:
+        if soc_variant:
+            req_conf_file = '%s-%s-generic' % (soc_family, soc_variant)
+        else:
+            req_conf_file = '%s-generic' % (soc_family)
 
     # Machine conf json file
     import json
@@ -109,11 +87,10 @@ def generate_yocto_machine(args, hw_flow):
                                         machinejson_data[machine_conf_file]['extra-yocto-vars'])
     else:
         # Check if machine name from sysconfig is generic machine
-        # or part of layers if yes include that instead of generic machine
-        # Append device_id to yocto_machine_name
-        if yocto_machine_name in machinejson_data['generic-machines'] \
-                or check_machineconf_exists(args, yocto_machine_name):
-            req_conf_file = yocto_machine_name
+        # or machine_name and include_machine_name is same then
+        # Append device_id/999 to yocto_machine_name
+        if machine_conf_file in machinejson_data['generic-machines'] \
+                or machine_conf_file == req_conf_file:
             if device_id:
                 machine_conf_file += '-' + device_id
             else:

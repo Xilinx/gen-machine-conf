@@ -1211,7 +1211,7 @@ endmenu
 menu "Yocto Settings"
 
 config YOCTO_MACHINE_NAME
-       string "YOCTO_MACHINE_NAME"
+       string "Yocto Machine Name"
        default "versal-net-generic" if SUBSYSTEM_VARIANT_VERSALNET
        default "versal-generic" if SYSTEM_VERSAL
        default "zynqmp-generic" if SYSTEM_ZYNQMP
@@ -1219,6 +1219,13 @@ config YOCTO_MACHINE_NAME
        default "microblaze-generic" if SUBSYSTEM_ARCH_MICROBLAZE
        help
          You can specify MACHINE_NAME using this variable.
+	 Auto append the deviceId to Machine Name if this matches with INCLUDE_MACHINE_NAME
+
+config YOCTO_INCLUDE_MACHINE_NAME
+	string "Yocto Include Machine name"
+	default ""
+	help
+	  Specify MACHINE_NAME which will need to be include into the YOCTO_MACHINE file
 
 menu "TMPDIR Location"
 
