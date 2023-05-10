@@ -17,7 +17,6 @@ CONFIG_udev-extraconf=y
 CONFIG_imagefeature-ssh-server-openssh=y
 CONFIG_imagefeature-hwcodecs=y
 CONFIG_linux-xlnx-udev-rules=y
-CONFIG_watchdog-init=y
 CONFIG_ADD_EXTRA_USERS="root:root;petalinux::passwd-expire;"
 CONFIG_CREATE_NEW_GROUPS="aie;"
 CONFIG_ADD_USERS_TO_GROUPS="petalinux:audio,video,aie,input;"

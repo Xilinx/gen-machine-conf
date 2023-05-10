@@ -7382,18 +7382,6 @@ config watchdog-config-dev
 	
 endmenu
 
-if system-zynqmp
-menu "watchdog-init"
-config watchdog-init
-        bool "watchdog-init"
-        help
-        This watchdog-init is to start and kick the FPD WDT which is monitored by pmu-fw
-
-endmenu
-endif
-
-
-
 menu "x11perf " 
 config x11perf  
 	 bool "x11perf"
