@@ -392,7 +392,11 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     extra_dt_files = get_config_value('CONFIG_SUBSYSTEM_EXTRA_DT_FILES',
                                       default_cfgfile)
     if autoconfig_dt:
-        override_string += 'EXTRA_DT_FILES = "%s"\n' % extra_dt_files
+        yocto_override = ''
+        if hw_flow == 'sdt':
+            yocto_override = ':linux'
+        override_string += 'EXTRA_DT_FILES%s = "%s"\n' % (
+            yocto_override, extra_dt_files)
     dt_remove_pl = get_config_value('CONFIG_SUBSYSTEM_REMOVE_PL_DTB',
                                     default_cfgfile)
     if dt_remove_pl:
