@@ -385,6 +385,12 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
                                    default_cfgfile)
     if dt_no_alias:
         override_string += 'YAML_ENABLE_NO_ALIAS = "1"\n'
+    # Generate dtg/system-top.dts aliases in final dtb instead of using it from board.dts /DT machine file
+    only_dtg_alias = get_config_value('CONFIG_SUBSYSTEM_ENABLE_DTG_ALIAS',
+                                   default_cfgfile)
+    if only_dtg_alias:
+       override_string += 'YAML_ENABLE_DTG_ALIAS = "1"\n'
+
     dt_verbose = get_config_value('CONFIG_SUBSYSTEM_ENABLE_DT_VERBOSE',
                                   default_cfgfile)
     if dt_verbose:
