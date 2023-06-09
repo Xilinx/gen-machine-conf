@@ -6,6 +6,7 @@
 CONFIG_mtd-utils=y
 CONFIG_can-utils=y
 CONFIG_pciutils=y
+CONFIG_dosfstools=y
 CONFIG_run-postinsts=y
 CONFIG_packagegroup-core-boot=y
 CONFIG_packagegroup-core-ssh-dropbear=y
