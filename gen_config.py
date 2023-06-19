@@ -342,6 +342,7 @@ def pre_sys_conf(args, default_cfgfile):
 
 def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
     output = args.output
+    proot = ''
 
     bootargs_auto = get_config_value(
         'CONFIG_SUBSYSTEM_BOOTARGS_AUTO', default_cfgfile)
@@ -437,6 +438,59 @@ def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
                             ethdevname, '"%s"' % new_mac, default_cfgfile)
         update_config_value('CONFIG_SUBSYSTEM_ETHERNET_%s_MAC_AUTO' %
                             ethdevname, 'disable', default_cfgfile)
+
+    memory = get_config_value('CONFIG_SUBSYSTEM_MEMORY_', default_cfgfile,
+                              'choice', '_SELECT=y')
+    if memory != 'MANUAL':
+        memory_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_%s_BASEADDR'
+                                           % memory, default_cfgfile)
+        # updating bl33 address based on the base mem
+        if args.soc_family in ['versal', 'zynqmp']:
+            bl33_offset = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE',
+                                           default_cfgfile)
+            # updating for upper memory cases
+            if int(bl33_offset, base=16) < int(memory_baseaddr, base=16):
+                bl33_load_addr = hex(
+                    int(memory_baseaddr, base=16) + int(bl33_offset, base=16))
+                update_config_value(
+                    'CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE', bl33_load_addr, default_cfgfile)
+            elif memory_baseaddr == '0x00000000':
+                # updating from upper mem to lower selection case
+                if 'PROOT' in os.environ.keys():
+                    proot = os.environ['PROOT']
+                if proot:
+                    bl33_offset = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE',
+                                                   os.path.join(proot, 'project-spec', 'attributes'))
+                    update_config_value(
+                        'CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE', bl33_offset, default_cfgfile)
+
+        # updating the dtb load address for u-boot
+        if args.soc_family != 'microblaze':
+            if args.soc_family == 'versal':
+                dtb_offset = '0x1000'
+            elif args.soc_family in ['zynqmp', 'zynq']:
+                dtb_offset = '0x100000'
+            dtb_load_addr = hex(
+                int(memory_baseaddr, base=16) + int(dtb_offset, base=16))
+            uboot_dir = os.path.join(args.output, 'u-boot-xlnx')
+            if not os.path.exists(uboot_dir):
+                os.makedirs(uboot_dir)
+            uboot_config = os.path.join(uboot_dir, 'config.cfg')
+            update_config_value(
+                'CONFIG_XILINX_OF_BOARD_DTB_ADDR', dtb_load_addr, uboot_config)
+    else:
+        # updating for manual memory case if selected different value from previous bank selection
+        if 'PROOT' in os.environ.keys():
+            proot = os.environ['PROOT']
+        if proot:
+            bl33_offset = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE',
+                                           os.path.join(proot, 'project-spec', 'attributes'))
+            update_config_value(
+                'CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE', bl33_offset, default_cfgfile)
+        # removing u-boot config.cfg file if already exists from previous bank selection
+        # as this is not required for manual case and default u-boot dtb load value works.
+        if os.path.exists(os.path.join(args.output, 'u-boot-xlnx', 'config.cfg')):
+            os.remove(os.path.join(args.output, 'u-boot-xlnx', 'config.cfg'))
 
     if bootargs_auto == 'y':
         consolebootargs = get_sysconsole_bootargs(
