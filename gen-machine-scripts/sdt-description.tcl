@@ -708,6 +708,9 @@ proc plnx_gen_conf_ethernet {mapping kconfprefix cpuname cpuslaves} {
 					continue
 				}
 				set kname [plnx_fix_kconf_name ${hd}]
+				if {[regexp "config.*${ethkconfprefix}${kname}_SELECT" "$choicestr" matched]} {
+					continue
+				}
 				set choicestr [format "%s%s\n\t%s\n" "${choicestr}" \
 					"config ${ethkconfprefix}${kname}_SELECT" \
 					"bool \"${hd}\""]
