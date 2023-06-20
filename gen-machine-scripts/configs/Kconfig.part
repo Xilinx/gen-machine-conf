@@ -39,13 +39,6 @@ config SUBSYSTEM_COMPONENT_BOOTLOADER_NAME_ZYNQMP_FSBL
 	bool
 	default y
 	depends on SUBSYSTEM_COMPONENT_BOOTLOADER_AUTO_FSBL && SYSTEM_ZYNQMP
-config SUBSYSTEM_COMPONENT_BOOTLOADER_AUTO_PS_INIT
-	bool "Auto update ps_init"
-	default y
-	depends on SUBSYSTEM_COMPONENT_BOOTLOADER_NAME_ZYNQMP_FSBL || SUBSYSTEM_COMPONENT_BOOTLOADER_NAME_ZYNQ_FSBL
-	help
-	  If you select this option, PetaLinux will auto update psu_init.c/.h(zynqMP) or ps7_init.c/.h(zynq) files
-	  in fsbl source when running "petalinux-config --get-hw-description".
 config SUBSYSTEM_COMPONENT_PMU_FIRMWARE
 	bool "PMU Firmware"
 	default y
