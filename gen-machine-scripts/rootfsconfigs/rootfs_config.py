@@ -180,7 +180,7 @@ def update_cfg(cfg_file, xilinx_arch):
 
     # Add Init_manager variable
     if 'Init_manager' in packages.keys():
-        init_managerstr = 'INIT_MANAGER = "' + \
+        init_managerstr = 'INIT_MANAGER_DEFAULT = "' + \
             packages['Init_manager'] + '"\n\n'
         cfg_file.write(init_managerstr)
     # Add Tune_feature variable
