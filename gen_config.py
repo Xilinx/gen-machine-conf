@@ -57,7 +57,7 @@ config SUBSYSTEM_SDT_FLOW
 Kconfig_multitarget = '''
 config YOCTO_BBMC_{0}
         bool "{1}"
-        default y
+        default n
 '''
 
 base_dir = os.path.dirname(__file__)
@@ -341,6 +341,7 @@ def pre_sys_conf(args, default_cfgfile):
 
 
 def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
+    builddir = os.environ.get('BUILDDIR', '')
     output = args.output
     proot = ''
 
@@ -537,8 +538,18 @@ def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
              flashinfo_file)
         run_cmd(cmd, output, args.logfile)
 
+    # Enabling the multiconfigs based on BBMULTICONFIG value
+    if hw_flow == 'sdt':
+        if builddir:
+            multiconfig = get_config_value('BBMULTICONFIG', os.path.join(
+                builddir, 'conf', 'sdt-auto.conf'), 'asterisk', '=')
+            for config in multiconfig.split():
+                update_config_value('CONFIG_YOCTO_BBMC_%s' % config.upper().replace(
+                    "-", "_"), 'y', default_cfgfile)
 
 # Run menuconfig/silentconfig
+
+
 def run_menuconfig(Kconfig, cfgfile, ui, out_dir, component):
     if not ui:
         logger.info('Silentconfig %s' % (component))
@@ -707,15 +718,18 @@ def get_hw_description(args, hw_flow):
     Kconfig_soc_family = soc_family.upper()
     Kconfig_str = start_menu.format(Kconfig_soc_family, output)
     if hw_flow == 'sdt':
+        bbmulticonfig = ''
+        # parsing the multiconfig conf directory to get
+        # the available machine conf files and generating
+        # kconfig based on that values
         if builddir:
-            bbmulticonfig = get_config_value(
-                'BBMULTICONFIG',
-                os.path.join(builddir, 'conf', 'sdt-auto.conf'), 'asterisk', '=')
-            Kconfig_str += "menu \"Multiconfig Targets\""
+            for mconf in os.listdir(os.path.join(builddir, 'conf', 'multiconfig')):
+                bbmulticonfig += mconf.rstrip('.conf') + ' '
+            multiconfig_str = "menu \"Multiconfig Targets\""
             for config in bbmulticonfig.split():
-                Kconfig_str += Kconfig_multitarget.format(
+                multiconfig_str += Kconfig_multitarget.format(
                     config.upper().replace("-", "_"), config)
-            Kconfig_str += "endmenu"
+            multiconfig_str += "endmenu"
         Kconfig_str += Kconfig_sdt
     if soc_variant:
         Kconfig_soc_variant = soc_variant.upper()
@@ -724,8 +738,15 @@ def get_hw_description(args, hw_flow):
     with open(Kconfig_part, 'r', encoding='utf-8') as kconfig_part_f:
         kconfig_part_data = kconfig_part_f.read()
     kconfig_part_f.close()
-    Kconfig_str += kconfig_part_data.replace(
+    kconfig_part_data = kconfig_part_data.replace(
         'source ./Kconfig.syshw', 'source %s' % Kconfig_syshw)
+    if hw_flow == 'sdt':
+        kconfig_part_data = kconfig_part_data.replace(
+            '@@multiconfigmenustr@@', multiconfig_str)
+    else:
+        kconfig_part_data = kconfig_part_data.replace(
+            '@@multiconfigmenustr@@', '')
+    Kconfig_str += kconfig_part_data
     with open(Kconfig, 'w') as kconfig_f:
         kconfig_f.write(Kconfig_str)
     kconfig_f.close()
