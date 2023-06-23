@@ -1211,6 +1211,10 @@ endmenu
 
 menu "Yocto Settings"
 
+if SUBSYSTEM_SDT_FLOW
+@@multiconfigmenustr@@
+endif
+
 config YOCTO_MACHINE_NAME
        string "Yocto Machine Name"
        default "versal-net-generic" if SUBSYSTEM_VARIANT_VERSALNET
