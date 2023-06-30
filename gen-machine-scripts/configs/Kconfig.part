@@ -687,9 +687,11 @@ config SUBSYSTEM_PRELOADED_BL33_BASE
 	hex "PRELOADED BL33 BASE"
 	default 0x8000000
 	help
-	 BL33 address can be mentioned.Only takes care of passing PRELOADED_BL33_BASE
-	 during atf compilation.For Example incase of BL33 being U-boot CONFIG_TEXT_BASE
-	 has to be adjusted using "petalinux-config -c --u-boot"
+	 BL33 address offset can be mentioned.Only takes care of passing PRELOADED_BL33_BASE
+	 offset by appending baseaddr during atf compilation.
+	 For Example incase of BL33 being U-boot CONFIG_TEXT_BASE
+	 has to be adjusted using "petalinux-config -> Memory Settings -> u-boot text base
+
 config SUBSYSTEM_TF-A_DEBUG
 	bool "TF-A debug"
 	default n
