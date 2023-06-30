@@ -574,6 +574,15 @@ config SUBSYSTEM_ENABLE_DTG_ALIAS
 	help
 	 Enable this option to get only DTG generated aliases instead of board alias.
 
+config SUBSYSTEM_ENABLE_NO_LABELS
+	bool "Disable labels For Partial DT files"
+	default n
+	depends on SUBSYSTEM_FPGA_MANAGER
+	help
+	 Enable this option to not generated the labels in partial dtbo files.
+	 There will not be any Changes in base dtb or PL dtb or dtbo files.
+	 User should take care of the nodes if any build failures.
+
 config SUBSYSTEM_ENABLE_DT_VERBOSE
 	bool "Enable dt verbose"
 	default n

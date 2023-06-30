@@ -391,6 +391,11 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if only_dtg_alias:
         override_string += 'YAML_ENABLE_DTG_ALIAS = "1"\n'
 
+    dt_no_labels = get_config_value('CONFIG_SUBSYSTEM_ENABLE_NO_LABELS',
+                                    default_cfgfile)
+    if dt_no_labels:
+        override_string += 'YAML_ENABLE_NO_LABELS = "1"\n'
+
     dt_verbose = get_config_value('CONFIG_SUBSYSTEM_ENABLE_DT_VERBOSE',
                                   default_cfgfile)
     if dt_verbose:
