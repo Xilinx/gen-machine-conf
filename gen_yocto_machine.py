@@ -202,6 +202,8 @@ def generate_yocto_machine(args, hw_flow):
                                    % uboot_config
 
     if arch == 'aarch64':
+        baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_',
+                                           default_cfgfile, 'asterisk', '_BASEADDR=')
         machine_override_string += '\n# Yocto arm-trusted-firmware(TF-A) variables\n'
         atf_serial_ip_name = get_config_value('CONFIG_SUBSYSTEM_SERIAL_TF-A_IP_NAME',
                                               default_cfgfile)
@@ -223,13 +225,14 @@ def generate_yocto_machine(args, hw_flow):
 
         atf_extra_settings = get_config_value('CONFIG_SUBSYSTEM_TF-A_EXTRA_COMPILER_FLAGS',
                                               default_cfgfile)
-        atf_bl33_load = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE',
+        atf_bl33_offset = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE',
                                          default_cfgfile)
         if atf_extra_settings:
             machine_override_string += 'EXTRA_OEMAKE:append:pn-arm-trusted-firmware'\
                                        ' = " %s"\n' % atf_extra_settings
-        if atf_bl33_load:
-            machine_override_string += 'TFA_BL33_LOAD = "%s"\n' % atf_bl33_load
+        #appending the bl33 offset to baseaddr
+        if atf_bl33_offset:
+            machine_override_string += 'TFA_BL33_LOAD = "%s"\n' % hex(int(atf_bl33_offset, base=16) + int(baseaddr, base=16))
 
     if soc_family == 'versal':
         machine_override_string += '\n# Yocto PLM variables\n'
