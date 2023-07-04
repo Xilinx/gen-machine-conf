@@ -344,8 +344,8 @@ proc plnx_gen_memory_bank_kconfig {bankid bankbaseaddr bankhighaddr instance_nam
 			"hex \"u-boot text base address offset to memory base address\"" \
 			"default [format 0x%x [expr ${bankbaseaddr} + 0x8000000]] if SUBSYSTEM_ARCH_AARCH64" \
 			"default [format 0x%x [expr ${bankbaseaddr} + 0x4000000]] if SUBSYSTEM_ARCH_ARM" \
-			"default 0x100000" \
-			"range ${bankbaseaddr} [format 0x%x [expr ${bankbaseaddr} + ${banksize} - 0x2000000 + 0x100000]]" \
+			"default [format 0x%x [expr ${bankbaseaddr} + 0x100000]] if SUBSYSTEM_ARCH_MICROBLAZE" \
+			"range [format 0x%x [expr ${bankbaseaddr} + 0x100000]] [format 0x%x [expr ${bankbaseaddr} + ${banksize} - 0x2000000 + 0x100000]]" \
 			"depends on ${kconfig_prefix}${kname}_${bankkconf}_SELECT" \
 			"depends on !SUBSYSTEM_COMPONENT_U__BOOT_NAME_NONE" \
 			"help" \

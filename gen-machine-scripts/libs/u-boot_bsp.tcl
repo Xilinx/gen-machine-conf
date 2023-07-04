@@ -47,7 +47,7 @@ proc uboot_config_gen {} {
 		# set uboot text base
 		set mem_base [dict get $kconfig_dict memory baseaddr]
 		set uboot_offset [dict get $kconfig_dict memory "u__boot_textbase_offset"]
-		set uboot_textbase [format "0x%08x" [expr $mem_base + $uboot_offset]]
+		set uboot_textbase $uboot_offset
 		# get cpu version
 		set vlnv [hsi get_property "VLNV" [hsi get_cells -hier $target_cpu]]
 		set cpu_ver [lindex [split $vlnv ":"] 3]
