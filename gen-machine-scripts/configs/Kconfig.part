@@ -452,7 +452,7 @@ config SUBSYSTEM_MACHINE_NAME
          Change of hardware design or Machine_name between same architecture is allowed
 
 config SUBSYSTEM_DT_XSCT_WORKSPACE
-	string "Device-tree XSCT workspace"
+	string "Device-tree workspace"
 	help
 	  Provide the location to use as Device-tree XSCT workspace location.
 
@@ -1242,6 +1242,13 @@ config YOCTO_INCLUDE_MACHINE_NAME
 	default ""
 	help
 	  Specify MACHINE_NAME which will need to be include into the YOCTO_MACHINE file
+
+config YOCTO_ADD_OVERRIDES
+	string "Yocto Additional Overrides"
+	default ""
+	help
+	  Specify additional overrides to the generated machine conf file
+	  Specify multiple overrides with ':' separator
 
 menu "TMPDIR Location"
 
