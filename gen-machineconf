@@ -115,7 +115,11 @@ def update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow):
             machine_dir = os.path.join(builddir, 'conf', 'machine')
             if not os.path.exists(machine_dir):
                 os.makedirs(machine_dir)
-            shutil.copy2(machine_conf_path, machine_dir)
+
+            # dt_processor.sh generates the file directly under conf/
+            # So copy only if machienconf file exists in outdir
+            if os.path.isfile(machine_conf_path):
+                shutil.copy2(machine_conf_path, machine_dir)
 
             localconf_strs = []
             if hw_flow == 'sdt':
@@ -180,26 +184,32 @@ def validate_hwfile(args):
 
 
 # Run dtprocessor.sh to generate the dtb files using lopper
-def run_dtprocessor(args):
-    builddir = ''
-    if 'BUILDDIR' in os.environ.keys():
-        builddir = os.environ['BUILDDIR']
+def run_dtprocessor(args, machine_conf_file='plnx_mconf'):
+    builddir = os.environ.get('BUILDDIR', '')
+    proot = os.environ.get('PROOT', '')
     if not builddir:
         logger.error('No BUILDDIR found in environment'
                      'to set this up please run oe-init-build-env')
         sys.exit(255)
     conf_dir = os.path.join(builddir, 'conf')
+    machine_conf_path = os.path.join(
+        conf_dir, 'machine', '%s.conf' % machine_conf_file)
     sdtauto_conf = os.path.join(conf_dir, 'sdt-auto.conf')
     plnx_syshw_file = os.path.join(conf_dir, 'petalinux_config.yaml')
     sdtipinfo = os.path.join(scripts_dir, 'data', 'sdt_ipinfo.yaml')
+    default_cfgfile = os.path.join(args.output, 'config')
     sdt_envscript = os.path.join(
         args.sdt_sysroot, 'environment-setup-x86_64-petalinux-linux')
 
     # Run dt-processor.sh only if HW_FILE changed and
     # no petalinux_config.yaml found and
     # no build/conf/dts found
+    # no machineconf found
+    # if sysconfig changed
     if validate_hashfile(args, 'HW_FILE', args.hw_file, update=False) and \
+            validate_hashfile(args, 'SYSTEM_CONF', default_cfgfile, update=False) and \
             os.path.exists(os.path.join(conf_dir, 'dts')) and \
+            os.path.exists(machine_conf_path) and \
             os.path.exists(plnx_syshw_file):
         return
     dt_procscript = os.path.join(args.sdt_sysroot, 'dt-processor.sh')
@@ -211,22 +221,39 @@ def run_dtprocessor(args):
     # is appending everytime instead of override
     if os.path.exists(sdtauto_conf):
         os.remove(sdtauto_conf)
+    if os.path.exists(machine_conf_path):
+        os.remove(machine_conf_path)
     logger.info('Executing dt-processor.sh script')
-    cmd = "bash -c 'source %s;source %s -c %s -s %s -l %s -P %s'" % (
-        sdt_envscript, dt_procscript, conf_dir, args.hw_file, sdtauto_conf, sdtipinfo)
+    dts_dir = ''
+    if proot:
+        # TODO:Change the config macro as generic
+        dts_dir = get_config_value(
+            'CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE', default_cfgfile)
+        dts_dir = dts_dir.replace('${PROOT}', proot)
+        dts_dir = dts_dir.replace('$PROOT', proot)
+        if not os.path.exists(dts_dir):
+            os.makedirs(dts_dir)
+        dts_dir = '-D %s' % dts_dir
+    include_file = get_config_value(
+        'CONFIG_YOCTO_INCLUDE_MACHINE_NAME', default_cfgfile)
+    if include_file:
+        include_file = '-r %s' % include_file
+        if not include_file.endswith('.conf'):
+            include_file = '%s.conf' % include_file
+    # Add config overrides
+    overrides = get_config_value('CONFIG_YOCTO_ADD_OVERRIDES', default_cfgfile)
+    if overrides:
+        overrides = '-O %s' % overrides
+    cmd = "bash -c 'source %s;\
+            source %s -c %s -s %s -l %s -P %s -m %s %s %s %s'" % (
+        sdt_envscript, dt_procscript, conf_dir, args.hw_file,
+        sdtauto_conf, sdtipinfo, machine_conf_file,
+        dts_dir, include_file, overrides
+    )
     run_cmd(cmd, os.getcwd(), args.logfile, shell=True)
     if not os.path.isfile(plnx_syshw_file):
         logger.error('Failed to generate petalinux_config.yaml')
         sys.exit(255)
-    if os.path.isfile(sdtauto_conf):
-        sdtauto_str = '\nPREFERRED_VERSION_fsbl-firmware = "experimental%"\n'
-        sdtauto_str += 'PREFERRED_VERSION_pmu-firmware = "experimental%"\n'
-        sdtauto_str += 'PREFERRED_VERSION_plm-firmware = "experimental%"\n'
-        sdtauto_str += 'PREFERRED_VERSION_psm-firmware = "experimental%"\n'
-        sdtauto_str += '\nLICENSE_FLAGS_ACCEPTED += "xilinx"\n'
-        with open(sdtauto_conf, 'a') as sdtauto_conf_f:
-            sdtauto_conf_f.write(sdtauto_str)
-        sdtauto_conf_f.close()
     shutil.copy2(plnx_syshw_file, args.output)
 
 
@@ -427,6 +454,14 @@ def main():
 
     add_user_layers(args)
     machine_conf_file = generate_yocto_machine(args, hw_flow)
+    if hw_flow == 'sdt':
+        # Generating machineconf for SDT
+        builddir = os.environ.get('BUILDDIR', '')
+        conf_dir = os.path.join(builddir, 'conf')
+        tmpconfinc = os.path.join(conf_dir, 'machine', 'include', 'plnx_mconf')
+        if os.path.exists(tmpconfinc):
+            shutil.rmtree(tmpconfinc)
+        run_dtprocessor(args, machine_conf_file)
     plnx_conf_file = generate_plnx_config(args, machine_conf_file, hw_flow)
     update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow)
     if not args.petalinux:
