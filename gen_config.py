@@ -333,12 +333,11 @@ def get_soc_variant(soc_family, output):
             soc_variant = 'hbm'
     return soc_variant
 
+
 # updating dtb load addr and u-boot text base
 # based on user bank selection if they select
 # otherthan manual or starting from zero bank
 # as the default values does not work for those cases.
-
-
 def update_mem_based_configs(args, default_cfgfile):
     memory = get_config_value('CONFIG_SUBSYSTEM_MEMORY_', default_cfgfile,
                               'choice', '_SELECT=y')
@@ -358,8 +357,7 @@ def update_mem_based_configs(args, default_cfgfile):
         # if selected different value from previous bank selection
         # for zynq BL33 address not applicable
         if args.soc_family != 'zynq':
-            if 'PROOT' in os.environ.keys():
-                proot = os.environ['PROOT']
+            proot = os.environ.get('PROOT', '')
             if proot:
                 bl33_offset = get_config_value('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE', os.path.join(
                     proot, 'project-spec', 'attributes'))
@@ -411,8 +409,6 @@ def pre_sys_conf(args, default_cfgfile):
 def post_sys_conf(args, default_cfgfile, hw_flow, soc_variant):
     builddir = os.environ.get('BUILDDIR', '')
     output = args.output
-    proot = ''
-
     bootargs_auto = get_config_value(
         'CONFIG_SUBSYSTEM_BOOTARGS_AUTO', default_cfgfile)
     rootfs_type = get_config_value(
