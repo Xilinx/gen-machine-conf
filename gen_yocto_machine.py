@@ -102,6 +102,12 @@ def generate_yocto_machine(args, hw_flow):
     if validate_hashfile(args, 'SYSTEM_CONF', default_cfgfile, update=False) and \
             os.path.exists(machine_conf_path):
         return machine_conf_file
+
+    # Dont generate machineconf file from gen-machineconf if hw_flow SDT
+    # dt-processor.sh generates it
+    if hw_flow == 'sdt':
+        return machine_conf_file
+
     logger.info('Generating machine conf file')
     # Variable for constructing ${MACHINE}.conf files.
     machine_override_string = ''
@@ -111,6 +117,11 @@ def generate_yocto_machine(args, hw_flow):
     machine_override_string += '#@NAME: %s\n' % machine_conf_file
     machine_override_string += '#@DESCRIPTION: Machine configuration for the '\
         '%s boards.\n' % machine_conf_file
+
+    # Add config machine overrides into machine conf file
+    overrides = get_config_value('CONFIG_YOCTO_ADD_OVERRIDES', default_cfgfile)
+    if overrides:
+        board_overrides += overrides
 
     if board_overrides:
         machine_override_string += '\n# Compatibility with old BOARD value.\n'
