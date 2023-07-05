@@ -13,15 +13,21 @@ import logging
 from gen_plnx_machine import *
 
 
-def search_strin_file(filename, string):
+def search_strin_file(filename, string, remove_if_exists=False):
     with open(filename, 'r') as filename_f:
         lines = filename_f.readlines()
     filename_f.close()
     str_found = ''
+    lines_f = []
     for line in lines:
-        line = line.replace('\\', '').strip()
-        if re.search(string, line):
+        _line = line.replace('\\', '').strip()
+        if re.search(string, _line):
             str_found = True
+            continue
+        lines_f.append(line)
+    if str_found and remove_if_exists:
+        with open(filename, 'w') as file_f:
+            file_f.writelines(lines_f)
     return str_found
 
 
@@ -95,7 +101,7 @@ def update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow):
     if 'BUILDDIR' in os.environ.keys():
         builddir = os.environ['BUILDDIR']
     if builddir:
-        local_conf = os.path.join(builddir, 'conf/local.conf')
+        local_conf = os.path.join(builddir, 'conf', 'local.conf')
         if not os.path.isfile(local_conf):
             logger.debug('No local.conf file found in %s/conf directory to add .conf'
                          ' file' % builddir)
@@ -137,11 +143,10 @@ def update_localconf(args, plnx_conf_file, machine_conf_file, hw_flow):
                     # Remove site.conf from output directory
                     os.remove(site_conf_path)
             for file_str in localconf_strs:
-                found = search_strin_file(local_conf, file_str)
-                if not found:
-                    with open(local_conf, 'a') as local_conf_f:
-                        local_conf_f.write(file_str + '\n')
-                    local_conf_f.close()
+                search_strin_file(local_conf, file_str, remove_if_exists=True)
+                with open(local_conf, 'a') as local_conf_f:
+                    local_conf_f.write(file_str + '\n')
+                local_conf_f.close()
 
 
 # Validate the hw_description given and justify xsct/sdt flow.
