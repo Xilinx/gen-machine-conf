@@ -788,7 +788,7 @@ config SUBSYSTEM_UBOOT_PRE_BOOTENV
 
 menu "JTAG/DDR image offsets"
 config SUBSYSTEM_UBOOT_DEVICETREE_OFFSET
-	hex "Devicetree offset"
+	string "Devicetree offset"
 	default 0x1000 if SYSTEM_VERSAL
 	default 0x100000 if SYSTEM_ZYNQMP
 	default 0x100000 if SUBSYSTEM_ARCH_ARM
