@@ -361,6 +361,17 @@ proc plnx_gen_memory_bank_kconfig {bankid bankbaseaddr bankhighaddr instance_nam
 	}
 }
 
+#proc to add bank address to dict
+proc set_bank_addr {cpuname hd addr_list block_name i} {
+	upvar addr_list localaddrlist
+	set bankbaseaddr [common::get_property BASE_VALUE [lindex [hsi get_mem_ranges -of_objects [hsi get_cells -hier $cpuname] $hd] $i]]
+	set bankhighaddr [common::get_property HIGH_VALUE [lindex [hsi get_mem_ranges -of_objects [hsi get_cells -hier $cpuname] $hd] $i]]
+	if {"${bankbaseaddr}" != "" && "${bankhighaddr}" != ""} {
+		dict set localaddrlist $block_name bankbaseaddr $bankbaseaddr
+		dict set localaddrlist $block_name bankhighaddr $bankhighaddr
+	}
+}
+
 proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 	set retmemories {}
 	set devicetype "memory"
@@ -418,17 +429,56 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 			set kname [plnx_fix_kconf_name ${name}]
 			if {"${has_bank}" == "n"} {
 				if {[regexp "axi_noc" "${ipname}" match]} {
+					set ddr [dict create is_ddr_low_0 0 is_ddr_low_1 0 is_ddr_low_2 0 is_ddr_low_3 0 is_ddr_ch_0 0 is_ddr_ch_1 0 is_ddr_ch_2 0 is_ddr_ch_3 0]
 					set addr_list [dict create]
 					set strlist ""
 					set interface_block_names [hsi get_property ADDRESS_BLOCK [hsi get_mem_ranges -of_objects [hsi get_cells -hier $cpuname] $hd]]
 					set i 0
 					foreach block_name $interface_block_names {
-						set bankbaseaddr [common::get_property BASE_VALUE [lindex [hsi get_mem_ranges -of_objects [hsi get_cells -hier $cpuname] $hd] $i]]
-						set bankhighaddr [common::get_property HIGH_VALUE [lindex [hsi get_mem_ranges -of_objects [hsi get_cells -hier $cpuname] $hd] $i]]
-						if {"${bankbaseaddr}" != "" && "${bankhighaddr}" != ""} {
-							dict set addr_list $block_name bankbaseaddr $bankbaseaddr
-							dict set addr_list $block_name bankhighaddr $bankhighaddr
-						}
+						#filtering duplicate ddr banks
+						if {[string match "C*_DDR_LOW0*" $block_name]} {
+							if {[dict get $ddr is_ddr_low_0] == 0} {
+								set_bank_addr $cpuname $hd $addr_list $block_name $i
+							}
+							dict set ddr is_ddr_low_0 1
+						} elseif {[string match "C*_DDR_LOW1*" $block_name]} {
+							if {[dict get $ddr is_ddr_low_1] == 0} {
+								set_bank_addr $cpuname $hd $addr_list $block_name $i
+							}
+							dict set ddr is_ddr_low_1 1
+						} elseif {[string match "C*_DDR_LOW2*" $block_name]} {
+							if {[dict get $ddr is_ddr_low_2] == 0} {
+								set_bank_addr $cpuname $hd $addr_list $block_name $i
+							}
+							dict set ddr is_ddr_low_2 1
+						} elseif {[string match "C*_DDR_LOW3*" $block_name]} {
+							if {[dict get $ddr is_ddr_low_3] == 0} {
+								set_bank_addr $cpuname $hd $addr_list $block_name $i
+							}
+							dict set ddr is_ddr_low_3 1
+						} elseif {[string match "C*_DDR_CH0*" $block_name]} {
+							if {[dict get $ddr is_ddr_ch_0] == 0} {
+								set_bank_addr $cpuname $hd $addr_list $block_name $i
+							}
+							dict set ddr is_ddr_ch_0 1
+						} elseif {[string match "C*_DDR_CH1*" $block_name]} {
+							if {[dict get $ddr is_ddr_ch_1] == 0} {
+								set_bank_addr $cpuname $hd $addr_list $block_name $i
+							}
+							dict set ddr is_ddr_ch_1 1
+						} elseif {[string match "C*_DDR_CH2*" $block_name]} {
+							if {[dict get $ddr is_ddr_ch_2] == 0} {
+								set_bank_addr $cpuname $hd $addr_list $block_name $i
+							}
+							dict set ddr is_ddr_ch_2 1
+						} elseif {[string match "C*_DDR_CH3*" $block_name]} {
+							if {[dict get $ddr is_ddr_ch_3] == 0} {
+								set_bank_addr $cpuname $hd $addr_list $block_name $i
+							}
+							dict set ddr is_ddr_ch_3 1
+                                                } else {
+                                                        set_bank_addr $cpuname $hd $addr_list $block_name $i
+                                                }
 						incr i
 					}
 					foreach block_name [dict keys $addr_list] {
