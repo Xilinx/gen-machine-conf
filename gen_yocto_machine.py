@@ -416,7 +416,7 @@ def generate_yocto_machine(args, hw_flow):
         'the Postamble\n'
     machine_override_string += '#### Postamble\n'
     machine_override_string += 'PACKAGE_EXTRA_ARCHS:append = "'"${@['', " \
-                               "'%s']['%s' != '${MACHINE}']}"'"\n'\
+                               "' %s']['%s' != '${MACHINE}']}"'"\n'\
                                % (machine_conf_file.replace('-', '_'),
                                   machine_conf_file)
 
