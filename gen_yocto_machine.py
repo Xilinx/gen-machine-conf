@@ -133,26 +133,6 @@ def generate_yocto_machine(args, hw_flow):
                                % (machine_conf_file, machine_conf_file)
     machine_override_string += '#### Regular settings follow\n'
 
-    # Variable used for Vivado XSA path, name using local file or subversion
-    # path
-    if hw_flow == 'xsct':
-        machine_override_string += '\n# Add system XSA\n'
-        machine_override_string += 'HDF_EXT = "xsa"\n'
-        machine_override_string += 'HDF_BASE = "file://"\n'
-        machine_override_string += 'HDF_PATH = "%s"\n' % args.hw_file
-
-    # Set Tune Features for MicroBlaze
-    if soc_family == 'microblaze':
-        tune_settings = get_tunefeatures(soc_family, default_cfgfile)
-        # MicroBlaze Tune features Settings
-        machine_override_string += '\n# MicroBlaze Tune features Settings\n'
-        machine_override_string += 'TUNE_FEATURES:tune-microblaze = "%s"\n' \
-                                   % tune_settings
-
-    if soc_variant == 'ev' and soc_family == 'zynqmp':
-        machine_override_string += 'MACHINE_HWCODECS = "libomxil-xlnx"\n'
-        machine_override_string += 'IMAGE_FEATURES += "hwcodecs"\n'
-
     # Update machine conf file with yocto variabls from json file
     if json_yocto_vars:
         machine_override_string += '\n# Machine specific yocto variables\n'
@@ -202,14 +182,11 @@ def generate_yocto_machine(args, hw_flow):
             machine_override_string += 'YAML_DT_BOARD_FLAGS ?= "{BOARD %s}"\n'\
                 % dtg_machine
 
-    machine_override_string += '\n# Yocto linux-xlnx variables\n'
     machine_override_string += '\n# Yocto u-boot-xlnx variables\n'
     uboot_config = get_config_value('CONFIG_SUBSYSTEM_UBOOT_CONFIG_TARGET',
                                     default_cfgfile)
     if uboot_config and uboot_config.lower() != 'auto':
         machine_override_string += 'UBOOT_MACHINE ?= "%s"\n' % uboot_config
-        machine_override_string += 'HAS_PLATFORM_INIT:append = " %s"\n' \
-                                   % uboot_config
 
     if arch == 'aarch64':
         baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_',
@@ -335,20 +312,6 @@ def generate_yocto_machine(args, hw_flow):
     if arch != 'aarch64':
         machine_override_string += 'KERNEL_EXTRA_ARGS += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n'
 
-    ddr_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_', default_cfgfile,
-                                    'asterisk', '_BASEADDR=')
-    if not ddr_baseaddr:
-        ddr_baseaddr = '0x0'
-    machine_override_string += '\n#Set DDR Base address for u-boot-xlnx-scr '\
-                               'variables\n'
-    machine_override_string += 'DDR_BASEADDR ?= "%s"\n' % ddr_baseaddr
-    skip_append_baseaddr = get_config_value('CONFIG_SUBSYSTEM_UBOOT_APPEND_BASEADDR',
-                                            default_cfgfile)
-    if skip_append_baseaddr:
-        machine_override_string += 'SKIP_APPEND_BASEADDR ?= "0"\n'
-    else:
-        machine_override_string += 'SKIP_APPEND_BASEADDR ?= "1"\n'
-
     serialname = get_config_value('CONFIG_SUBSYSTEM_SERIAL_', default_cfgfile,
                                   'choice', '_SELECT=y')
     if serialname != 'MANUAL':
@@ -364,7 +327,7 @@ def generate_yocto_machine(args, hw_flow):
         else:
             serial_console = '%s;ttyPS0' % baudrate
 
-        machine_override_string += '\n# %s Serial Console \n' \
+        machine_override_string += '\n# %s Serial Console\n' \
                                    % machine_conf_file
         # parse the selected serial IP if no_alias selected to get the serial no.
         # serial no. will be suffix to the serial ip name Ex:psu_uart_1 -> serial no. is 1.
@@ -382,16 +345,49 @@ def generate_yocto_machine(args, hw_flow):
                 serial_console = serial_console[:-1]
                 serial_console = serial_console + serial_no
         machine_override_string += 'SERIAL_CONSOLES ?= "%s"\n' % serial_console
-        machine_override_string += 'SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"\n'
         machine_override_string += 'YAML_SERIAL_CONSOLE_BAUDRATE ?= "%s"\n' \
                                    % baudrate
 
+    ddr_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_', default_cfgfile,
+                                    'asterisk', '_BASEADDR=')
+    if not ddr_baseaddr:
+        ddr_baseaddr = '0x0'
+    machine_override_string += '\n# Set DDR Base address for u-boot-xlnx-scr '\
+                               'variables\n'
+    machine_override_string += 'DDR_BASEADDR ?= "%s"\n' % ddr_baseaddr
+    skip_append_baseaddr = get_config_value('CONFIG_SUBSYSTEM_UBOOT_APPEND_BASEADDR',
+                                            default_cfgfile)
+    if skip_append_baseaddr:
+        machine_override_string += 'SKIP_APPEND_BASEADDR ?= "0"\n'
+    else:
+        machine_override_string += 'SKIP_APPEND_BASEADDR ?= "1"\n'
     # Variables that changes based on hw design or board specific requirement must be
     # defined before calling the required inclusion file else pre-expansion value
     # defined in respective generic machine conf will be set.
     machine_override_string += '\n# Required generic machine inclusion\n'
     machine_override_string += 'require conf/machine/%s.conf\n' % \
         req_conf_file
+
+    # Variable used for Vivado XSA path, name using local file or subversion
+    # path
+    if hw_flow == 'xsct':
+        machine_override_string += '\n# Add system XSA\n'
+        machine_override_string += 'HDF_EXT = "xsa"\n'
+        machine_override_string += 'HDF_BASE = "file://"\n'
+        machine_override_string += 'HDF_PATH = "%s"\n' % args.hw_file
+
+    # Set Tune Features for MicroBlaze
+    if soc_family == 'microblaze':
+        tune_settings = get_tunefeatures(soc_family, default_cfgfile)
+        # MicroBlaze Tune features Settings
+        machine_override_string += '\n# MicroBlaze Tune features Settings\n'
+        machine_override_string += 'TUNE_FEATURES:tune-microblaze = "%s"\n' \
+                                   % tune_settings
+
+    if soc_variant == 'ev' and soc_family == 'zynqmp':
+        machine_override_string += '\n# Yocto IMAGE_FEATURES Variable\n'
+        machine_override_string += 'MACHINE_HWCODECS = "libomxil-xlnx"\n'
+        machine_override_string += 'IMAGE_FEATURES += "hwcodecs"\n'
 
     machine_features = ''
     is_fpga_manager = get_config_value(
