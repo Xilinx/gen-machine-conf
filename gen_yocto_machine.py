@@ -188,20 +188,19 @@ def generate_yocto_machine(args, hw_flow):
     processor_ipname = get_config_value('CONFIG_SUBSYSTEM_PROCESSOR0_IP_NAME',
                                         default_cfgfile)
     if soc_family == 'microblaze':
-        machine_override_string += 'XSCTH_PROC:%s:pn-device-tree = "%s"\n' \
-            % (soc_family, processor_ipname)
+        machine_override_string += 'XSCTH_PROC:pn-device-tree = "%s"\n' \
+            % processor_ipname
 
     # Set dt board file as per the machine file
     # if config set to template/auto/AUTO
     if dtg_machine:
-        # Add machine name as override due to meta-xilinx-tool device-tree bbappend
         if (dtg_machine == 'template' or dtg_machine.lower() == 'auto') \
                 and dt_board_file:
-            machine_override_string += 'YAML_DT_BOARD_FLAGS:%s = "{BOARD %s}"\n'\
-                % (machine_override, dt_board_file)
+            machine_override_string += 'YAML_DT_BOARD_FLAGS = "{BOARD %s}"\n'\
+                % dt_board_file
         elif dtg_machine.lower() != 'auto':
-            machine_override_string += 'YAML_DT_BOARD_FLAGS:%s = "{BOARD %s}"\n'\
-                % (machine_override, dtg_machine)
+            machine_override_string += 'YAML_DT_BOARD_FLAGS = "{BOARD %s}"\n'\
+                % dtg_machine
 
     machine_override_string += '\n# Yocto linux-xlnx variables\n'
     machine_override_string += '\n# Yocto u-boot-xlnx variables\n'
@@ -336,9 +335,7 @@ def generate_yocto_machine(args, hw_flow):
     machine_override_string += 'UBOOT_LOADADDRESS = "%s"\n' % loadaddr
 
     if arch != 'aarch64':
-        # Using soc_family override due to soc-zynq.inc has :zynq
-        machine_override_string += 'KERNEL_EXTRA_ARGS:%s += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n' % (
-            soc_family)
+        machine_override_string += 'KERNEL_EXTRA_ARGS += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n'
 
     ddr_baseaddr = get_config_value('CONFIG_SUBSYSTEM_MEMORY_', default_cfgfile,
                                     'asterisk', '_BASEADDR=')
