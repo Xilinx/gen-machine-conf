@@ -172,7 +172,7 @@ def generate_yocto_machine(args, hw_flow):
     memory_ipname = get_config_value('CONFIG_SUBSYSTEM_MEMORY_IP_NAME',
                                      default_cfgfile)
     if not memory_manual:
-        machine_override_string += 'YAML_MAIN_MEMORY_CONFIG:pn-device-tree = "%s"\n' \
+        machine_override_string += 'YAML_MAIN_MEMORY_CONFIG:pn-device-tree ?= "%s"\n' \
             % memory_ipname
 
     dt_padding_size = get_config_value('CONFIG_SUBSYSTEM_DTB_PADDING_SIZE',
@@ -188,7 +188,7 @@ def generate_yocto_machine(args, hw_flow):
     processor_ipname = get_config_value('CONFIG_SUBSYSTEM_PROCESSOR0_IP_NAME',
                                         default_cfgfile)
     if soc_family == 'microblaze':
-        machine_override_string += 'XSCTH_PROC:pn-device-tree = "%s"\n' \
+        machine_override_string += 'XSCTH_PROC:pn-device-tree ?= "%s"\n' \
             % processor_ipname
 
     # Set dt board file as per the machine file
@@ -196,10 +196,10 @@ def generate_yocto_machine(args, hw_flow):
     if dtg_machine:
         if (dtg_machine == 'template' or dtg_machine.lower() == 'auto') \
                 and dt_board_file:
-            machine_override_string += 'YAML_DT_BOARD_FLAGS = "{BOARD %s}"\n'\
+            machine_override_string += 'YAML_DT_BOARD_FLAGS ?= "{BOARD %s}"\n'\
                 % dt_board_file
         elif dtg_machine.lower() != 'auto':
-            machine_override_string += 'YAML_DT_BOARD_FLAGS = "{BOARD %s}"\n'\
+            machine_override_string += 'YAML_DT_BOARD_FLAGS ?= "{BOARD %s}"\n'\
                 % dtg_machine
 
     machine_override_string += '\n# Yocto linux-xlnx variables\n'
@@ -220,9 +220,7 @@ def generate_yocto_machine(args, hw_flow):
         atf_serial_manual = get_config_value('CONFIG_SUBSYSTEM_TF-A_SERIAL_MANUAL_SELECT',
                                              default_cfgfile)
         if not atf_serial_manual:
-            # Use soc_family override due to arm-trusted-firmware.inc has :zynqmp
-            machine_override_string += 'ATF_CONSOLE:%s ?= "%s"\n' % (
-                soc_family, atf_serial_ip_name)
+            machine_override_string += 'ATF_CONSOLE_DEFAULT ?= "%s"\n' % atf_serial_ip_name
         atf_mem_settings = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEMORY_SETTINGS',
                                             default_cfgfile)
         atf_mem_base = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEM_BASE',
@@ -242,7 +240,7 @@ def generate_yocto_machine(args, hw_flow):
                                        ' = " %s"\n' % atf_extra_settings
         #appending the bl33 offset to baseaddr
         if atf_bl33_offset:
-            machine_override_string += 'TFA_BL33_LOAD = "%s"\n' % hex(int(atf_bl33_offset, base=16) + int(baseaddr, base=16))
+            machine_override_string += 'TFA_BL33_LOAD ?= "%s"\n' % hex(int(atf_bl33_offset, base=16) + int(baseaddr, base=16))
 
     if soc_family == 'versal':
         machine_override_string += '\n# Yocto PLM variables\n'
@@ -302,13 +300,13 @@ def generate_yocto_machine(args, hw_flow):
         fsboot_flash_ipname = get_config_value('CONFIG_SUBSYSTEM_FLASH_IP_NAME',
                                                default_cfgfile)
         if not fsboot_memory_manual:
-            machine_override_string += 'YAML_MAIN_MEMORY_CONFIG:pn-fs-boot = "%s"\n' \
+            machine_override_string += 'YAML_MAIN_MEMORY_CONFIG:pn-fs-boot ?= "%s"\n' \
                                        % fsboot_memory_ipname
-            machine_override_string += 'YAML_FLASH_MEMORY_CONFIG:pn-fs-boot = "%s"\n' \
+            machine_override_string += 'YAML_FLASH_MEMORY_CONFIG:pn-fs-boot ?= "%s"\n' \
                                        % fsboot_flash_ipname
         processor_ip_name = get_config_value('CONFIG_SUBSYSTEM_PROCESSOR0_IP_NAME',
                                              default_cfgfile)
-        machine_override_string += 'XSCTH_PROC:pn-fs-boot = "%s"\n' % processor_ip_name
+        machine_override_string += 'XSCTH_PROC:pn-fs-boot ?= "%s"\n' % processor_ip_name
 
     machine_override_string += '\n# Yocto KERNEL Variables\n'
     # Additional kernel make command-line arguments
@@ -331,8 +329,8 @@ def generate_yocto_machine(args, hw_flow):
     else:
         loadaddr = kernel_loadaddr
 
-    machine_override_string += 'UBOOT_ENTRYPOINT  = "%s"\n' % loadaddr
-    machine_override_string += 'UBOOT_LOADADDRESS = "%s"\n' % loadaddr
+    machine_override_string += 'UBOOT_ENTRYPOINT  ?= "%s"\n' % loadaddr
+    machine_override_string += 'UBOOT_LOADADDRESS ?= "%s"\n' % loadaddr
 
     if arch != 'aarch64':
         machine_override_string += 'KERNEL_EXTRA_ARGS += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n'
@@ -343,13 +341,13 @@ def generate_yocto_machine(args, hw_flow):
         ddr_baseaddr = '0x0'
     machine_override_string += '\n#Set DDR Base address for u-boot-xlnx-scr '\
                                'variables\n'
-    machine_override_string += 'DDR_BASEADDR = "%s"\n' % ddr_baseaddr
+    machine_override_string += 'DDR_BASEADDR ?= "%s"\n' % ddr_baseaddr
     skip_append_baseaddr = get_config_value('CONFIG_SUBSYSTEM_UBOOT_APPEND_BASEADDR',
                                             default_cfgfile)
     if skip_append_baseaddr:
-        machine_override_string += 'SKIP_APPEND_BASEADDR = "0"\n'
+        machine_override_string += 'SKIP_APPEND_BASEADDR ?= "0"\n'
     else:
-        machine_override_string += 'SKIP_APPEND_BASEADDR = "1"\n'
+        machine_override_string += 'SKIP_APPEND_BASEADDR ?= "1"\n'
 
     serialname = get_config_value('CONFIG_SUBSYSTEM_SERIAL_', default_cfgfile,
                                   'choice', '_SELECT=y')
@@ -383,9 +381,9 @@ def generate_yocto_machine(args, hw_flow):
                 serial_no = tmp[0]
                 serial_console = serial_console[:-1]
                 serial_console = serial_console + serial_no
-        machine_override_string += 'SERIAL_CONSOLES = "%s"\n' % serial_console
+        machine_override_string += 'SERIAL_CONSOLES ?= "%s"\n' % serial_console
         machine_override_string += 'SERIAL_CONSOLES_CHECK = "${SERIAL_CONSOLES}"\n'
-        machine_override_string += 'YAML_SERIAL_CONSOLE_BAUDRATE = "%s"\n' \
+        machine_override_string += 'YAML_SERIAL_CONSOLE_BAUDRATE ?= "%s"\n' \
                                    % baudrate
 
     # Variables that changes based on hw design or board specific requirement must be
