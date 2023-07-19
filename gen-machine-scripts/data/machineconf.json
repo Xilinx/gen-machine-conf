@@ -42,12 +42,6 @@
     "xilinx-zcu111": {
         "dt-boardfile": "zcu111-reva"
     },
-    "xilinx-zcu1275": {
-        "dt-boardfile": "zcu1275-revb"
-    },
-    "xilinx-zcu1285": {
-        "dt-boardfile": "zcu1285-reva"
-    },
     "xilinx-zcu208": {
         "dt-boardfile": "zcu208-reva"
     },

@@ -1248,8 +1248,6 @@ config YOCTO_INCLUDE_MACHINE_NAME
 	default "zc706-zynq7" if YOCTO_MACHINE_NAME = "xilinx-zc706"
 	default "zedboard-zynq7" if YOCTO_MACHINE_NAME = "avnet-digilent-zedboard"
 	default "ultra96-zynqmp" if YOCTO_MACHINE_NAME = "xilinx-ultra96-reva"
-	default "zcu1275-zynqmp" if YOCTO_MACHINE_NAME = "xilinx-zcu1275"
-	default "zcu1285-zynqmp" if YOCTO_MACHINE_NAME = "xilinx-zcu1285"
 	default "zc1751-zynqmp" if YOCTO_MACHINE_NAME = "xilinx-zc1751-dc1"
 	default "zcu102-zynqmp" if YOCTO_MACHINE_NAME = "xilinx-zcu102"
 	default "zcu104-zynqmp" if YOCTO_MACHINE_NAME = "xilinx-zcu104"
