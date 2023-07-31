@@ -534,8 +534,8 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 					set highstrmap [string map ${idmap} "${bank_highaddr_property}"]
 					set typestrmap [string map ${idmap} "${bank_type_property}"]
 					if {"${ipname}" == "axi_emc"} {
-						set banktype [hsi get_property ${typestrmap} ${hd}]
-						if {"${banktype}" == "2" || "${banktype}" == "3"} {
+						set isflash [hsi get_property CONFIG.EMC_BOARD_INTERFACE ${hd}]
+						if {"${isflash}" == "linear_flash"} {
 							# It is flash
 							continue
 						}
@@ -1383,8 +1383,8 @@ proc plnx_gen_conf_flash {mapping kconfprefix cpuname cpuslaves} {
 					set basestrmap [string map ${idmap} "${bank_baseaddr_property}"]
 					set highstrmap [string map ${idmap} "${bank_highaddr_property}"]
 					set typestrmap [string map ${idmap} "${bank_type_property}"]
-					set banktype [hsi get_property ${typestrmap} ${hd}]
-					if {"${banktype}" == "0" || "${banktype}" == "1" || "${banktype}" == "4"} {
+					set isflash [hsi get_property CONFIG.EMC_BOARD_INTERFACE ${hd}]
+					if {"${isflash}" != "linear_flash"} {
 						# It is memory
 						continue
 					}
