@@ -217,9 +217,6 @@ proc update_alias_node {main_dts} {
 			close $fd
 			foreach line $data_read {
 				if {[string match -nocase "*aliases \{*" $line]} {
-					if { ![dict exists $kconfig_dict subsys_conf enable_no_alias]} {
-						regsub -all "aliases \{" $line "/delete-node/ aliases; \n\taliases \{" line
-					}
 					if {[llength $eeprom_alias]} {
 						regsub -all "aliases \{" $line "aliases \{\n\t\tnvmem0 = \\&eeprom;" line
 					}
