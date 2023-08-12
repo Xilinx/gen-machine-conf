@@ -1320,19 +1320,25 @@ config MC_PLNX_IMAGES_LOCATION
 menu "Parallel thread execution"
 
 config YOCTO_BB_NUMBER_THREADS
-	string "sets number of bb threads (BB_NUMBER_THREADS)"
+	string "Set number of bb threads (BB_NUMBER_THREADS)"
 	help
-	By default bitbake calculates the number of cores in pc
+	  Sets the number of tasks BitBake should run in parallel at any one time.
+	  By default BitBake calculates the number of tasks is equal to the
+	  number of cores on the build system.
 
 config YOCTO_BB_NUMBER_PARSE_THREADS
-	string "sets number of bb threads (BB_NUMBER_PARSE_THREADS)"
+	string "Set number of bb parse threads (BB_NUMBER_PARSE_THREADS)"
 	help
-	Sets the number of threads BitBake uses when parsing. By default bitbake calculates the number of threads is equal to the number of cores in pc
+	  Sets the number of threads BitBake uses when parsing.
+	  By default BitBake calculates the number of threads is equal
+	  to the number of cores on the build system.
 
 config YOCTO_PARALLEL_MAKE
-	string "sets number of parallel make -j (PARALLEL_MAKE)"
+	string "Set number of parallel make -j (PARALLEL_MAKE)"
 	help
-	By default bitbake calculates the number of cores in pc
+	  Specify parallel compilation on the local build host
+	  during the do_compile task.
+	  By default BitBake calculates the number of cores on the build system.
 
 endmenu
 
