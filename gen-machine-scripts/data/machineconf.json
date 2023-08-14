@@ -60,9 +60,6 @@
     "xilinx-k24-kd": {
         "dt-boardfile": ""
     },
-    "xilinx-k24-kv": {
-        "dt-boardfile": ""
-    },
     "xilinx-k24-som": {
         "dt-boardfile": ""
     },
