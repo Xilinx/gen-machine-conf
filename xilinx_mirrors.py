@@ -60,10 +60,10 @@ def generate_siteconf(args, arch, xilinx_network):
                     os.environ['XILINX_INT_DOWNLOADS'])
         else:
             if 'XILINX_INT_SSTATES' in os.environ.keys():
-                siteconf_string += 'SSTATE_MIRRORS:prepend = "file://.* file://%s/PATH \\n"\n' % (
+                siteconf_string += 'SSTATE_MIRRORS:prepend = "file://.* %s/PATH \\n"\n' % (
                     os.path.join(os.environ['XILINX_INT_SSTATES'], arch))
             if 'XILINX_INT_DOWNLOADS' in os.environ.keys():
-                siteconf_string += 'SOURCE_MIRROR_URL = "file://%s"\n' % os.environ['XILINX_INT_DOWNLOADS']
+                siteconf_string += 'SOURCE_MIRROR_URL = "%s"\n' % os.environ['XILINX_INT_DOWNLOADS']
 
         if siteconf_string:
             with open(site_conf_path, 'w') as site_conf_f:
