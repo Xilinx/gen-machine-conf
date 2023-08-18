@@ -416,8 +416,11 @@ endmenu
 source ./Kconfig.syshw
 
 choice
-	prompt "System Architecture"
+	prompt "Subsystem Architecture"
 	default SUBSYSTEM_ARCH_ARM
+	help
+	  This option is to control the processor targeted by PetaLinux.
+	  WARNING: Do not edit this option.
 
 config SUBSYSTEM_ARCH_AARCH64
 	bool "aarch64"
