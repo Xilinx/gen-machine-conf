@@ -325,8 +325,6 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     if parallel_make:
         override_string += 'PARALLEL_MAKE = "-j %s"\n' % parallel_make
 
-    if soc_family == "zynqmp":
-        override_string += 'LICENSE_FLAGS_ACCEPTED:append = " xilinx_pmu-rom-native"\n'
 
     override_string += 'PACKAGE_CLASSES = "package_rpm"\n'
     override_string += 'DL_DIR = "${TOPDIR}/downloads"\n'
