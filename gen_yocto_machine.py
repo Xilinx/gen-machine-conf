@@ -197,7 +197,7 @@ def generate_yocto_machine(args, hw_flow):
         atf_serial_manual = get_config_value('CONFIG_SUBSYSTEM_TF-A_SERIAL_MANUAL_SELECT',
                                              default_cfgfile)
         if not atf_serial_manual:
-            machine_override_string += 'ATF_CONSOLE_DEFAULT ?= "%s"\n' % atf_serial_ip_name
+            machine_override_string += 'ATF_CONSOLE ?= "%s"\n' % atf_serial_ip_name
         atf_mem_settings = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEMORY_SETTINGS',
                                             default_cfgfile)
         atf_mem_base = get_config_value('CONFIG_SUBSYSTEM_TF-A_MEM_BASE',
