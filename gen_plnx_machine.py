@@ -263,6 +263,7 @@ def generate_plnx_config(args, machine_conf_file, hw_flow):
     override_string += '# PetaLinux Tool Auto generated file\n'
     override_string += '\n# Generic variables\n'
     override_string += generate_mirrors(args, arch)
+    override_string += 'SIGGEN_UNLOCKED_RECIPES += "busybox"'
     if hw_flow == 'xsct':
         override_string += '\nMACHINE = "%s"\n' % machine_conf_file
 
