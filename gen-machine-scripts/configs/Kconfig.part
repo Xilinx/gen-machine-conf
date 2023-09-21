@@ -1226,10 +1226,6 @@ endmenu
 
 menu "Yocto Settings"
 
-if SUBSYSTEM_SDT_FLOW
-@@multiconfigmenustr@@
-endif
-
 config YOCTO_MACHINE_NAME
        string "Yocto Machine Name"
        default "versal-net-generic" if SUBSYSTEM_VARIANT_VERSALNET
@@ -1314,11 +1310,16 @@ config PLNX_IMAGES_LOCATION
 	help
 	  Specify the PetaLinux deploy directory to place the generated build artifacts.
 
+if SUBSYSTEM_SDT_FLOW
+
 config MC_PLNX_IMAGES_LOCATION
         string "PetaLinux Multiconfig Deploy Directory"
         help
           Specify the PetaLinux multiconfig deploy directory to place the generated build artifacts.
 
+@@multiconfigmenustr@@
+
+endif
 menu "Parallel thread execution"
 
 config YOCTO_BB_NUMBER_THREADS
