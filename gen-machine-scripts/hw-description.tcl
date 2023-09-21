@@ -1718,6 +1718,23 @@ proc generate_mapping_list {args} {
 	return ${mappinglist}
 }
 
+proc get_soc_info {args} {
+	set args [split [lindex ${args} 0]]
+	set hdf [lindex ${args} 0]
+	if { "${hdf}" == "" } {
+		error "No Hardware description file is specified."
+	}
+	if { [catch {openhw "${hdf}"} res] } {
+		error "Failed to open hardware design from ${hdf}"
+	}
+	# getting device_id from hw file
+	set current_proc_list [hsi get_cells -hier -filter {IP_NAME==psx_cortexa78 || \
+				IP_NAME==psv_cortexa72 || IP_NAME==psu_cortexa53 || \
+				IP_NAME==ps7_cortexa9 || IP_NAME==microblaze}]
+	set current_proc [hsi get_property IP_NAME [lindex $current_proc_list 0]]
+	puts "{\"proc_name\": \"$current_proc\"}"
+}
+
 proc plnx_gen_hwsysconf {args} {
 	set args [split [lindex ${args} 0]]
 	set hdf [lindex ${args} 0]
