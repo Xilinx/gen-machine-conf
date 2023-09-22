@@ -366,7 +366,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
 
     machine_override_string += '\n# Load the dynamic machine features\n'
     machine_override_string += 'include conf/machine/include/%s/${BB_CURRENT_MC}-features.conf\n' % args.machine
-    machine_override_string += 'LIBXIL_CONFIG = "conf/machine/include/%s/${BB_CURRENT_MC}-libxil.conf\n' % args.machine
+    machine_override_string += 'LIBXIL_CONFIG = "conf/machine/include/%s/${BB_CURRENT_MC}-libxil.conf"\n' % args.machine
 
     if MultiConfDict.get('FsblMcDepends'):
         machine_override_string += '\n# First Stage Boot Loader\n'

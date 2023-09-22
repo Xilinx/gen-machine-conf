@@ -155,6 +155,6 @@ def PreProcessSysConf(args, system_conffile):
     if args.machine_overrides:
         common_utils.UpdateConfigValue('CONFIG_YOCTO_ADD_OVERRIDES',
                                        '"%s"' % args.machine_overrides, system_conffile)
-    if hasattr(args, 'dts_path'):
+    if hasattr(args, 'dts_path') and args.dts_path:
         common_utils.UpdateConfigValue('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',
                                        '"%s"' % args.dts_path, system_conffile)
