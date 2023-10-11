@@ -84,7 +84,7 @@ def main():
     optional_args = parser._action_groups.pop()
     required_args = parser.add_argument_group('required arguments')
 
-    required_args.add_argument('--hw-description', metavar='[<PATH_TO_XSA>/<xsa_name>.xsa]',
+    required_args.add_argument('--hw-description', metavar='[<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>',
                                help='Specify Hardware(xsa) file or System Device-tree Directory',
                                type=os.path.realpath)
     optional_args.add_argument('--soc-family', metavar='',
@@ -106,7 +106,7 @@ def main():
     optional_args.add_argument(
         '--output', metavar='', help='Output directory name', default='')
     optional_args.add_argument('--native-sysroot', metavar='',
-                               help='Native sysroot path to use the mconf/conf commands.')
+                               help='Native sysroot path to use the mconf/conf or lopper commands.')
     optional_args.add_argument('--menuconfig', help='UI menuconfig option '
                                'to update configuration(default is project).'
                                '\nproject - To update System Level configurations '
