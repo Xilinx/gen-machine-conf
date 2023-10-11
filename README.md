@@ -76,31 +76,83 @@ gen-machineconf tool. Below is the gen-machineconf tool usage and examples.
 * gen-machineconf usage:
 
 ```bash
-$ gen-machineconf -h
-usage: gen-machineconf --soc-family [SOC_FAMILY] [--hw-description <PATH_TO_XSA>/<xsa_name>.xsa] [--machine-name] [other options]
+$ gen-machineconf --help
+[INFO] Getting bitbake BBPATH
+usage: gen-machineconf [--hw-description [<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>] [--soc-family] [--soc-variant] [--machine-name] [-c <config_dir>] [-r] [-O] [--output] [--native-sysroot]
+                       [--menuconfig [{project,rootfs}]] [--petalinux] [--add-rootfsconfig] [-D] [-h]
+                       <subcommand> ...
 
-PetaLinux/Yocto xsa to Machine Configuration File generation tool
+PetaLinux/Yocto Machine Configuration File generation tool
 
 required arguments:
-  --soc-family          Specify SOC family type from choice list.
-  --hw-description      <PATH_TO_XSA>/<xsa_name>.xsa
+  --hw-description [<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>
                         Specify Hardware(xsa) file or System Device-tree Directory
 
-optional arguments:
-  -h, --help            show this help message and exit
+options:
+  --soc-family          SOC family type from choice list (usually auto detected).
+  --soc-variant         SOC Variant: Ex: cg, dr, eg, ev, ai-prime, premium (usually auto detected).
   --machine-name        Provide a name to generate machine configuration
+  -c <config_dir>, --config-dir <config_dir>
+                        Location of the build conf directory
+  -r , --require-machine
+                        This machine will be required, instead of the generic machine if defined
+  -O , --machine-overrides
+                        Provide additional overrides to the generated machine
   --output              Output directory name
-  --xsct-tool           Vivado or Vitis XSCT path to use xsct commands
-  --native-sysroot      Native sysroot path to use the mconf/conf commands.
-  --sdt-sysroot         Native sysroot path to use lopper utilities.
-  --menuconfig {project,rootfs}
-                        UI menuconfig option to update configuration.
+  --native-sysroot      Native sysroot path to use the mconf/conf or lopper commands.
+  --menuconfig [{project,rootfs}]
+                        UI menuconfig option to update configuration(default is project).
                         project - To update System Level configurations
                         rootfs  - To update Rootfs configurations
-  --petalinux           Update the build/local.conf file with generated .conf files.
-  --debug               Output debug information on console
+  --petalinux           Generate Rootfs and PetaLinux Tool conf files and update the build/local.conf file with generated .conf files.
   --add-rootfsconfig    Specify a file with list of package names to add into rootfs menu entry
+  -D, --debug           Enable debug output
+  -h, --help            show this help message and exit
 
+subcommands:
+  <subcommand>
+    parse-xsa           Parse xsa file and generate Yocto/PetaLinux configurations.
+    parse-sdt           Parse System devicet-tree file and generate Yocto/PetaLinux configurations.
+
+Use gen-machineconf <subcommand> --help to get help on a specific command
+$
+```
+
+* gen-machineconf parse-xsa usage:
+
+```bash
+$ gen-machineconf parse-xsa --help
+usage: gen-machineconf parse-xsa [--hw-description <PATH_TO_XSA>/<xsa_name>.xsa] [other options]
+
+options:
+  -h, --help            show this help message and exit
+  --xsct-tool [XSCT_TOOL_PATH]
+                        Vivado or Vitis XSCT path to use xsct commands
+$
+
+```
+
+* gen-machineconf parse-sdt usage:
+
+```bash
+$ gen-machineconf parse-sdt --help
+usage: gen-machineconf parse-sdt [--hw-description <PATH_TO_SDTDIR>] [other options]
+
+options:
+  -h, --help            show this help message and exit
+  -o, --overlay         Generate overlay dts
+  -e, --external-fpga   Apply a partial overlay
+  -d <domain_file>, --domain-file <domain_file>
+                        Path to domain file (.yml/.dts)
+  -p <psu_init_path>, --psu-init-path <psu_init_path>
+                        Path to psu_init files, defaults to system_dts path
+  -i <pdi path>, --fpga <pdi path>
+                        Path to pdi file
+  -l <config_file>, --localconf <config_file>
+                        Write local.conf changes to this file
+  --dts-path <dts_path>
+                        Absolute path or subdirectory of conf/dts to place DTS files in (usually auto detected from DTS)
+$
 ```
 
 > **NOTE:** You can find the default BSP machine conf file names at `<gen-machine-conf>/gen-machine-scripts/data/machineconf.json`
