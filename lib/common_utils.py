@@ -342,7 +342,10 @@ def AddStrToFile(filename, string, mode='w'):
 
 
 def GetLopperUtilsPath():
-    lopper = check_tool('lopper')
+    lopper = check_tool('lopper',
+                   'Unable to find find lopper, please source the prestep '
+                   'environment to get lopper sysroot path. See README-setup '
+                   'in meta-xilinx layer for more details.')
     lopper_dir = os.path.dirname(lopper)
     lops_dir = glob.glob(os.path.join(os.path.dirname(lopper_dir),
                                       'lib', 'python*', 'site-packages', 'lopper', 'lops'))[0]
