@@ -139,15 +139,15 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file):
 
         atf_extra_settings = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_TF-A_EXTRA_COMPILER_FLAGS',
                                                          system_conffile)
-        atf_bl33_offset = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE',
-                                                      system_conffile)
+        memory = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_', system_conffile,
+                                            'choice', '_SELECT=y')
+        atf_bl33_offset = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_%s_U__BOOT_TEXTBASE_OFFSET' % memory,
+                                                     system_conffile)
         if atf_extra_settings:
             machine_override_string += 'EXTRA_OEMAKE:append:pn-arm-trusted-firmware'\
                                        ' = " %s"\n' % atf_extra_settings
-        # appending the bl33 offset to baseaddr
         if atf_bl33_offset:
-            machine_override_string += 'TFA_BL33_LOAD ?= "%s"\n' % hex(
-                int(atf_bl33_offset, base=16) + int(baseaddr, base=16))
+            machine_override_string += 'TFA_BL33_LOAD ?= "%s"\n' % atf_bl33_offset
 
     if soc_family == 'versal':
         machine_override_string += '\n# Yocto PLM variables\n'

@@ -79,12 +79,8 @@ def UpdateMemConfigs(args, system_conffile):
         # if selected different value from previous bank selection
         # for zynq BL33 address not applicable
         if args.soc_family != 'zynq':
-            proot = os.environ.get('PROOT', '')
-            if proot:
-                bl33_offset = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE', os.path.join(
-                    proot, 'project-spec', 'attributes'))
-                common_utils.UpdateConfigValue(
-                    'CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE', bl33_offset, system_conffile)
+            bl33_offset = common_utils.GetConfigValue(
+                'CONFIG_SUBSYSTEM_MEMORY_%s_U__BOOT_TEXTBASE_OFFSET' % memory, system_conffile)
     else:
         # updating the dtb load address for u-boot
         if args.soc_family == 'versal':
@@ -108,19 +104,14 @@ def UpdateMemConfigs(args, system_conffile):
             'CONFIG_SUBSYSTEM_MEMORY_%s_U__BOOT_TEXTBASE_OFFSET' % memory, system_conffile)
         common_utils.UpdateConfigValue('CONFIG_TEXT_BASE',
                                        uboot_load_addr, uboot_config)
-        # updating bl33 address based on the base mem
+        # updating bl33 address based on the u-boot text base
         if args.soc_family in ['versal', 'zynqmp']:
             bl33_offset = common_utils.GetConfigValue(
-                'CONFIG_SUBSYSTEM_PRELOADED_BL33_BASE', system_conffile)
-            bl33_addr = hex(int(bl33_offset, base=16) +
-                            int(memory_baseaddr, base=16))
+                'CONFIG_TEXT_BASE', uboot_config)
+            bl33_addr = bl33_offset
             if int(bl33_addr, base=16) > max_mem_size:
                 logger.error('bl33 addr %s exceeding max mem size %s' % (
                     bl33_addr, max_mem_size))
-            elif int(bl33_addr, base=16) != int(uboot_load_addr, base=16):
-                logger.error(
-                    'bl33 addr %s and u-boot text base addr %s not matching' % (bl33_addr, uboot_load_addr))
-
 
 def GetSysConsoleBootargs(system_conffile, soc_family, soc_variant):
     global ipinfo_data
