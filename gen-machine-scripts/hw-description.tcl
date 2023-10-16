@@ -330,15 +330,6 @@ proc plnx_gen_memory_bank_kconfig {bankid bankbaseaddr bankhighaddr instance_nam
 			"help" \
 			"  Size of the system memory. Minimum is 32MB, maximum is the size of" \
 			"  the selected primary memory physical address range."]
-		set kernelbaseaddrstr [format "%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n" \
-			"config ${kconfig_prefix}${kname}_${bankkconf}_KERNEL_BASEADDR" \
-			"hex \"kernel base address\"" \
-			"default ${bankbaseaddr}" \
-			"range ${bankbaseaddr} [format 0x%x [expr ${bankbaseaddr} + ${banksize} - 0x2000000]]" \
-			"depends on ${kconfig_prefix}${kname}_${bankkconf}_SELECT" \
-			"depends on SUBSYSTEM_ARCH_ARM || SUBSYSTEM_ARCH_AARCH64" \
-			"help" \
-			"  kernel base address."]
 		set ubootoffsetstr [format "%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n" \
 			"config ${kconfig_prefix}${kname}_${bankkconf}_U__BOOT_TEXTBASE_OFFSET" \
 			"hex \"u-boot text base address offset to memory base address\"" \
@@ -355,7 +346,7 @@ proc plnx_gen_memory_bank_kconfig {bankid bankbaseaddr bankhighaddr instance_nam
 			"string" \
 			"default $kname" \
 			"depends on ${kconfig_prefix}${kname}_${bankkconf}_SELECT"]
-		return [list "${choicestr}" "${baseaddrstr}" "${sizestr}" "${kernelbaseaddrstr}" "${ubootoffsetstr}" "${ddripname}"]
+		return [list "${choicestr}" "${baseaddrstr}" "${sizestr}" "${ubootoffsetstr}" "${ddripname}"]
 	} else {
 		return ""
 	}
@@ -382,7 +373,6 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 	set baseaddrstr1 ""
 	set sizestr1 ""
 	set ubootoffsetstr ""
-	set kernelbaseaddrstr ""
 	set ddripname ""
 
 	foreach m ${mapping} {
@@ -491,9 +481,8 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 								set choicestr [format "%s%s" "${choicestr}" "${tmpchoicestr}"]
 								set baseaddrstr [format "%s\n%s\n" "${baseaddrstr}" [lindex ${strlist} 1]]
 								set sizestr [format "%s\n%s\n" "${sizestr}" [lindex ${strlist} 2]]
-								set kernelbaseaddrstr [format "%s\n%s\n" "${kernelbaseaddrstr}" [lindex ${strlist} 3]]
-								set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 4]]
-								set ddripname [format "%s\n%s\n" "${ddripname}" [lindex ${strlist} 5]]
+								set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 3]]
+								set ddripname [format "%s\n%s\n" "${ddripname}" [lindex ${strlist} 4]]
 								set memnode [list "${name}_bankless" [list device_type ${devicetype}] [list ip_name ${ipname}] [list baseaddr ${bankbaseaddr}] [list highaddr "${bankhighaddr}"]]
 								lappend retmemories ${memnode}
 							}
@@ -511,9 +500,8 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 						set choicestr [format "%s%s" "${choicestr}" "${tmpchoicestr}"]
 						set baseaddrstr [format "%s\n%s\n" "${baseaddrstr}" [lindex ${strlist} 1]]
 						set sizestr [format "%s\n%s\n" "${sizestr}" [lindex ${strlist} 2]]
-						set kernelbaseaddrstr [format "%s\n%s\n" "${kernelbaseaddrstr}" [lindex ${strlist} 3]]
-						set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 4]]
-						set ddripname [format "%s\n%s\n" "${ddripname}" [lindex ${strlist} 5]]
+						set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 3]]
+						set ddripname [format "%s\n%s\n" "${ddripname}" [lindex ${strlist} 4]]
 						set memnode [list "${name}_bankless" [list device_type ${devicetype}] [list ip_name ${ipname}] [list baseaddr ${bankbaseaddr}] [list highaddr "${bankhighaddr}"]]
 						lappend retmemories ${memnode}
 					}
@@ -548,8 +536,7 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 						set choicestr [format "%s%s" "${choicestr}" "${tmpchoicestr}"]
 						set baseaddrstr [format "%s\n%s\n" "${baseaddrstr}" [lindex ${strlist} 1]]
 						set sizestr [format "%s\n%s\n" "${sizestr}" [lindex ${strlist} 2]]
-						set kernelbaseaddrstr [format "%s\n%s\n" "${kernelbaseaddrstr}" [lindex ${strlist} 3]]
-						set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 4]]
+						set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 3]]
 						set memnode [list "${name}_bank${i}" [list device_type ${devicetype}] [list ip_name ${ipname}] [list baseaddr ${bankbaseaddr}] [list highaddr "${bankhighaddr}"]]
 						lappend retmemories ${memnode}
 					}
@@ -575,8 +562,7 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 						set choicestr [format "%s%s" "${choicestr}" "${tmpchoicestr}"]
 						set baseaddrstr [format "%s\n%s\n" "${baseaddrstr}" [lindex ${strlist} 1]]
 						set sizestr [format "%s\n%s\n" "${sizestr}" [lindex ${strlist} 2]]
-						set kernelbaseaddrstr [format "%s\n%s\n" "${kernelbaseaddrstr}" [lindex ${strlist} 3]]
-						set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 4]]
+						set ubootoffsetstr [format "%s\n%s\n" "${ubootoffsetstr}" [lindex ${strlist} 3]]
 						set memnode [list "${name}_bank${i}" [list device_type ${devicetype}] [list ip_name ${ipname}] [list baseaddr ${bankbaseaddr}] [list highaddr "${bankhighaddr}"]]
 						lappend retmemories ${memnode}
 					}
@@ -634,14 +620,13 @@ proc plnx_gen_conf_memory {mapping kconfprefix cpuname cpuslaves} {
 		"  To skip generating lower or upper memory node specify 0x0 offset to the memory size." \
 		"${choicestr}" \
 		"endchoice"]
-	set kconfigstr [format "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n" \
+	set kconfigstr [format "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n" \
 		"menu \"Memory Settings\"" \
 		"${choicestr}" \
 		"${baseaddrstr}" \
 		"${sizestr}" \
 		"${baseaddrstr1}" \
 		"${sizestr1}" \
-		"${kernelbaseaddrstr}" \
 		"${ubootoffsetstr}" \
 		"${ddripname}" \
 		"endmenu"]

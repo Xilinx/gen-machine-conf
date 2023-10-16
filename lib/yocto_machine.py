@@ -220,15 +220,11 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file):
     if soc_family == 'microblaze':
         kernel_loadaddr = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_',
                                                       system_conffile, 'asterisk', '_BASEADDR=')
-    else:
-        kernel_baseaddr = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_',
-                                                      system_conffile, 'asterisk', '_KERNEL_BASEADDR=')
-        if not kernel_baseaddr:
-            kernel_baseaddr = '0x0'
-        kernel_offset = '0x200000'
-        kernel_loadaddr = hex(int(kernel_baseaddr, 16) +
-                              int(kernel_offset, 16))
-        kernel_loadaddr = '0x%s' % kernel_loadaddr[2:].upper()
+    kernel_baseaddr = '0x0'
+    kernel_offset = '0x200000'
+    kernel_loadaddr = hex(int(kernel_baseaddr, 16) +
+                        int(kernel_offset, 16))
+    kernel_loadaddr = '0x%s' % kernel_loadaddr[2:].upper()
     if kernel_loadaddr and int(kernel_loadaddr, 16) >> 32:
         MSB = '0x%s' % hex(int(kernel_loadaddr, 16) >> 32)[2:].upper()
         LSB = '0x%s' % hex(int(kernel_loadaddr, 16) & 0x0ffffffff)[2:].upper()
