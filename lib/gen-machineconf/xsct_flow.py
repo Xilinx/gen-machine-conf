@@ -31,9 +31,10 @@ def AddXsctUtilsPath(xsct_tool):
         else:
             os.environ["PATH"] += os.pathsep + os.path.join(xsct_tool, 'bin')
     else:
-        common_utils.check_tool('bitbake',
+        if not common_utils.check_tool('bitbake',
                                 'No --xsct-tool specified or bitbake command found '
-                                'to get XILINX_SDK_TOOLCHAIN')
+                                'to get XILINX_SDK_TOOLCHAIN'):
+            sys.exit(255)
         command = "bitbake -e"
         logger.info('Getting XILINX_SDK_TOOLCHAIN path...')
         stdout, stderr = common_utils.RunCmd(
@@ -55,7 +56,7 @@ def AddXsctUtilsPath(xsct_tool):
         elif xilinx_xsct_tool:
             os.environ["PATH"] += os.pathsep + xilinx_xsct_tool + '/bin'
 
-    xsct_exe = shutil.which('xsct')
+    xsct_exe = common_utils.check_tool('xsct')
     if not xsct_exe:
         logger.error('xsct command not found')
         sys.exit(255)

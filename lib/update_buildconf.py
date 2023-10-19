@@ -42,7 +42,7 @@ def AddUserLayers(args):
     system_conffile = os.path.join(args.output, 'config')
 
     # Return if sysconf doesnot modified
-    bitbake_layers = shutil.which('bitbake-layers')
+    bitbake_layers = common_utils.check_tool('bitbake-layers')
     builddir = os.environ.get('BUILDDIR')
 
     if not bitbake_layers or not builddir or not \

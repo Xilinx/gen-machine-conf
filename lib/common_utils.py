@@ -145,7 +145,7 @@ def RunCmd(command, out_dir, extraenv=None,
 
 # Check mconf utilities
 def AddNativeSysrootPath(native_sysroot):
-    if shutil.which('mconf') and shutil.which('conf'):
+    if check_tool('mconf') and check_tool('conf'):
         pass
     elif native_sysroot:
         if not os.path.isdir(native_sysroot):
@@ -158,9 +158,10 @@ def AddNativeSysrootPath(native_sysroot):
                     native_sysroot, bindir) + os.pathsep + os.environ['PATH']
     else:
         mconf_provides = "kconfig-frontends-native"
-        check_tool('bitbake',
+        if not check_tool('bitbake',
                    'No --native-sysroot specified or bitbake command found '
-                   'to get kconfig-frontends sysroot path')
+                   'to get kconfig-frontends sysroot path'):
+            sys.exit(255)
         command = "bitbake -e %s" % (mconf_provides)
         logger.info('Getting kconfig-frontends sysroot path...')
         stdout, stderr = RunCmd(command, os.getcwd(), shell=True)
@@ -299,13 +300,14 @@ def ValidateHashFile(output, macro, infile, update=True):
     return True
 
 
-def check_tool(tool, failed_msg='Failed to get tool path'):
+def check_tool(tool, failed_msg=None):
     '''Check the tool exists in PATH variable'''
     tool = tool.lower()
     tool_path = shutil.which(tool)
     if not tool_path:
-        logger.error(failed_msg)
-        sys.exit(255)
+        if failed_msg:
+            logger.error(failed_msg)
+        return None
     return tool_path
 
 
@@ -346,6 +348,8 @@ def GetLopperUtilsPath():
                    'Unable to find find lopper, please source the prestep '
                    'environment to get lopper sysroot path. See README-setup '
                    'in meta-xilinx layer for more details.')
+    if not lopper:
+        sys.exit(255)
     lopper_dir = os.path.dirname(lopper)
     lops_dir = glob.glob(os.path.join(os.path.dirname(lopper_dir),
                                       'lib', 'python*', 'site-packages', 'lopper', 'lops'))[0]

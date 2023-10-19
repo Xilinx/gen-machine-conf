@@ -75,7 +75,7 @@ def GenerateSiteConf(args, arch, xilinx_network):
 
 
 def GenerateMirrors(args, arch):
-    nslookup_exe = shutil.which('nslookup')
+    nslookup_exe = common_utils.check_tool('nslookup')
     system_conffile = os.path.join(args.output, 'config')
     if not nslookup_exe or not 'XILINX_INT_SITE' in os.environ.keys():
         xilinx_network = False
