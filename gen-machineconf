@@ -183,6 +183,13 @@ def main():
     # Add nativesysroot path
     common_utils.AddNativeSysrootPath(args.native_sysroot)
 
+    # We need conf and mconf
+    if not common_utils.check_tool('mconf', 'kconfig-frontends-native', 'Tool mconf is required'):
+        sys.exit(255)
+
+    if not common_utils.check_tool('conf', 'kconfig-frontends-native', 'Tool conf is required'):
+        sys.exit(255)
+
     ret = args.func(args)
     return ret
 

@@ -57,9 +57,8 @@ def AddXsctUtilsPath(xsct_tool):
         elif xilinx_xsct_tool:
             os.environ["PATH"] += os.pathsep + xilinx_xsct_tool + '/bin'
 
-    xsct_exe = common_utils.check_tool('xsct')
+    xsct_exe = common_utils.check_tool('xsct', 'xsct-native', 'xsct command not found')
     if not xsct_exe:
-        logger.error('xsct command not found')
         sys.exit(255)
     else:
         logger.debug('Using xsct from : %s' % xsct_exe)

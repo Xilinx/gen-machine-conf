@@ -145,48 +145,65 @@ def RunCmd(command, out_dir, extraenv=None,
 
 # Check mconf utilities
 def AddNativeSysrootPath(native_sysroot):
-    if check_tool('mconf') and check_tool('conf'):
-        pass
-    elif native_sysroot:
-        if not os.path.isdir(native_sysroot):
-            logger.error('Native sysroot path doesnot exists: %s'
-                         % native_sysroot)
-            sys.exit(255)
-        else:
-            for bindir in ['bin', 'sbin', os.path.join('usr', 'bin'), os.path.join('usr', 'sbin')]:
-                os.environ["PATH"] = os.path.join(
-                    native_sysroot, bindir) + os.pathsep + os.environ['PATH']
+    '''Add a native-sysroot to the PATH'''
+    if not native_sysroot:
+       return
+
+    native_sysroot = os.path.abspath(native_sysroot)
+
+    # Note the PATH setting following poky/scripts/oe-run-native
+    if not os.path.isdir(native_sysroot):
+        logger.error('Native sysroot path does not exists: %s'
+                     % native_sysroot)
+        sys.exit(255)
     else:
-        if not HaveBitbake():
-            logger.error('No --native-sysroot specified or bitbake command found '
-                         'to get kconfig-frontends sysroot path')
-            sys.exit(255)
+        # This list is BACKWARDS of oe-run-native, ensures we get the same final order
+        # Skip python3-native, as this breaks subsequent calls to bitbake
+        for entry in os.listdir(os.path.join(native_sysroot, 'usr', 'bin')):
+            special_bin_dir = os.path.join(native_sysroot, 'usr', 'bin', entry)
+            if os.path.isdir(special_bin_dir) and entry.endswith('-native') and entry != 'python3-native':
+                os.environ["PATH"] = special_bin_dir + os.pathsep + os.environ['PATH']
 
-        logger.info('Getting kconfig-frontends sysroot path...')
-        try:
-            vars = GetBitbakeVars(
-                     ['SYSROOT_DESTDIR','STAGING_BINDIR_NATIVE','NATIVE_PACKAGE_PATH_SUFFIX'],
-                     'kconfig-frontends-native')
+        for bindir in ['sbin', 'usr/sbin', 'bin', 'usr/bin']:
+            add_path = os.path.join(native_sysroot, bindir)
+            # Skip paths already in the PATH
+            if add_path in os.environ["PATH"].split(':'):
+                continue
+            os.environ["PATH"] = add_path + os.pathsep + os.environ['PATH']
 
-            sysroot_destdir = vars['SYSROOT_DESTDIR']
-            staging_bindir_native = vars['STAGING_BINDIR_NATIVE']
-            native_package_path_suffix = vars['NATIVE_PACKAGE_PATH_SUFFIX']
-            sysroot_path = '%s%s%s' % (sysroot_destdir, staging_bindir_native,
-                                   native_package_path_suffix)
+    logger.debug("PATH=%s" % os.environ["PATH"])
 
-            os.environ["PATH"] += os.pathsep + sysroot_path
 
-            if not check_tool('mconf') and not check_tool('conf'):
-                logger.debug('INFO: Running CMD: bitbake kconfig-frontends-native')
-                subprocess.check_call(["bitbake", "kconfig-frontends-native"])
+def FindNativeSysroot(recipe):
+    '''Based on oe-find-native-sysroot, purpose is to find a recipes sysroot'''
+    if not recipe:
+        return ""
 
-                if not check_tool('mconf') and not check_tool('conf'):
-                    logger.error('mconf/conf command not found')
-                    sys.exit(255)
-        except KeyError as e:
-            logger.error('Unable to get kconfig-frontends paths: %s' % e)
-            sys.exit(255)
+    # That has already been done, don't repeat!
+    if recipe in FindNativeSysroot.recipe_list:
+        return
 
+    if not HaveBitbake():
+        logger.error('No bitbake command found '
+                     'to get %s sysroot path' % recipe)
+        sys.exit(255)
+
+    # Make sure the sysroot is available to us
+    logger.info('Constructing %s recipe sysroot' % recipe)
+
+    subprocess.check_call(["bitbake", "-c", "addto_recipe_sysroot", recipe])
+
+    try:
+        recipe_staging_dir = GetBitbakeVars(['STAGING_DIR_NATIVE'], recipe)['STAGING_DIR_NATIVE']
+    except KeyError:
+        recipe_staging_dir = None
+
+    AddNativeSysrootPath(recipe_staging_dir)
+
+    FindNativeSysroot.recipe_list.append(recipe)
+
+# Default
+FindNativeSysroot.recipe_list = []
 
 def RunMenuconfig(Kconfig, cfgfile, ui, out_dir, component):
     if not ui:
@@ -288,14 +305,19 @@ def ValidateHashFile(output, macro, infile, update=True):
     return True
 
 
-def check_tool(tool, failed_msg=None):
+def check_tool(tool, recipe=None, failed_msg=None):
     '''Check the tool exists in PATH variable'''
     tool = tool.lower()
     tool_path = shutil.which(tool)
     if not tool_path:
-        if failed_msg:
-            logger.error(failed_msg)
-        return None
+        if recipe:
+            FindNativeSysroot(recipe)
+
+        tool_path = shutil.which(tool)
+        if not tool_path:
+            if failed_msg:
+                logger.error(failed_msg)
+            return None
     return tool_path
 
 
@@ -333,16 +355,25 @@ def AddStrToFile(filename, string, mode='w'):
 
 def GetLopperUtilsPath():
     lopper = check_tool('lopper',
-                   'Unable to find find lopper, please source the prestep '
-                   'environment to get lopper sysroot path. See README-setup '
+                   'esw-conf-native',
+                   'Unable to find find lopper, please ensure this is in your '
+                   'environment or lopper can be built by bitbake. See README-setup '
                    'in meta-xilinx layer for more details.')
     if not lopper:
         sys.exit(255)
     lopper_dir = os.path.dirname(lopper)
     lops_dir = glob.glob(os.path.join(os.path.dirname(lopper_dir),
                                       'lib', 'python*', 'site-packages', 'lopper', 'lops'))[0]
+    if not os.path.isdir(lops_dir):
+        logger.error("The lopper 'lops' are missing.")
+        sys.exit(255)
+
     embeddedsw = os.path.join(os.path.dirname(
         lopper_dir), 'share', 'embeddedsw')
+
+    if not os.path.isdir(embeddedsw):
+        logger.error("The embeddedsw configuration files are missing.")
+        sys.exit(255)
 
     return lopper, lopper_dir, lops_dir, embeddedsw
 
