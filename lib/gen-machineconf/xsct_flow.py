@@ -31,22 +31,17 @@ def AddXsctUtilsPath(xsct_tool):
         else:
             os.environ["PATH"] += os.pathsep + os.path.join(xsct_tool, 'bin')
     else:
-        if not common_utils.check_tool('bitbake',
-                                'No --xsct-tool specified or bitbake command found '
-                                'to get XILINX_SDK_TOOLCHAIN'):
+        if not common_utils.HaveBitbake():
+            logger.error('No --xsct-tool specified or bitbake command found '
+                         'to get XILINX_SDK_TOOLCHAIN')
             sys.exit(255)
-        command = "bitbake -e"
-        logger.info('Getting XILINX_SDK_TOOLCHAIN path...')
-        stdout, stderr = common_utils.RunCmd(
-            command, os.getcwd(), shell=True)
-        xilinx_xsct_tool = ''
-        for line in stdout.splitlines():
-            try:
-                line = line.decode('utf-8')
-            except AttributeError:
-                pass
-            if line.startswith('XILINX_SDK_TOOLCHAIN'):
-                xilinx_xsct_tool = line.split('=')[1].replace('"', '')
+
+        try:
+            xilinx_xsct_tool = common_utils.GetBitbakeVars(['XILINX_SDK_TOOLCHAIN'])['XILINX_SDK_TOOLCHAIN']
+        except KeyError:
+            logger.error('Unable to get XILINX_SDK_TOOLCHAIN path, please verify meta-xilinx-tools layer is available.')
+            sys.exit(255)
+
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
             logger.error('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
                          ' please set a valid one, or' % xilinx_xsct_tool)

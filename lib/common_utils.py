@@ -157,47 +157,35 @@ def AddNativeSysrootPath(native_sysroot):
                 os.environ["PATH"] = os.path.join(
                     native_sysroot, bindir) + os.pathsep + os.environ['PATH']
     else:
-        mconf_provides = "kconfig-frontends-native"
-        if not check_tool('bitbake',
-                   'No --native-sysroot specified or bitbake command found '
-                   'to get kconfig-frontends sysroot path'):
+        if not HaveBitbake():
+            logger.error('No --native-sysroot specified or bitbake command found '
+                         'to get kconfig-frontends sysroot path')
             sys.exit(255)
-        command = "bitbake -e %s" % (mconf_provides)
-        logger.info('Getting kconfig-frontends sysroot path...')
-        stdout, stderr = RunCmd(command, os.getcwd(), shell=True)
-        sysroot_path = ''
-        sysroot_destdir = ''
-        staging_bindir_native = ''
-        native_package_path_suffix = ''
-        for line in stdout.splitlines():
-            if line.startswith('SYSROOT_DESTDIR'):
-                sysroot_destdir = line.split('=')[1].replace('"', '')
-            elif line.startswith('STAGING_BINDIR_NATIVE'):
-                staging_bindir_native = line.split('=')[1].replace('"', '')
-            elif line.startswith('NATIVE_PACKAGE_PATH_SUFFIX'):
-                native_package_path_suffix = line.split(
-                    '=')[1].replace('"', '')
-        sysroot_path = '%s%s%s' % (sysroot_destdir, staging_bindir_native,
-                                   native_package_path_suffix)
-        scripts = ['mconf', 'conf']
-        not_found = False
-        for script in scripts:
-            if not os.path.isfile(os.path.join(sysroot_path, script)):
-                not_found = True
-            elif os.path.isfile(os.path.join(sysroot_path, script)) and not \
-                    os.access(os.path.join(sysroot_path, script), os.X_OK):
-                not_found = True
-        if not_found:
-            logger.debug('INFO: Running CMD: bitbake %s' % mconf_provides)
-            subprocess.check_call(["bitbake", mconf_provides])
-        os.environ["PATH"] += os.pathsep + sysroot_path
 
-    conf_exe = shutil.which('mconf')
-    if not conf_exe:
-        logger.error('mconf/conf command not found')
-        sys.exit(255)
-    else:
-        logger.debug('Using conf/mconf from : %s' % conf_exe)
+        logger.info('Getting kconfig-frontends sysroot path...')
+        try:
+            vars = GetBitbakeVars(
+                     ['SYSROOT_DESTDIR','STAGING_BINDIR_NATIVE','NATIVE_PACKAGE_PATH_SUFFIX'],
+                     'kconfig-frontends-native')
+
+            sysroot_destdir = vars['SYSROOT_DESTDIR']
+            staging_bindir_native = vars['STAGING_BINDIR_NATIVE']
+            native_package_path_suffix = vars['NATIVE_PACKAGE_PATH_SUFFIX']
+            sysroot_path = '%s%s%s' % (sysroot_destdir, staging_bindir_native,
+                                   native_package_path_suffix)
+
+            os.environ["PATH"] += os.pathsep + sysroot_path
+
+            if not check_tool('mconf') and not check_tool('conf'):
+                logger.debug('INFO: Running CMD: bitbake kconfig-frontends-native')
+                subprocess.check_call(["bitbake", "kconfig-frontends-native"])
+
+                if not check_tool('mconf') and not check_tool('conf'):
+                    logger.error('mconf/conf command not found')
+                    sys.exit(255)
+        except KeyError as e:
+            logger.error('Unable to get kconfig-frontends paths: %s' % e)
+            sys.exit(255)
 
 
 def RunMenuconfig(Kconfig, cfgfile, ui, out_dir, component):
@@ -357,3 +345,40 @@ def GetLopperUtilsPath():
         lopper_dir), 'share', 'embeddedsw')
 
     return lopper, lopper_dir, lops_dir, embeddedsw
+
+
+def HaveBitbake():
+    '''If bitbake is available, return True'''
+    if not HaveBitbake.have_bitbake:
+        if shutil.which('bitbake'):
+            logger.debug("Bitbake found.")
+            HaveBitbake.have_bitbake = True
+        else:
+            logger.debug("No bitbake found.")
+            HaveBitbake.have_bitbake = False
+    return HaveBitbake.have_bitbake
+
+# Default
+HaveBitbake.have_bitbake = None
+
+
+def GetBitbakeVars(variables, recipe=None):
+    '''Return back the values of bitbake variables with an optional recipe'''
+    logger.debug('Getting bitbake variables %s' % ' '.join(variables))
+
+    if not HaveBitbake():
+        logger.debug('No bitbake found skip getting %s' % ''.join(variables))
+        return {}
+
+    command = 'bitbake -e'
+    if recipe:
+        command = command + ' ' + recipe
+
+    stdout, stderr = RunCmd(command, os.getcwd(), shell=True)
+    bbval = {}
+    for line in stdout.splitlines():
+        for variable in variables:
+            if line.startswith(variable + "="):
+                logger.debug(line)
+                bbval[variable] = line.split('=')[1].replace('"', '')
+    return bbval

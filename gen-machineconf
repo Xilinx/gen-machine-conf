@@ -60,21 +60,6 @@ def validate_hwfile(hw_description):
     return hw_ext, hw_description
 
 
-def GetBBPath():
-    if shutil.which('bitbake'):
-        logger.info('Getting bitbake BBPATH')
-        command = 'bitbake -e'
-        stdout, stderr = common_utils.RunCmd(command, os.getcwd(), shell=True)
-        bbpath = ''
-        for line in stdout.splitlines():
-            if line.startswith('BBPATH'):
-                bbpath = line.split('=')[1].replace('"', '')
-        return bbpath
-    else:
-        logger.debug('No bitbake found skip getting BBPATH')
-    return ''
-
-
 def main():
     parser = argparse.ArgumentParser(
         description='PetaLinux/Yocto Machine Configuration File generation tool',
@@ -132,7 +117,12 @@ def main():
                                        dest='subcommand')
 
     # Try to get BBPATH to load modules
-    bbpath = GetBBPath()
+    try:
+        logger.info('Getting bitbake variable BBPATH')
+        bbpath = common_utils.GetBitbakeVars(['BBPATH'])['BBPATH']
+    except KeyError:
+        bbpath = ''
+
     # Load the plugins from BBPATH and lib/gen-machineconf directory
     for path in bbpath.split(':') + [scripts_path]:
         pluginpath = os.path.join(path, 'lib', 'gen-machineconf')
