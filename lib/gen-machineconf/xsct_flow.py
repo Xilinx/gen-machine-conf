@@ -19,6 +19,7 @@ import plnx_machine
 import yocto_machine
 import update_buildconf
 import re
+import subprocess
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -41,6 +42,11 @@ def AddXsctUtilsPath(xsct_tool):
         except KeyError:
             logger.error('Unable to get XILINX_SDK_TOOLCHAIN path, please verify meta-xilinx-tools layer is available.')
             sys.exit(255)
+
+        if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
+            mconf_provides = "xsct-native"
+            logger.debug('INFO: Running CMD: bitbake %s' % mconf_provides)
+            subprocess.check_call(["bitbake", mconf_provides])
 
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
             logger.error('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
