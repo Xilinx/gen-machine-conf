@@ -181,12 +181,15 @@ def ParseXsa(args):
                      system_conffile, args.hw_file)
         rootfs_config.GenRootfsConfig(args, system_conffile)
 
+    if args.petalinux:
+        # Layers should be added before generating machine conf files
+        update_buildconf.AddUserLayers(args)
+
     machine_conf_file = yocto_machine.GenerateYoctoMachine(
         args, system_conffile, plnx_syshw_file)
     if args.petalinux:
         plnx_conf_file = plnx_machine.GeneratePlnxConfig(
             args, machine_conf_file)
-        update_buildconf.AddUserLayers(args)
         update_buildconf.UpdateLocalConf(
             args, plnx_conf_file, machine_conf_file)
 
