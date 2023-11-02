@@ -117,11 +117,17 @@ def main():
                                        dest='subcommand')
 
     # Try to get BBPATH to load modules
-    try:
-        logger.info('Getting bitbake variable BBPATH')
-        bbpath = common_utils.GetBitbakeVars(['BBPATH'])['BBPATH']
-    except KeyError:
+    # We can skip this by setting SKIP_BBPATH_SEARCH variable from env
+    if os.environ.get('SKIP_BBPATH_SEARCH'):
+        logger.debug('SKIP_BBPATH_SEARCH is set, Skip getting '
+                        'BBPATH to load gen-machineconf modules')
         bbpath = ''
+    else:
+        try:
+            logger.info('Getting bitbake variable BBPATH')
+            bbpath = common_utils.GetBitbakeVars(['BBPATH'])['BBPATH']
+        except KeyError:
+            bbpath = ''
 
     # Load the plugins from BBPATH and lib/gen-machineconf directory
     for path in bbpath.split(':') + [scripts_path]:
