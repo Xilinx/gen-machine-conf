@@ -207,7 +207,7 @@ def PostProcessSysConf(args, system_conffile, ipinfo_file, plnx_syshw_file):
         nfsserverip = common_utils.GetConfigValue(
             'CONFIG_SUBSYSTEM_NFSSERVER_IP', system_conffile)
         cmd = '%s/petalinux-find-ipaddr %s' % (genmachine_scripts, nfsserverip)
-        nfsserverip = common_utils.RunCmd(cmd, args.output)[0].strip()
+        nfsserverip = common_utils.RunCmd(cmd, args.output, shell=True)[0].strip()
         use_dhcp = common_utils.GetConfigValue(
             'CONFIG_SUBSYSTEM_ETHERNET_%s_USE_DHCP' % ethdevname, system_conffile)
         static_ip = common_utils.GetConfigValue(
