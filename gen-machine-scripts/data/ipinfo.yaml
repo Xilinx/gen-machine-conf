@@ -55,6 +55,12 @@ axi_noc:
             has_bank: n
             baseaddr: BASE_VALUE
             highaddr: HIGH_VALUE
+axi_noc2:
+    device_type:
+        memory:
+            has_bank: n
+            baseaddr: CONFIG.C_BASEADDR
+            highaddr: CONFIG.C_HIGHADDR
 axi_emc:
     device_type:
         memory:
