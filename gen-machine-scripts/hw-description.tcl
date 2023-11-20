@@ -726,6 +726,15 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 					"  If you select \'manual\', you will need to add this variable " \
 					"  ATF_CONSOLE:forcevariable = \"<serial_ipname>\" in petalinuxbps.conf "]
 			}
+			if { "${component}" == "DTG" } {
+				set choicestr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s\n" "${choicestr}" \
+                                "help" \
+                                "  Select a serial as the U-boot and Linux's stdin,stdout." \
+                                "  If you select \'manual\', you will need to add this variable " \
+                                "  YAML_SERIAL_CONSOLE_STDIN:forcevariable:pn-${component} = \"<serial_ipname>\" " \
+                                "  YAML_SERIAL_CONSOLE_STDOUT:forcevariable:pn-${component} = \"<serial_ipname>\" " \
+                                "  in petalinuxbsp.conf file to specify the stdin/stdout." ]
+			}
 		foreach str $tmpstr {
 			set kstr [plnx_fix_kconf_name ${str}]
 			if { "${component}" != "DTG" && "${component}" != "FSBOOT" } {
