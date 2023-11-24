@@ -105,9 +105,7 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file):
     # Set dt board file as per the machine file
     # if config set to template/auto/AUTO
     if dtg_machine:
-        if (dtg_machine == 'template' or dtg_machine.lower() == 'auto'):
-            machine_override_string += ''
-        elif dtg_machine.lower() != 'auto':
+        if dtg_machine.lower() != 'auto':
             machine_override_string += 'YAML_DT_BOARD_FLAGS ?= "{BOARD %s}"\n'\
                 % dtg_machine
 
