@@ -330,9 +330,9 @@ proc plnx_gen_memory_bank_kconfig {bankid bankbaseaddr bankhighaddr instance_nam
 			"help" \
 			"  Size of the system memory. Minimum is 32MB, maximum is the size of" \
 			"  the selected primary memory physical address range."]
-		set ubootoffsetstr [format "%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n" \
+		set ubootoffsetstr [format "%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t\%s\n\t%s\n\t%s\n" \
 			"config ${kconfig_prefix}${kname}_${bankkconf}_U__BOOT_TEXTBASE_OFFSET" \
-			"hex \"u-boot text base address offset to memory base address\"" \
+			"hex \"u-boot text base address\"" \
 			"default [format 0x%x [expr ${bankbaseaddr} + 0x8000000]] if SUBSYSTEM_ARCH_AARCH64" \
 			"default [format 0x%x [expr ${bankbaseaddr} + 0x4000000]] if SUBSYSTEM_ARCH_ARM" \
 			"default [format 0x%x [expr ${bankbaseaddr} + 0x100000]] if SUBSYSTEM_ARCH_MICROBLAZE" \
@@ -340,7 +340,9 @@ proc plnx_gen_memory_bank_kconfig {bankid bankbaseaddr bankhighaddr instance_nam
 			"depends on ${kconfig_prefix}${kname}_${bankkconf}_SELECT" \
 			"depends on !SUBSYSTEM_COMPONENT_U__BOOT_NAME_NONE" \
 			"help" \
-			"  u-boot offset to the memory base address. Minimum suggested is 1MB."]
+			"  u-boot text base address by specifying from the memory base address." \
+		        "  u-boot load address = bank base address + offset. And same value will" \
+			"  pass to TF-A also. Minimum suggested is 1MB."]
 		set ddripname [format "%s\n\t%s\n\t%s\n\t%s\n" \
 			"config ${kconfig_prefix}IP_NAME" \
 			"string" \

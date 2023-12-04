@@ -109,9 +109,6 @@ def UpdateMemConfigs(args, system_conffile):
             bl33_offset = common_utils.GetConfigValue(
                 'CONFIG_TEXT_BASE', uboot_config)
             bl33_addr = bl33_offset
-            if int(bl33_addr, base=16) > max_mem_size:
-                logger.error('bl33 addr %s exceeding max mem size %s' % (
-                    bl33_addr, max_mem_size))
 
 def GetSysConsoleBootargs(system_conffile, soc_family, soc_variant):
     global ipinfo_data
