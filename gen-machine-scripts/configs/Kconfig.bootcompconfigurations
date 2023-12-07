@@ -153,6 +153,15 @@ config SUBSYSTEM_UBOOT_FIT_IMAGE_OFFSET
 	help
 	  Offset to load the Fit image to the DDR/JTAG.
 
+if !SUBSYSTEM_ARCH_MICROBLAZE
+config SUBSYSTEM_UBOOT_BOOTSCR_OFFSET
+	hex "Boot script offset"
+	default 0x20000000 if SYSTEM_VERSAL
+	default 0x20000000 if SYSTEM_ZYNQMP
+	default 0x3000000 if SUBSYSTEM_ARCH_ARM
+	help
+	  Boot script offset to the DDR/JTAG.
+endif
 endmenu
 
 menu "QSPI/OSPI image offsets"
