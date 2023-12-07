@@ -166,7 +166,7 @@ def ParseXsa(args):
         logger.debug('Using the soc_variant specified by user:%s' % args.soc_variant)
 
     project_config.GenKconfigProj(args.soc_family, args.soc_variant,
-                                  args.output, system_conffile)
+                                  args.output, args.petalinux, system_conffile)
     # Update the sysconfig with command line arguments
     # to reflect in menuconfig/config
     project_config.PreProcessSysConf(args, system_conffile)

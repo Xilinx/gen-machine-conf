@@ -14,6 +14,7 @@ import re
 import yaml
 import common_utils
 import logging
+import glob
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -24,6 +25,7 @@ config SUBSYSTEM_TYPE_LINUX
         bool
         default y
         select SYSTEM_{0}
+
 config SYSTEM_{0}
         bool "{0} Configuration"
         help
@@ -40,6 +42,13 @@ config SUBSYSTEM_VARIANT_{0}{1}
 
 Kconfig_sdt = '''
 config SUBSYSTEM_SDT_FLOW
+        bool
+        default y
+        help
+'''
+
+Kconfig_plnx = '''
+config SUBSYSTEM_DISTRO_PETALINUX
         bool
         default y
         help
@@ -101,7 +110,7 @@ def ConvertMCTargetsToKconfig(bbmctargets, multiconfig_min):
     return multiconfig_str
 
 
-def GenKconfigProj(soc_family, soc_variant, output,
+def GenKconfigProj(soc_family, soc_variant, output, petalinux,
                    system_conffile, bbmctargets='', multiconfig_min=''):
     genmachine_scripts = GenMachineScriptsPath()
     project_cfgdir = os.path.join(output, 'configs')
@@ -109,15 +118,29 @@ def GenKconfigProj(soc_family, soc_variant, output,
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     template_cfgfile = os.path.join(
         genmachine_scripts, 'configs/config_%s' % soc_family)
-    Kconfig_part = os.path.join(genmachine_scripts, 'configs', 'Kconfig.part')
+    Kconfig_files = glob.glob(os.path.join(
+                        genmachine_scripts, 'configs', 'Kconfig.*'))
 
-    for file_path in [Kconfig_part, Kconfig_syshw]:
-        if not os.path.isfile(file_path):
-            logger.error('%s is not found in tool' % file_path)
-            sys.exit(255)
+    if not os.path.isfile(Kconfig_syshw):
+        logger.error('%s is not found in tool' % file_path)
+        sys.exit(255)
 
     if not os.path.isfile(system_conffile):
         common_utils.CopyFile(template_cfgfile, system_conffile)
+
+    Kconfig_BBMCTargets = ''
+    if bbmctargets:
+        Kconfig_BBMCTargets = ConvertMCTargetsToKconfig(
+            bbmctargets, multiconfig_min)
+
+    for Kconfig_file in Kconfig_files:
+        common_utils.CopyFile(Kconfig_file, project_cfgdir)
+        common_utils.ReplaceStrFromFile(
+                    os.path.join(project_cfgdir, os.path.basename(Kconfig_file)),
+                    'source ./Kconfig.', 'source %s/Kconfig.' % project_cfgdir)
+        common_utils.ReplaceStrFromFile(
+                    os.path.join(project_cfgdir, os.path.basename(Kconfig_file)),
+                    '@@multiconfigmenustr@@', Kconfig_BBMCTargets)
 
     Kconfig_soc_family = soc_family.upper()
     Kconfig_str = start_menu.format(Kconfig_soc_family, output)
@@ -125,21 +148,12 @@ def GenKconfigProj(soc_family, soc_variant, output,
         Kconfig_soc_variant = soc_variant.upper()
         Kconfig_str += socvariant_menu.format(
             Kconfig_soc_family, Kconfig_soc_variant)
-
-    Kconfig_BBMCTargets = ''
-    if bbmctargets:
+    if Kconfig_BBMCTargets:
         Kconfig_str += Kconfig_sdt
-        Kconfig_BBMCTargets = ConvertMCTargetsToKconfig(
-            bbmctargets, multiconfig_min)
+    if petalinux:
+        Kconfig_str += Kconfig_plnx
+    Kconfig_str += '\nsource %s/Kconfig.main\n' % project_cfgdir
 
-    with open(Kconfig_part, 'r', encoding='utf-8') as kconfig_part_f:
-        kconfig_part_data = kconfig_part_f.read()
-    kconfig_part_f.close()
-    kconfig_part_data = kconfig_part_data.replace(
-        'source ./Kconfig.syshw', 'source %s' % Kconfig_syshw)
-    kconfig_part_data = kconfig_part_data.replace(
-        '@@multiconfigmenustr@@', Kconfig_BBMCTargets)
-    Kconfig_str += kconfig_part_data
     with open(Kconfig, 'w') as kconfig_f:
         kconfig_f.write(Kconfig_str)
     kconfig_f.close()

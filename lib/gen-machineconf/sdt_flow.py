@@ -153,7 +153,7 @@ def ParseSDT(args):
         args.machine = local_machine_conf
 
     project_config.GenKconfigProj(args.soc_family, args.soc_variant,
-                                  args.output, system_conffile,
+                                  args.output, args.petalinux, system_conffile,
                                   multiconfig_targets, multiconfig_min)
 
     # Update the sysconfig with command line arguments
