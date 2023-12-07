@@ -1523,12 +1523,7 @@ proc plnx_gen_hwsysconf {args} {
 
 	global plnx_kconfig
 	set plnx_kconfig ${kconffile}
-	set hwmenustr "menuconfig SUBSYSTEM_HARDWARE_AUTO\n"
-	set hwmenustr [format "%s\t%s\n" "${hwmenustr}" "bool \"Subsystem AUTO Hardware Settings\""]
-	set hwmenustr [format "%s\t%s\n" "${hwmenustr}" "default y"]
-	set hwmenustr [format "%s\t%s\n" "${hwmenustr}" "help"]
-	set hwmenustr [format "%s\t%s\n" "${hwmenustr}" "  This menu is to configure system hardware."]
-	set hwmenustr [format "%s\n%s\n" "${hwmenustr}" "if SUBSYSTEM_HARDWARE_AUTO"]
+	set hwmenustr "menu \"Subsystem Hardware Settings\"\n"
 	plnx_output_kconfig "${hwmenustr}"
 
 	set hwkconfprefix "SUBSYSTEM_"
@@ -1571,7 +1566,7 @@ proc plnx_gen_hwsysconf {args} {
 		plnx_output_kconfig "endif"
 		global plnx_ips_record
 	}
-	plnx_output_kconfig "endif"
+	plnx_output_kconfig "endmenu"
 	close ${kconffile}
 }
 

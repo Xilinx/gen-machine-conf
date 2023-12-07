@@ -1762,12 +1762,7 @@ proc plnx_gen_hwsysconf {args} {
 
 	global plnx_kconfig
 	set plnx_kconfig ${kconffile}
-	set hwmenustr "menuconfig SUBSYSTEM_HARDWARE_AUTO\n"
-	set hwmenustr [format "%s\t%s\n" "${hwmenustr}" "bool \"Subsystem AUTO Hardware Settings\""]
-	set hwmenustr [format "%s\t%s\n" "${hwmenustr}" "default y"]
-	set hwmenustr [format "%s\t%s\n" "${hwmenustr}" "help"]
-	set hwmenustr [format "%s\t%s\n" "${hwmenustr}" "  This menu is to configure system hardware."]
-	set hwmenustr [format "%s\n%s\n" "${hwmenustr}" "if SUBSYSTEM_HARDWARE_AUTO"]
+	set hwmenustr "menu \"Subsystem Hardware Settings\"\n"
 	plnx_output_kconfig "${hwmenustr}"
 
 	set hwkconfprefix "SUBSYSTEM_"
@@ -1822,7 +1817,7 @@ proc plnx_gen_hwsysconf {args} {
 		lappend c ${retslaves}
 		lappend cpus_nodes ${c}
 	}
-	plnx_output_kconfig "endif"
+	plnx_output_kconfig "endmenu"
 	plnx_output_data ${cpus_nodes}
 	close ${kconffile}
 	close ${plnx_data}
