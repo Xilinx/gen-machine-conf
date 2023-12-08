@@ -207,7 +207,7 @@ proc plnx_gen_conf_processor {mapping kconfprefix} {
 	if { "${cpuchoicesstr}" == "" } {
 		puts stderr [format "%s\n%s\n%s\n" "No CPU can be found in the system."\
 					"Please review your hardware system."\
-					"Valid processors are: microblaze, ps7_cortexa9, psu_cortexa53, psv_cortexa72."]
+					"Valid processors are: microblaze, ps7_cortexa9, psu_cortexa53, psv_cortexa72, psx_cortexa78."]
 		error ""
 	}
 	set kconfstr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n%s\n%s\n" "${kconfstr}" \
@@ -567,7 +567,7 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 	}
 	set components_list ""
 	if { [string match -nocase "*aarch64*" $arch_mapping ] } {
-		if { [regexp "psv_cortexa72*" $cpuname matched] == 1 } {
+		if { [regexp "ps*_cortexa7*" $cpuname matched] == 1 } {
 			set components_list "PLM TF-A DTG"
 		} elseif { [regexp "psu_cortexa53*" $cpuname matched] == 1 } {
 			set components_list "PMUFW FSBL TF-A DTG"
@@ -653,9 +653,9 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 					set atf_console "cadence"
 				} elseif { [string match -nocase "*psu_uart_1*" ${str} ] } {
 					set atf_console "cadence1"
-				} elseif { [string match -nocase "*psv_sbsauart_0*" ${str} ] } {
+				} elseif { [string match -nocase "*ps*_sbsauart_0*" ${str} ] } {
 					set atf_console "pl011"
-				} elseif { [string match -nocase "*psv_sbsauart_1*" ${str} ] } {
+				} elseif { [string match -nocase "*ps*_sbsauart_1*" ${str} ] } {
 					set atf_console "pl011_1"
 				}
 				if { "${atf_console}" == "" } {
@@ -1492,7 +1492,7 @@ proc generate_mapping_list {args} {
 		set devtype_mapping {}
 		lappend devtype_mapping "${devtype}"
 		if {"${devtype}" == "sd"} {
-			lappend devtype_mapping "processor_ip ps7_cortexa9 psu_cortexa53 psv_cortexa72"
+			lappend devtype_mapping "processor_ip ps7_cortexa9 psu_cortexa53 psv_cortexa72 psx_cortexa78"
 		} elseif {"${devtype}" == "timer"} {
 			lappend devtype_mapping "processor_ip microblaze"
 		} elseif {"${devtype}" == "reset_gpio"} {
