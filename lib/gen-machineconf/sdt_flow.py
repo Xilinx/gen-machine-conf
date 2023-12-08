@@ -42,14 +42,12 @@ def CpuInfoToDict(cpu_info):
     return cpu_info_dict
 
 
-def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, soc_family, hw_file, output):
-    logger.info('Generating Kconfig for project')
-    plnxconf_family = {'zynqmp': 'psu_cortexa53_0',
-                       'versal': 'psv_cortexa72_0'}
+def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, output):
+    logger.info('Generating Kconfig for the project')
     petalinux_schema = os.path.join(
         genmachine_scripts, 'data', 'sdt_ipinfo.yaml')
     multiconfigs.RunLopperSubcommand(output, output, hw_file,
-                                     'petalinuxconfig_xlnx %s %s' % (plnxconf_family[soc_family],
+                                     'petalinuxconfig_xlnx %s %s' % (proc_type,
                                                                      petalinux_schema))
     cmd = 'tclsh %s plnx_gen_hwsysconf "" %s' % \
         (os.path.join(genmachine_scripts, 'sdt-description.tcl'), Kconfig_syshw)
@@ -143,7 +141,7 @@ def ParseSDT(args):
     if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file) or \
             not os.path.exists(Kconfig_syshw):
         GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw,
-                           args.soc_family, args.hw_file, args.output)
+                           proc_type, args.hw_file, args.output)
 
     ipinfo_file = os.path.join(genmachine_scripts, 'data', 'ipinfo.yaml')
     plnx_syshw_file = os.path.join(args.output, 'petalinux_config.yaml')
