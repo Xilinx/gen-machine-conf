@@ -27,6 +27,14 @@ psv_cortexa72:
             - const: arm,cortex-a72
     device_type: processor
 
+psx_cortexa78:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - const: arm,cortex-a78
+    device_type: processor
+
 microblaze:
     properties:
       compatible:
