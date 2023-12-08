@@ -137,6 +137,22 @@ class CreateMultiConfigFiles():
         self.GenLibxilFeatures(
             'lop-a72-imux.dts', mc_name, distro_name, 'cortexa72')
 
+    # TODO - Since we don't have tune files for cortexa78 use cortexa72 until we
+    #        have tune file for cortexa78.
+    def CortexA78Baremetal(self):
+        suffix = '-%s' % self.domain if self.domain and self.domain != 'None' else ''
+        mc_name = 'cortexa78-%s-%s%s-baremetal' % (
+            self.core, self.args.soc_family, suffix)
+        self.MultiConfFiles.append(mc_name)
+        if self.ReturnConfFiles:
+            return
+        logger.info(
+            'cortex-a78 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+
+        distro_name = 'xilinx-standalone-nolto'
+        self.GenLibxilFeatures(
+            'lop-a78-imux.dts', mc_name, distro_name, 'cortexa72')
+
     def CortexR5Baremetal(self, domain=''):
         if not domain:
             domain = self.domain
@@ -163,9 +179,23 @@ class CreateMultiConfigFiles():
             logger.info(
                 'cortex-r5 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
+    def CortexR52Baremetal(self, domain=''):
+        if not domain:
+            domain = self.domain
+        suffix = '-%s' % domain if domain and domain != 'None' else ''
+        lto = '-nolto' if not domain or domain == 'None' else ''
+        mc_name = 'cortexr52-%s-%s%s-baremetal' % (self.core,
+                                                  self.args.soc_family, suffix)
+        self.MultiConfFiles.append(mc_name)
+        if self.ReturnConfFiles:
+            return
+
+        logger.info(
+                'cortex-r52 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+
         distro_name = 'xilinx-standalone%s' % lto
-        self.GenLibxilFeatures('lop-r5-imux.dts', mc_name,
-                               distro_name, 'cortexr5', extra_conf_str)
+        self.GenLibxilFeatures('lop-r52-imux.dts', mc_name,
+                               distro_name, 'cortexr52')
 
     def CortexA53FreeRtos(self):
         suffix = '-%s' % self.domain if self.domain and self.domain != 'None' else ''
@@ -195,6 +225,22 @@ class CreateMultiConfigFiles():
         self.GenLibxilFeatures('lop-a72-imux.dts',
                                mc_name, distro_name, 'cortexa72')
 
+    # TODO - Since we don't have tune files for cortexa78 use cortexa72 until we
+    #        have tune file for cortexa78.
+    def CortexA78FreeRtos(self):
+        suffix = '-%s' % self.domain if self.domain and self.domain != 'None' else ''
+        mc_name = 'cortexa78-%s-%s%s-freertos' % (self.core,
+                                                  self.args.soc_family, suffix)
+        self.MultiConfFiles.append(mc_name)
+        if self.ReturnConfFiles:
+            return
+        logger.info(
+            'cortex-a78 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
+
+        distro_name = 'xilinx-freertos'
+        self.GenLibxilFeatures('lop-a78-imux.dts',
+                               mc_name, distro_name, 'cortexa72')
+
     def CortexR5FreeRtos(self):
         suffix = '-%s' % self.domain if self.domain and self.domain != 'None' else ''
         mc_name = 'cortexr5-%s-%s%s-freertos' % (self.core,
@@ -208,6 +254,20 @@ class CreateMultiConfigFiles():
         distro_name = 'xilinx-freertos'
         self.GenLibxilFeatures('lop-r5-imux.dts',
                                mc_name, distro_name, 'cortexr5')
+
+    def CortexR52FreeRtos(self):
+        suffix = '-%s' % self.domain if self.domain and self.domain != 'None' else ''
+        mc_name = 'cortexr52-%s-%s%s-freertos' % (self.core,
+                                                 self.args.soc_family, suffix)
+        self.MultiConfFiles.append(mc_name)
+        if self.ReturnConfFiles:
+            return
+        logger.info(
+            'cortex-r52 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
+
+        distro_name = 'xilinx-freertos'
+        self.GenLibxilFeatures('lop-r52-imux.dts',
+                               mc_name, distro_name, 'cortexr52')
 
     def CortexA53Linux(self):
         if self.domain == 'None':
@@ -296,6 +356,56 @@ class CreateMultiConfigFiles():
                 lopper_args += '-x "*.yaml"'
             domain_files = [self.args.domain_file, 'lop-a72-imux.dts']
             domain_files += ['lop-domain-a72.dts', 'lop-domain-a72-prune.dts']
+            RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
+                                     self.args.hw_file, dts_file, lopper_args)
+        if conf_file:
+            conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
+            conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
+            common_utils.AddStrToFile(conf_file, conf_file_str)
+
+    # TODO - Use lop-a72* dts as a78 lop dts are still under development.
+    #        Once a78 is available update lop dts.
+    def CortexA78Linux(self):
+        if self.domain == 'None':
+            mc_name = ''
+            dts_file = os.path.join(self.args.dts_path if self.args.dts_path else '',
+                                    'cortexa78-%s-linux.dts' % self.args.soc_family)
+            conf_file = ''
+        else:
+            mc_name = 'cortexa78-%s-%s-linux' % (
+                self.args.soc_family, self.domain)
+            dts_file = os.path.join(self.args.dts_path if self.args.dts_path else '',
+                                    '%s.dts' % mc_name)
+            conf_file = os.path.join(self.args.config_dir,
+                                     'multiconfig', '%s.conf' % mc_name)
+        self.GenLinuxDts = True
+        if mc_name:
+            self.MultiConfFiles.append(mc_name)
+        self.MultiConfDict['LinuxDT'] = dts_file
+        if self.ReturnConfFiles:
+            return
+        logger.info('cortex-a78 for Linux [ %s ]' % self.domain)
+        # Check if it is overlay dts otherwise just create linux dts
+        if self.args.overlay:
+            if self.args.external_fpga:
+                # As there is no partial support on Versal, As per fpga manager implementation there is
+                # a flag "external_fpga" which says apply overlay without loading the bit file.
+                RunLopperSubcommand(self.args.output, self.args.dts_path, self.args.hw_file,
+                                    'xlnx_overlay_dt %s full external_fpga' % self.args.soc_family,
+                                    '-f')
+            else:
+                # If there is no external_fpga flag, then the default is full
+                RunLopperSubcommand(self.args.output, self.args.dts_path, self.args.hw_file,
+                                    'xlnx_overlay_dt %s full' % self.args.soc_family)
+            common_utils.RunCmd('dtc -q -O dtb -o %s -b 0 -@ %s' % (
+                os.path.join(self.args.dts_path, 'pl.dtbo'),
+                os.path.join(self.args.dts_path, 'pl.dtsi')))
+        else:
+            lopper_args = '-f --enhanced'
+            if self.args.domain_file:
+                lopper_args += '-x "*.yaml"'
+            domain_files = [self.args.domain_file, 'lop-a72-imux.dts']
+            domain_files += ['lop-domain-a72.dts']
             RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
                                      self.args.hw_file, dts_file, lopper_args)
         if conf_file:
@@ -400,6 +510,25 @@ class CreateMultiConfigFiles():
             self.CortexA72Baremetal()
             self.CortexA72FreeRtos()
 
+    def ArmCortexA78Setup(self):
+        if self.os_hint != 'None':
+            if self.os_hint.startswith('linux'):
+                if not self.GenLinuxDts:
+                    self.CortexA78Linux()
+            elif self.os_hint.startswith('baremetal'):
+                self.CortexA78Baremetal()
+            elif self.os_hint.startswith('freertos'):
+                self.CortexA78FreeRtos()
+            else:
+                logger.warning('cortex-a78 for unknown OS (%s), \
+                        parsing Baremetal. %s' % (self.os_hint, self.domain))
+                self.CortexA78Baremetal()
+        else:
+            if not self.GenLinuxDts:
+                self.CortexA78Linux()
+            self.CortexA78Baremetal()
+            self.CortexA78FreeRtos()
+
     def ArmCortexR5Setup(self):
         if self.os_hint != 'None':
             if self.os_hint.startswith('baremetal'):
@@ -414,6 +543,18 @@ class CreateMultiConfigFiles():
                 self.CortexR5Baremetal('fsbl')
             self.CortexR5Baremetal()
             self.CortexR5FreeRtos()
+
+    def ArmCortexR52Setup(self):
+        if self.os_hint != 'None':
+            if self.os_hint.startswith('baremetal'):
+                self.CortexR52Baremetal()
+            elif self.os_hint.startswith('freertos'):
+                self.CortexR52FreeRtos()
+            else:
+                self.CortexR52Baremetal()
+        else:
+            self.CortexR52Baremetal()
+            self.CortexR52FreeRtos()
 
     def MicroblazeSetup(self):
         self.MBTuneFeatures()
@@ -437,8 +578,12 @@ class CreateMultiConfigFiles():
                 self.ArmCortexA53Setup()
             elif self.cpu == 'arm,cortex-a72':
                 self.ArmCortexA72Setup()
+            elif self.cpu == 'arm,cortex-a78':
+                self.ArmCortexA78Setup()
             elif self.cpu == 'arm,cortex-r5':
                 self.ArmCortexR5Setup()
+            elif self.cpu == 'arm,cortex-r52':
+                self.ArmCortexR52Setup()
             elif self.cpu == 'xlnx,microblaze':
                 self.MicroblazeSetup()
             elif self.cpu == 'pmu-microblaze':
