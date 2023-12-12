@@ -129,7 +129,7 @@ CONFIG_SUBSYSTEM_DEVICETREE_COMPILER_FLAGS="-@"
 #
 # Kernel Bootargs
 #
-CONFIG_SUBSYSTEM_BOOTARGS_GENERATED="console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8 clk_ignore_unused"
+CONFIG_SUBSYSTEM_BOOTARGS_GENERATED="console=ttyAMA0 earlycon=pl011,mmio32,0xFF000000,115200n8"
 
 #
 # ARM Trusted Firmware Compilation Configuration

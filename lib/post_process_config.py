@@ -173,12 +173,12 @@ def GetSysConsoleBootargs(system_conffile, soc_family, soc_variant):
             earlycon_addr = int(earlycon_addr, base=16)
         earlycon_addr = hex(earlycon_addr).upper()
         if soc_family != 'versal':
-            return '%s console=%s,%s clk_ignore_unused' % (earlyprintk, serial_devfile, baudrate)
+            return '%s console=%s,%s' % (earlyprintk, serial_devfile, baudrate)
         else:
             if soc_variant == 'net':
-                return '%s console=%s,%s clk_ignore_unused' % (earlyprintk, serial_devfile, baudrate)
+                return '%s console=%s,%s' % (earlyprintk, serial_devfile, baudrate)
             else:
-                return 'console=%s %s clk_ignore_unused' % (serial_devfile, earlyprintk)
+                return 'console=%s %s' % (serial_devfile, earlyprintk)
     else:
         return 'console=%s,%s%s' % (serial_devfile, baudrate, earlyprintk)
 
