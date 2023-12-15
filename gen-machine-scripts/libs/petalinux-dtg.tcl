@@ -555,7 +555,12 @@ proc gen_dts_u_boot_node {fid} {
 	if {[string match {*microblaze*} $processor_ip_name]} {
 		return
 	}
-	set memory_base_addr [dict get $kconfig_dict memory baseaddr]
+
+	if {[dict exists $kconfig_dict subsys_conf memory_manual_lower_baseaddr]} {
+		set memory_base_addr [dict get $kconfig_dict subsys_conf memory_manual_lower_baseaddr]
+	} else {
+		set memory_base_addr [dict get $kconfig_dict memory baseaddr]
+	}
 	set bootscr_offset [dict get $kconfig_dict subsys_conf uboot_bootscr_offset]
 	if {![catch {dict get $kconfig_dict subsys_conf uboot_append_baseaddr}]} {
 		set boot_script_loadaddr [format "0x%08x" [expr $memory_base_addr + $bootscr_offset]]
