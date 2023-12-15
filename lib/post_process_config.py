@@ -109,6 +109,13 @@ def UpdateMemConfigs(args, system_conffile):
             bl33_offset = common_utils.GetConfigValue(
                 'CONFIG_TEXT_BASE', uboot_config)
             bl33_addr = bl33_offset
+    bootscr_flash_offset = common_utils.GetConfigValue(
+        'CONFIG_SUBSYSTEM_UBOOT_QSPI_BOOTSCR_OFFSET', system_conffile)
+    bootscr_flash_size = common_utils.GetConfigValue(
+        'CONFIG_SUBSYSTEM_UBOOT_QSPI_BOOTSCR_SIZE', system_conffile)
+    if (bootscr_flash_offset == "AUTO" and bootscr_flash_size != "AUTO") or (bootscr_flash_offset != "AUTO" and bootscr_flash_size == "AUTO"):
+            logger.error('Both boot script flash offset [%s] and boot script flash size [%s] should provide' % (
+                bootscr_flash_offset, bootscr_flash_size))
 
 def GetSysConsoleBootargs(system_conffile, soc_family, soc_variant):
     global ipinfo_data

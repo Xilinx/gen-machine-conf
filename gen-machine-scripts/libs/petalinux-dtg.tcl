@@ -549,6 +549,11 @@ proc is_ps_ip {ip_inst} {
 	return 0
 }
 
+proc add_bootscr_flash_offset_size_prop {fid qspi_bootscr_offset qspi_bootscr_size} {
+	puts $fid "\t\t\tbootscr-flash-offset = /bits/ 64 <${qspi_bootscr_offset}>;"
+	puts $fid "\t\t\tbootscr-flash-size = /bits/ 64 <${qspi_bootscr_size}>;"
+}
+
 proc gen_dts_u_boot_node {fid} {
 	global kconfig_dict
 	set processor_ip_name [dict get $kconfig_dict processor ip_str]
@@ -562,6 +567,8 @@ proc gen_dts_u_boot_node {fid} {
 		set memory_base_addr [dict get $kconfig_dict memory baseaddr]
 	}
 	set bootscr_offset [dict get $kconfig_dict subsys_conf uboot_bootscr_offset]
+	set qspi_bootscr_offset [dict get $kconfig_dict subsys_conf uboot_qspi_bootscr_offset]
+	set qspi_bootscr_size [dict get $kconfig_dict subsys_conf uboot_qspi_bootscr_size]
 	if {![catch {dict get $kconfig_dict subsys_conf uboot_append_baseaddr}]} {
 		set boot_script_loadaddr [format "0x%08x" [expr $memory_base_addr + $bootscr_offset]]
 	} else {
@@ -572,6 +579,9 @@ proc gen_dts_u_boot_node {fid} {
 	puts $fid "\t\tu-boot \{"
 	puts $fid "\t\t\tcompatible = \"u-boot,config\";"
 	puts $fid "\t\t\tbootscr-address = /bits/ 64 <${boot_script_loadaddr}>;"
+	if {![string match {*AUTO*} $qspi_bootscr_offset] && ![string match {*AUTO*} $qspi_bootscr_size]} {
+		add_bootscr_flash_offset_size_prop $fid $qspi_bootscr_offset $qspi_bootscr_size
+	}
 	puts $fid "\t\t\};"
 	puts $fid "\t\};"
 }

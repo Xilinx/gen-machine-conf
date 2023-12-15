@@ -224,6 +224,23 @@ config SUBSYSTEM_UBOOT_QSPI_FIT_IMAGE_SIZE
 	help
 	  Specify the QSPI/OSPI Fit image size to read the Fit image from Flash.
 
+if !SUBSYSTEM_ARCH_MICROBLAZE
+config SUBSYSTEM_UBOOT_QSPI_BOOTSCR_OFFSET
+	string "QSPI/OSPI Boot script offset"
+	default "AUTO"
+	help
+	  Specify the QSPI/OSPI boot script offset to read the boot script from Flash.
+	  if QSPI/OSPI boot script offset value modified then QSPI/OSPI boot script size
+	  value should also change.
+
+config SUBSYSTEM_UBOOT_QSPI_BOOTSCR_SIZE
+	string "QSPI/OSPI Boot script size"
+	default "AUTO"
+	help
+	  Specify the QSPI/OSPI boot script size to read the boot script from Flash.
+	  if QSPI/OSPI boot script size value modified then QSPI/OSPI boot script offset
+	  value should also change.
+endif
 endmenu
 menu "NAND image offsets"
 config SUBSYSTEM_UBOOT_NAND_KERNEL_OFFSET
