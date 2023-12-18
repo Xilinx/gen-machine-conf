@@ -422,11 +422,6 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
                 args.fpga)
             machine_override_string += 'PDI_PATH[vardepsexclude] += "PDI_PATH_DIR"\n'
 
-    machine_override_string += '\n# Enable the correct version of the firmware components\n'
-    machine_override_string += 'PREFERRED_VERSION_fsbl-firmware = "2023_sdt_experimental%"\n'
-    machine_override_string += 'PREFERRED_VERSION_pmu-firmware = "2023_sdt_experimental%"\n'
-    machine_override_string += 'PREFERRED_VERSION_plm-firmware = "2023_sdt_experimental%"\n'
-    machine_override_string += 'PREFERRED_VERSION_psm-firmware = "2023_sdt_experimental%"\n'
     machine_override_string += '\n# Exclude BASE_TMPDIR from hash calculations\n'
     machine_override_string += 'BB_HASHEXCLUDE_COMMON:append = " BASE_TMPDIR"\n'
     machine_override_string += '\n# Update bootbin to use proper device tree\n'
