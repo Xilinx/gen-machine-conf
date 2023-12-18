@@ -276,7 +276,7 @@ def GeneratePlnxConfig(args, machine_conf_file):
     override_string += '\n# Generic variables\n'
     override_string += xilinx_mirrors.GenerateMirrors(args, arch)
     override_string += '\nSIGGEN_UNLOCKED_RECIPES += "busybox"\n'
-    override_string += '\nMACHINE = "%s"\n' % machine_conf_file
+    override_string += '\nMACHINE = "%s"\n' % machine_conf_file.lower()
 
     if tmp_dir:
         override_string += 'TMPDIR = "%s"\n' % tmp_dir

@@ -507,6 +507,7 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
                 machine_conf_file += '-999'
     machine_conf_dir = os.path.join(args.config_dir, 'machine')
     common_utils.CreateDir(machine_conf_dir)
+    machine_conf_file = machine_conf_file.lower()
     machine_conf_path = os.path.join(machine_conf_dir, machine_conf_file + '.conf')
     machine_override = machine_conf_file
 
