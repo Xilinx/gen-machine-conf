@@ -179,6 +179,10 @@ class CreateMultiConfigFiles():
             logger.info(
                 'cortex-r5 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
+        distro_name = 'xilinx-standalone%s' % lto
+        self.GenLibxilFeatures('lop-r5-imux.dts', mc_name,
+                               distro_name, 'cortexr5', extra_conf_str)
+
     def CortexR52Baremetal(self, domain=''):
         if not domain:
             domain = self.domain
