@@ -198,7 +198,8 @@ def ParseSDT(args):
     common_utils.CreateDir(args.dts_path)
     if GenMultiConf:
         PrintsSystemConfiguration(args, model, device_id, cpu_info_dict)
-        MCObject = multiconfigs.CreateMultiConfigFiles(args, cpu_info_dict)
+        MCObject = multiconfigs.CreateMultiConfigFiles(args, cpu_info_dict,
+                                                       system_conffile=system_conffile)
         MultiConfDict = MCObject.ParseCpuDict()
 
     if args.petalinux:

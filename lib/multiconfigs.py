@@ -102,7 +102,8 @@ class CreateMultiConfigFiles():
         self.MultiConfFiles.append(mc_name)
         if domain == 'fsbl':
             self.MultiConfMin.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         extra_conf_str = ''
         if domain == 'fsbl':
@@ -128,7 +129,8 @@ class CreateMultiConfigFiles():
         mc_name = 'cortexa72-%s-%s%s-baremetal' % (
             self.core, self.args.soc_family, suffix)
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
             'cortex-a72 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -144,7 +146,8 @@ class CreateMultiConfigFiles():
         mc_name = 'cortexa78-%s-%s%s-baremetal' % (
             self.core, self.args.soc_family, suffix)
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
             'cortex-a78 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -162,7 +165,8 @@ class CreateMultiConfigFiles():
                                                   self.args.soc_family, suffix)
         self.r5FsblDone = True
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         extra_conf_str = ''
         if domain == 'fsbl':
@@ -191,7 +195,8 @@ class CreateMultiConfigFiles():
         mc_name = 'cortexr52-%s-%s%s-baremetal' % (self.core,
                                                   self.args.soc_family, suffix)
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
 
         logger.info(
@@ -206,7 +211,8 @@ class CreateMultiConfigFiles():
         mc_name = 'cortexa53-%s-%s%s-freertos' % (self.core,
                                                   self.args.soc_family, suffix)
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
             'cortex-a53 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -220,7 +226,8 @@ class CreateMultiConfigFiles():
         mc_name = 'cortexa72-%s-%s%s-freertos' % (self.core,
                                                   self.args.soc_family, suffix)
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
             'cortex-a72 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -236,7 +243,8 @@ class CreateMultiConfigFiles():
         mc_name = 'cortexa78-%s-%s%s-freertos' % (self.core,
                                                   self.args.soc_family, suffix)
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
             'cortex-a78 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -250,7 +258,8 @@ class CreateMultiConfigFiles():
         mc_name = 'cortexr5-%s-%s%s-freertos' % (self.core,
                                                  self.args.soc_family, suffix)
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
             'cortex-r5 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -264,7 +273,8 @@ class CreateMultiConfigFiles():
         mc_name = 'cortexr52-%s-%s%s-freertos' % (self.core,
                                                  self.args.soc_family, suffix)
         self.MultiConfFiles.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
             'cortex-r52 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -290,7 +300,8 @@ class CreateMultiConfigFiles():
         if mc_name:
             self.MultiConfFiles.append(mc_name)
         self.MultiConfDict['LinuxDT'] = dts_file
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
         logger.info('cortex-a53 for Linux [ %s ]' % self.domain)
         # Check if it is overlay dts otherwise just create linux dts
@@ -336,7 +347,8 @@ class CreateMultiConfigFiles():
         if mc_name:
             self.MultiConfFiles.append(mc_name)
         self.MultiConfDict['LinuxDT'] = dts_file
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
         logger.info('cortex-a72 for Linux [ %s ]' % self.domain)
         # Check if it is overlay dts otherwise just create linux dts
@@ -386,7 +398,8 @@ class CreateMultiConfigFiles():
         if mc_name:
             self.MultiConfFiles.append(mc_name)
         self.MultiConfDict['LinuxDT'] = dts_file
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
         logger.info('cortex-a78 for Linux [ %s ]' % self.domain)
         # Check if it is overlay dts otherwise just create linux dts
@@ -435,7 +448,8 @@ class CreateMultiConfigFiles():
         mc_name = 'microblaze-0-pmu'
         self.MultiConfFiles.append(mc_name)
         self.MultiConfMin.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info('Microblaze ZynqMP PMU')
         self.MBTuneFeatures()
@@ -449,7 +463,8 @@ class CreateMultiConfigFiles():
         mc_name = 'microblaze-0-pmc'
         self.MultiConfFiles.append(mc_name)
         self.MultiConfMin.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info('Microblaze Versal PMC')
         self.MBTuneFeatures()
@@ -463,7 +478,8 @@ class CreateMultiConfigFiles():
         mc_name = 'microblaze-0-psm'
         self.MultiConfFiles.append(mc_name)
         self.MultiConfMin.append(mc_name)
-        if self.ReturnConfFiles:
+        # Return if mc_name not enabled by user
+        if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return mc_name
         logger.info('Microblaze Versal PSM')
         self.MBTuneFeatures()
@@ -605,14 +621,22 @@ class CreateMultiConfigFiles():
         # to create machine and local.conf files
         return self.MultiConfDict
 
-    def __init__(self, args, cpu_info_dict, file_names_only=False):
+    def __init__(self, args, cpu_info_dict, system_conffile='', file_names_only=False):
         self.a53FsblDone = self.r5FsblDone = False
         self.MBTunesDone = self.GenLinuxDts = False
         self.MultiConfFiles = []
         self.MultiConfMin = []
+        self.MultiConfUser = []
         self.MultiConfDict = {}
         self.cpu_info_dict = cpu_info_dict
         self.args = args
-        # self.Retur.nConfFiles if true returns the file names which is required
+        # self.ReturnConfFiles if true returns the file names which is required
         # to create Kconfig
         self.ReturnConfFiles = file_names_only
+        if system_conffile:
+            # Get the BBMC targets from system config file and generate
+            # multiconfig targets only for enabled
+            self.MultiConfUser = common_utils.GetConfigValue(
+                                        'CONFIG_YOCTO_BBMC_', system_conffile,
+                                        'choicelist', '=y').lower().replace('_', '-')
+            self.MultiConfUser = list(self.MultiConfUser.split(' '))
