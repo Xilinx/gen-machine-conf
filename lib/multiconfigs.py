@@ -33,6 +33,18 @@ def RunLopperUsingDomainFile(domain_files, outdir, dts_path, hw_file,
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 
+def RunLopperGenLinuxDts(outdir, dts_path, domain_files, hw_file, dts_file, subcommand_args, lopper_args=''):
+    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
+    domain_args = ''
+    for domain in list(filter(None, domain_files)):
+        if not os.path.isabs(domain):
+            domain_args += ' -i %s' % os.path.join(lops_dir, domain)
+        else:
+            domain_args += ' -i %s' % domain
+    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -O %s %s %s %s %s -- %s' % (
+        lopper, outdir, lopper_args, domain_args, hw_file, dts_file, subcommand_args)
+    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
+    return stdout
 
 def RunLopperSubcommand(outdir, dts_path, hw_file, subcommand_args, lopper_args=''):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
@@ -321,10 +333,9 @@ class CreateMultiConfigFiles():
             if self.args.domain_file:
                 lopper_args += '-x "*.yaml"'
             domain_files = [self.args.domain_file, 'lop-a53-imux.dts']
-            domain_files += ['lop-domain-linux-a53.dts',
-                             'lop-domain-linux-a53-prune.dts']
-            RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
-                                     self.args.hw_file, dts_file, lopper_args)
+            RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, self.args.hw_file,
+                                dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
+                                '-f')
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
             conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
@@ -371,9 +382,9 @@ class CreateMultiConfigFiles():
             if self.args.domain_file:
                 lopper_args += '-x "*.yaml"'
             domain_files = [self.args.domain_file, 'lop-a72-imux.dts']
-            domain_files += ['lop-domain-a72.dts', 'lop-domain-a72-prune.dts']
-            RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
-                                     self.args.hw_file, dts_file, lopper_args)
+            RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, self.args.hw_file,
+                                dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
+                                '-f')
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
             conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
