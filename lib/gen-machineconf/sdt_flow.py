@@ -226,12 +226,10 @@ def register_commands(subparsers):
                                        usage='%(prog)s [--hw-description'
                                        ' <PATH_TO_SDTDIR>] [other options]'
                                        )
-    parser_sdt.add_argument(
-        '-o', '--overlay', help='Generate overlay dts', action='store_true')
-    parser_sdt.add_argument('-e', '--external-fpga',
-                            help='Apply a partial overlay', action='store_true')
+    parser_sdt.add_argument('-g', '--gen-pl-overlay', choices=['full', 'dfx-static', 'dfx-partial'],
+                            help='Generate pl overlay for full, dfx-static and dfx-partial configuration using xlnx_overlay_dt lopper script')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
-                            help='Path to domain file (.yml/.dts)', type=os.path.realpath)
+                            help='Path to domain file (.yaml/.dts)', type=os.path.realpath)
     parser_sdt.add_argument('-p', '--psu-init-path', metavar='<psu_init_path>',
                             help='Path to psu_init files, defaults to system_dts path', type=os.path.realpath)
     parser_sdt.add_argument('-i', '--fpga', metavar='<pdi path>',
