@@ -13,7 +13,7 @@ import common_utils
 import project_config
 import logging
 import glob
-
+import pathlib
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -53,6 +53,12 @@ def RunLopperSubcommand(outdir, dts_path, hw_file, subcommand_args, lopper_args=
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 
+def RunLopperPlOverlaycommand(outdir, dts_path, hw_file, ps_dts_file, subcommand_args, lopper_args=''):
+    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
+    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s %s %s %s -- %s' % (
+        lopper, outdir, lopper_args, hw_file, ps_dts_file, subcommand_args)
+    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
+    return stdout
 
 def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
@@ -316,26 +322,36 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
         logger.info('cortex-a53 for Linux [ %s ]' % self.domain)
-        # Check if it is overlay dts otherwise just create linux dts
-        if self.args.overlay:
-            if self.args.external_fpga:
-                RunLopperSubcommand(self.args.output, self.args.dts_path, self.args.hw_file,
-                                    'xlnx_overlay_dt %s full' % self.args.soc_family,
-                                    '-f')
-            else:
-                RunLopperSubcommand(self.args.output, self.args.dts_path, self.args.hw_file,
-                                    'xlnx_overlay_dt %s partial' % self.args.soc_family)
-            common_utils.RunCmd('dtc -q -O dtb -o %s -b 0 -@ %s' % (
-                os.path.join(self.args.dts_path, 'pl.dtbo'),
-                os.path.join(self.args.dts_path, 'pl.dtsi')))
+        # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
+        # in lopper. This script provides full, dfx-static and dfx-partial pl
+        # overlays.
+        ps_dts_file = ''
+        if self.args.gen_pl_overlay:
+            # Do not overwrite original SDT file during overlay processing, Instead
+            # write out to a intermediate file in output directory and use this
+            # file for lopper pl overlay operation.
+            ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
+                                       % pathlib.Path(self.args.hw_file).stem)
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+                                      ps_dts_file, 'xlnx_overlay_dt cortexa53-%s %s'
+                                      % (self.args.soc_family, self.args.gen_pl_overlay),
+                                      '-f')
+            logger.info('pl-overlay [ %s ] is enabled for cortex-a53 file: %s and stored in intermediate ps dts file: %s'
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
         else:
-            lopper_args = '-f --enhanced'
-            if self.args.domain_file:
-                lopper_args += '-x "*.yaml"'
-            domain_files = [self.args.domain_file, 'lop-a53-imux.dts']
-            RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, self.args.hw_file,
-                                dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
-                                '-f')
+            ps_dts_file = self.args.hw_file
+            logger.debug('No pl-overlay is enabled for cortex-a53 Linux dts file: %s'
+                         % ps_dts_file)
+
+        # We need linux dts for with and without pl-overlay else without
+        # cortexa53-zynqmp-linux.dts it fails to build.
+        lopper_args = '-f --enhanced'
+        if self.args.domain_file:
+            lopper_args += '-x "*.yaml"'
+        domain_files = [self.args.domain_file, 'lop-a53-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+                            dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
+                            '-f')
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
             conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
@@ -362,29 +378,36 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
         logger.info('cortex-a72 for Linux [ %s ]' % self.domain)
-        # Check if it is overlay dts otherwise just create linux dts
-        if self.args.overlay:
-            if self.args.external_fpga:
-                # As there is no partial support on Versal, As per fpga manager implementation there is
-                # a flag "external_fpga" which says apply overlay without loading the bit file.
-                RunLopperSubcommand(self.args.output, self.args.dts_path, self.args.hw_file,
-                                    'xlnx_overlay_dt %s full external_fpga' % self.args.soc_family,
-                                    '-f')
-            else:
-                # If there is no external_fpga flag, then the default is full
-                RunLopperSubcommand(self.args.output, self.args.dts_path, self.args.hw_file,
-                                    'xlnx_overlay_dt %s full' % self.args.soc_family)
-            common_utils.RunCmd('dtc -q -O dtb -o %s -b 0 -@ %s' % (
-                os.path.join(self.args.dts_path, 'pl.dtbo'),
-                os.path.join(self.args.dts_path, 'pl.dtsi')))
+        # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
+        # in lopper. This script provides full(segmented configuration),
+        # dfx-static and dfx-partial pl overlays.
+        ps_dts_file = ''
+        if self.args.gen_pl_overlay:
+            # Do not overwrite original SDT file during overlay processing, Instead
+            # write out to a intermediate file in output directory and use this
+            # file for lopper pl overlay operation.
+            ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
+                                       % pathlib.Path(self.args.hw_file).stem)
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+                                      ps_dts_file, 'xlnx_overlay_dt cortexa72-%s %s'
+                                      % (self.args.soc_family, self.args.gen_pl_overlay),
+                                      '-f')
+            logger.info('pl-overlay [ %s ] is enabled for cortex-a72 file: %s and stored in intermediate ps dts file: %s'
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
         else:
-            lopper_args = '-f --enhanced'
-            if self.args.domain_file:
-                lopper_args += '-x "*.yaml"'
-            domain_files = [self.args.domain_file, 'lop-a72-imux.dts']
-            RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, self.args.hw_file,
-                                dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
-                                '-f')
+            ps_dts_file = self.args.hw_file
+            logger.debug('No pl-overlay is enabled for cortex-a72 Linux dts file: %s'
+                         % ps_dts_file)
+
+        # We need linux dts for with and without pl-overlay else without
+        # cortexa72-versal-linux.dts it fails to build.
+        lopper_args = '-f --enhanced'
+        if self.args.domain_file:
+            lopper_args += '-x "*.yaml"'
+        domain_files = [self.args.domain_file, 'lop-a72-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+                            dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
+                            '-f')
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
             conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
@@ -413,29 +436,36 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
         logger.info('cortex-a78 for Linux [ %s ]' % self.domain)
-        # Check if it is overlay dts otherwise just create linux dts
-        if self.args.overlay:
-            if self.args.external_fpga:
-                # As there is no partial support on Versal, As per fpga manager implementation there is
-                # a flag "external_fpga" which says apply overlay without loading the bit file.
-                RunLopperSubcommand(self.args.output, self.args.dts_path, self.args.hw_file,
-                                    'xlnx_overlay_dt %s full external_fpga' % self.args.soc_family,
-                                    '-f')
-            else:
-                # If there is no external_fpga flag, then the default is full
-                RunLopperSubcommand(self.args.output, self.args.dts_path, self.args.hw_file,
-                                    'xlnx_overlay_dt %s full' % self.args.soc_family)
-            common_utils.RunCmd('dtc -q -O dtb -o %s -b 0 -@ %s' % (
-                os.path.join(self.args.dts_path, 'pl.dtbo'),
-                os.path.join(self.args.dts_path, 'pl.dtsi')))
+        # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
+        # in lopper. This script provides full(segmented configuration),
+        # dfx-static and dfx-partial pl overlays.
+        ps_dts_file = ''
+        if self.args.gen_pl_overlay:
+            # Do not overwrite original SDT file during overlay processing, Instead
+            # write out to a intermediate file in output directory and use this
+            # file for lopper pl overlay operation.
+            ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
+                                       % pathlib.Path(self.args.hw_file).stem)
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+                                      ps_dts_file, 'xlnx_overlay_dt cortexa78-%s %s'
+                                      % (self.args.soc_family, self.args.gen_pl_overlay),
+                                      '-f')
+            logger.info('pl-overlay [ %s ] is enabled for cortex-a78 file: %s and stored in intermediate ps dts file: %s'
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
         else:
-            lopper_args = '-f --enhanced'
-            if self.args.domain_file:
-                lopper_args += '-x "*.yaml"'
-            domain_files = [self.args.domain_file, 'lop-a72-imux.dts']
-            domain_files += ['lop-domain-a72.dts']
-            RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
-                                     self.args.hw_file, dts_file, lopper_args)
+            ps_dts_file = self.args.hw_file
+            logger.debug('No pl-overlay is enabled for cortex-a78 Linux dts file: %s'
+                         % ps_dts_file)
+
+        # We need linux dts for with and without pl-overlay else without
+        # cortexa78-versal-linux.dts it fails to build.
+        lopper_args = '-f --enhanced'
+        if self.args.domain_file:
+            lopper_args += '-x "*.yaml"'
+        domain_files = [self.args.domain_file, 'lop-a78-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+                            dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
+                            '-f')
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
             conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
