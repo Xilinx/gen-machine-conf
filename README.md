@@ -140,10 +140,10 @@ usage: gen-machineconf parse-sdt [--hw-description <PATH_TO_SDTDIR>] [other opti
 
 options:
   -h, --help            show this help message and exit
-  -o, --overlay         Generate overlay dts
-  -e, --external-fpga   Apply a partial overlay
+  -g {full,dfx-static,dfx-partial}, --gen-pl-overlay {full,dfx-static,dfx-partial}
+                        Generate pl overlay for full, dfx-static and dfx-partial configuration using xlnx_overlay_dt lopper script
   -d <domain_file>, --domain-file <domain_file>
-                        Path to domain file (.yml/.dts)
+                        Path to domain file (.yaml/.dts)
   -p <psu_init_path>, --psu-init-path <psu_init_path>
                         Path to psu_init files, defaults to system_dts path
   -i <pdi path>, --fpga <pdi path>
