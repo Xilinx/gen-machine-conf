@@ -159,7 +159,21 @@ def GenKconfigProj(soc_family, soc_variant, output, petalinux,
     kconfig_f.close()
 
 
-def PreProcessSysConf(args, system_conffile):
+def ApplyConfValue(string, system_conffile):
+    string = string.strip()
+    if string.startswith('#'):
+        conf = string.replace('#', '').split()[0]
+        value = 'disable'
+    else:
+        conf = string.split('=')[0]
+        value = 'y'
+        if len(string.split('=')) == 2:
+            value = string.split('=')[1]
+    if conf and value:
+        common_utils.UpdateConfigValue(conf, value, system_conffile)
+
+
+def PreProcessSysConf(args, system_conffile, mctargets=[]):
     if args.machine:
         common_utils.UpdateConfigValue('CONFIG_YOCTO_MACHINE_NAME',
                                        '"%s"' % args.machine, system_conffile)
@@ -172,3 +186,24 @@ def PreProcessSysConf(args, system_conffile):
     if hasattr(args, 'dts_path') and args.dts_path:
         common_utils.UpdateConfigValue('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',
                                        '"%s"' % args.dts_path, system_conffile)
+
+    # Read the args.multiconfigfull and enable full target set
+    if hasattr(args, 'multiconfigfull') and args.multiconfigfull:
+        for mctarget in mctargets:
+            cfgtarget = 'CONFIG_YOCTO_BBMC_%s' % mctarget.upper().replace('-', '_')
+            common_utils.UpdateConfigValue(cfgtarget, 'y', system_conffile)
+
+    # Read the configs from CLI and update system conf file
+    for config in args.add_config:
+        # Default assume macro stars with CONFIG_ else file
+        if os.path.isfile(config):
+            with open(config, 'r') as file_data:
+                lines = file_data.readlines()
+            for line in lines:
+                ApplyConfValue(line, system_conffile)
+        elif config.strip().replace('#', '').startswith('CONFIG_'):
+            ApplyConfValue(config, system_conffile)
+        else:
+            logger.warning('Unable to detect config type: %s. Using CONFIG_%s' % (
+                            config, config))
+            ApplyConfValue('CONFIG_%s' % config, system_conffile)

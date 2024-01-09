@@ -105,6 +105,8 @@ options:
                         project - To update System Level configurations
                         rootfs  - To update Rootfs configurations
   --petalinux           Generate Rootfs and PetaLinux Tool conf files and update the build/local.conf file with generated .conf files.
+  --add-config [CONFIG_<macro>=y]
+                        Specify config macro or file containing config macros to be added on top of default configs
   --add-rootfsconfig    Specify a file with list of package names to add into rootfs menu entry
   -D, --debug           Enable debug output
   -h, --help            show this help message and exit
@@ -150,6 +152,7 @@ options:
                         Path to pdi file
   -l <config_file>, --localconf <config_file>
                         Write local.conf changes to this file
+  --multiconfigfull     Generate/Enable Full set of multiconfig .conf and .dts files. Default is minimal)
   --dts-path <dts_path>
                         Absolute path or subdirectory of conf/dts to place DTS files in (usually auto detected from DTS)
 $

@@ -159,7 +159,7 @@ def ParseSDT(args):
 
     # Update the sysconfig with command line arguments
     # to reflect in menuconfig/config
-    project_config.PreProcessSysConf(args, system_conffile)
+    project_config.PreProcessSysConf(args, system_conffile, multiconfig_targets)
     common_utils.RunMenuconfig(Kconfig, system_conffile,
                                True if args.menuconfig == 'project' else False,
                                args.output, 'project')
@@ -239,6 +239,8 @@ def register_commands(subparsers):
                             help='Path to pdi file', type=os.path.realpath)
     parser_sdt.add_argument('-l', '--localconf', metavar='<config_file>',
                             help='Write local.conf changes to this file', type=os.path.realpath)
+    parser_sdt.add_argument('--multiconfigfull', action='store_true',
+                            help='Generate/Enable Full set of multiconfig .conf and .dts files. Default is minimal)')
     parser_sdt.add_argument('--dts-path', metavar='<dts_path>',
                             help='Absolute path or subdirectory of conf/dts to place DTS files in (usually auto detected from DTS)')
 

@@ -101,6 +101,9 @@ def main():
     optional_args.add_argument('--petalinux', help='Generate Rootfs and PetaLinux Tool conf '
                                'files and update the build/local.conf file '
                                'with generated .conf files.', action='store_true')
+    optional_args.add_argument('--add-config', help='Specify config macro or file containing config macros '
+                               'to be added on top of default configs', action='append',
+                               nargs='?', default=[], metavar='CONFIG_<macro>=y')
     optional_args.add_argument('--add-rootfsconfig', help='Specify a file with list of '
                                'package names to add into rootfs menu entry',
                                metavar='')
