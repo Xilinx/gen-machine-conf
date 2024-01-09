@@ -55,7 +55,7 @@ def RunLopperSubcommand(outdir, dts_path, hw_file, subcommand_args, lopper_args=
 
 def RunLopperPlOverlaycommand(outdir, dts_path, hw_file, ps_dts_file, subcommand_args, lopper_args=''):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s %s %s %s -- %s' % (
+    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -O %s %s %s %s -- %s' % (
         lopper, outdir, lopper_args, hw_file, ps_dts_file, subcommand_args)
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
