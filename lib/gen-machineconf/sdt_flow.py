@@ -21,6 +21,7 @@ import multiconfigs
 import yocto_machine
 import plnx_machine
 import update_buildconf
+import kconfig_syshw
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -44,15 +45,17 @@ def CpuInfoToDict(cpu_info):
 
 def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, output):
     logger.info('Generating Kconfig for the project')
-    petalinux_schema = os.path.join(
+    sdtipinfo_schema = os.path.join(
         genmachine_scripts, 'data', 'sdt_ipinfo.yaml')
+    ipinfo_schema = os.path.join(
+        genmachine_scripts, 'data', 'ipinfo.yaml')
+    plnx_syshw_file = os.path.join(output, 'petalinux_config.yaml')
+
     multiconfigs.RunLopperSubcommand(output, output, hw_file,
                                      'petalinuxconfig_xlnx %s %s' % (proc_type,
-                                                                     petalinux_schema))
-    cmd = 'tclsh %s plnx_gen_hwsysconf "" %s' % \
-        (os.path.join(genmachine_scripts, 'sdt-description.tcl'), Kconfig_syshw)
+                                                                     sdtipinfo_schema))
     logger.debug('Generating System HW file')
-    common_utils.RunCmd(cmd, out_dir=output, shell=True)
+    kconfig_syshw.GenKconfigSysHW(plnx_syshw_file, ipinfo_schema, Kconfig_syshw)
     if not os.path.exists(Kconfig_syshw):
         logger.error('Failed to Generate Kconfig_syshw File')
         sys.exit(255)

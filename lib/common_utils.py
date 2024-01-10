@@ -18,6 +18,7 @@ import glob
 import subprocess
 import shutil
 import re
+import yaml
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -351,6 +352,15 @@ def AddStrToFile(filename, string, mode='w'):
     '''Add string or line into the given file '''
     with open(filename, mode) as file_f:
         file_f.write(string)
+
+
+def ReadYaml(yamlfile):
+    with open(yamlfile, 'r') as yaml_fd:
+        try:
+            return yaml.safe_load(yaml_fd)
+        except yaml.YAMLError as exc:
+            logger.error(exc)
+            sys.exit(255)
 
 
 def GetLopperUtilsPath():
