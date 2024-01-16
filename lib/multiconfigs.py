@@ -60,6 +60,13 @@ def RunLopperPlOverlaycommand(outdir, dts_path, hw_file, ps_dts_file, subcommand
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 
+def CopyPlOverlayfile(outdir, dts_path, pl_overlay_args):
+    pl_dt_path = os.path.join(dts_path, 'pl-overlay-%s' % pl_overlay_args)
+    common_utils.CreateDir(pl_dt_path)
+    common_utils.CopyFile(os.path.join(outdir, 'pl.dtsi'), pl_dt_path)
+    logger.info('Lopper generated pl overlay file is found in: %s and a copy of pl.dtsi is stored in: %s'
+                % (os.path.join(outdir, 'pl.dtsi'), pl_dt_path))
+
 def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s -f %s \
@@ -338,6 +345,12 @@ class CreateMultiConfigFiles():
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a53 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+            # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
+            # generated in lopper output directory. Hence copy pl.dtsi from
+            # output directory to dts_path/pl-overlay-{full|dfx-static|dfx-partial}
+            # directory. Later user can use this pl.dtsi as input file to firmware
+            # recipes.
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = self.args.hw_file
             logger.debug('No pl-overlay is enabled for cortex-a53 Linux dts file: %s'
@@ -394,6 +407,12 @@ class CreateMultiConfigFiles():
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a72 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+            # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
+            # generated in lopper output directory. Hence copy pl.dtsi from
+            # output directory to dts_path/pl-overlay-{full|dfx-static|dfx-partial}
+            # directory. Later user can use this pl.dtsi as input file to firmware
+            # recipes.
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = self.args.hw_file
             logger.debug('No pl-overlay is enabled for cortex-a72 Linux dts file: %s'
@@ -452,6 +471,12 @@ class CreateMultiConfigFiles():
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a78 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+            # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
+            # generated in lopper output directory. Hence copy pl.dtsi from
+            # output directory to dts_path/pl-overlay-{full|dfx-static|dfx-partial}
+            # directory. Later user can use this pl.dtsi as input file to firmware
+            # recipes.
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = self.args.hw_file
             logger.debug('No pl-overlay is enabled for cortex-a78 Linux dts file: %s'
