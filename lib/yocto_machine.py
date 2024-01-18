@@ -66,6 +66,25 @@ def GetTuneFeatures(soc_family, system_conffile):
     return ' '.join(tune_features)
 
 
+def YoctoCommonConfigs(args, arch, system_conffile):
+    machine_features = ''
+    machine_override_string = ''
+    is_fpga_manager = common_utils.GetConfigValue(
+        'CONFIG_SUBSYSTEM_FPGA_MANAGER', system_conffile)
+    if is_fpga_manager == 'y':
+        machine_features = ' fpga-overlay'
+
+    if CheckIP('vdu', system_conffile):
+        machine_features += ' vdu'
+
+    if machine_features:
+        machine_override_string += '\n# Yocto MACHINE_FEATURES Variable\n'
+        machine_override_string += 'MACHINE_FEATURES += "%s"\n' % (
+            machine_features.strip())
+
+    return machine_override_string
+
+
 def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file):
     soc_family = args.soc_family
     soc_variant = args.soc_variant
@@ -312,19 +331,8 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file):
         machine_override_string += 'MACHINE_HWCODECS = "libomxil-xlnx"\n'
         machine_override_string += 'IMAGE_FEATURES += "hwcodecs"\n'
 
-    machine_features = ''
-    is_fpga_manager = common_utils.GetConfigValue(
-        'CONFIG_SUBSYSTEM_FPGA_MANAGER', system_conffile)
-    if is_fpga_manager == 'y':
-        machine_features = ' fpga-overlay'
+    machine_override_string += YoctoCommonConfigs(args, arch, system_conffile)
 
-    if CheckIP('vdu', system_conffile):
-        machine_features += ' vdu'
-
-    if machine_features:
-        machine_override_string += '\n# Yocto MACHINE_FEATURES Variable\n'
-        machine_override_string += 'MACHINE_FEATURES += "%s"\n' % (
-            machine_features.strip())
     return machine_override_string
 
 
@@ -428,6 +436,8 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
     machine_override_string += 'BIF_PARTITION_IMAGE[device-tree] = "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
     machine_override_string += '\n# Remap boot files to ensure the right device tree is listed first\n'
     machine_override_string += 'IMAGE_BOOT_FILES =+ "devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
+
+    machine_override_string += YoctoCommonConfigs(args, arch, system_conffile)
 
     return machine_override_string
 
