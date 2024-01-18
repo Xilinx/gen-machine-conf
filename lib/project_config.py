@@ -193,6 +193,13 @@ def PreProcessSysConf(args, system_conffile, mctargets=[]):
             cfgtarget = 'CONFIG_YOCTO_BBMC_%s' % mctarget.upper().replace('-', '_')
             common_utils.UpdateConfigValue(cfgtarget, 'y', system_conffile)
 
+    # Read the args.gen_pl_overlay and update sysconfig
+    if hasattr(args, 'gen_pl_overlay') and args.gen_pl_overlay:
+        common_utils.UpdateConfigValue('CONFIG_SUBSYSTEM_FPGA_MANAGER',
+                                        'y', system_conffile)
+        common_utils.UpdateConfigValue('CONFIG_SUBSYSTEM_PL_DT_OVERLAY_%s' %
+                args.gen_pl_overlay.replace('-','_').upper(), 'y', system_conffile)
+
     # Read the configs from CLI and update system conf file
     for config in args.add_config:
         # Default assume macro stars with CONFIG_ else file
