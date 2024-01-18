@@ -181,12 +181,27 @@ endif
 endif
 endmenu
 
-if !SUBSYSTEM_ARCH_MICROBLAZE && !SUBSYSTEM_SDT_FLOW
+if !SUBSYSTEM_ARCH_MICROBLAZE
 menu "FPGA Manager"
 config SUBSYSTEM_FPGA_MANAGER
         bool "Fpga Manager"
         help
 	 Select this option to provides an interface to the Linux for configuring the programmable logic(PL).
 
+if SUBSYSTEM_FPGA_MANAGER && SUBSYSTEM_SDT_FLOW
+choice
+	prompt "PL Device-Tree Overlay Type"
+
+config SUBSYSTEM_PL_DT_OVERLAY_FULL
+	bool "full"
+
+config SUBSYSTEM_PL_DT_OVERLAY_DFX_STATIC
+	bool "dfx-static"
+
+config SUBSYSTEM_PL_DT_OVERLAY_DFX_PARTIAL
+	bool "dfx-partial"
+
+endchoice
+endif
 endmenu
 endif
