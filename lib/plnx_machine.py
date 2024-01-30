@@ -540,7 +540,13 @@ def GeneratePlnxConfig(args, machine_conf_file):
         override_string += 'SYMLINK_FILES:%s = "%s:%s"\n' \
             % (soc_family, 'system-default.dtb', 'system.dtb')
         override_string += 'DEVICE_TREE_NAME = "system.dtb"\n'
-    override_string += 'BOOTMODE = "generic"\n'
+
+    if (hw_flow == 'sdt') and (dt_xenhw_dtsi or dt_xenqemu_dtsi):
+        override_string += 'BOOTMODE = "xen"\n'
+        override_string += 'ENABLE_XEN_UBOOT_SCR = "1"\n'
+    else:
+        override_string += 'BOOTMODE = "generic"\n'
+
     override_string += 'BOOTFILE_EXT = ""\n'
     # Use MACHINE as override due to u-boot-xlnx-scr has $soc_family-$soc_variant overrides
     override_string += 'RAMDISK_IMAGE:${MACHINE} = "rootfs.cpio.gz.u-boot"\n'
