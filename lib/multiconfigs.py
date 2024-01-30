@@ -330,8 +330,7 @@ class CreateMultiConfigFiles():
             return
         logger.info('cortex-a53 for Linux [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
-        # in lopper. This script provides full, dfx-static and dfx-partial pl
-        # overlays.
+        # in lopper. This script provides full, dfx(static) pl overlays.
         ps_dts_file = ''
         if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
@@ -347,9 +346,8 @@ class CreateMultiConfigFiles():
                         % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
-            # output directory to dts_path/pl-overlay-{full|dfx-static|dfx-partial}
-            # directory. Later user can use this pl.dtsi as input file to firmware
-            # recipes.
+            # output directory to dts_path/pl-overlay-{full|dfx} directory.
+            # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
             ps_dts_file = self.args.hw_file
@@ -393,7 +391,7 @@ class CreateMultiConfigFiles():
         logger.info('cortex-a72 for Linux [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
         # in lopper. This script provides full(segmented configuration),
-        # dfx-static and dfx-partial pl overlays.
+        # dfx(static) pl overlays.
         ps_dts_file = ''
         if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
@@ -409,9 +407,8 @@ class CreateMultiConfigFiles():
                         % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
-            # output directory to dts_path/pl-overlay-{full|dfx-static|dfx-partial}
-            # directory. Later user can use this pl.dtsi as input file to firmware
-            # recipes.
+            # output directory to dts_path/pl-overlay-{full|dfx} directory.
+            # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
             ps_dts_file = self.args.hw_file
@@ -457,7 +454,7 @@ class CreateMultiConfigFiles():
         logger.info('cortex-a78 for Linux [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
         # in lopper. This script provides full(segmented configuration),
-        # dfx-static and dfx-partial pl overlays.
+        # dfx(static) pl overlays.
         ps_dts_file = ''
         if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
@@ -473,9 +470,8 @@ class CreateMultiConfigFiles():
                         % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
-            # output directory to dts_path/pl-overlay-{full|dfx-static|dfx-partial}
-            # directory. Later user can use this pl.dtsi as input file to firmware
-            # recipes.
+            # output directory to dts_path/pl-overlay-{full|dfx} directory.
+            # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
             ps_dts_file = self.args.hw_file
