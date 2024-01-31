@@ -706,14 +706,16 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 	set choicestr ""
 	foreach component $components_list {
 		set conf_comp $component
+		set menu_comp $component
                 if { "${component}" == "DTG" } {
                         set conf_comp ""
+			set menu_comp "U-boot/Linux"
                 } else {
                         set conf_comp "${component}_"
                 }
 		set choicestr [format "%s\n%s\n\t%s\n" "${choicestr}" \
 			"choice" \
-			"prompt \"${component} Serial stdin/stdout\"" ]
+			"prompt \"${menu_comp} Serial stdin/stdout\"" ]
 			set choicestr [format "%s\n%s\n\t%s\n\t%s\n\t%s\n\t%s\n" "${choicestr}" \
 				"help" \
 				"  Select a serial as the ${component}'s stdin,stdout." \
