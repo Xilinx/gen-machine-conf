@@ -195,11 +195,8 @@ choice
 config SUBSYSTEM_PL_DT_OVERLAY_FULL
 	bool "full"
 
-config SUBSYSTEM_PL_DT_OVERLAY_DFX_STATIC
-	bool "dfx-static"
-
-config SUBSYSTEM_PL_DT_OVERLAY_DFX_PARTIAL
-	bool "dfx-partial"
+config SUBSYSTEM_PL_DT_OVERLAY_DFX
+	bool "dfx"
 
 endchoice
 endif
