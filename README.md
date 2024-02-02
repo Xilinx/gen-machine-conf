@@ -142,8 +142,8 @@ usage: gen-machineconf parse-sdt [--hw-description <PATH_TO_SDTDIR>] [other opti
 
 options:
   -h, --help            show this help message and exit
-  -g {full,dfx-static,dfx-partial}, --gen-pl-overlay {full,dfx-static,dfx-partial}
-                        Generate pl overlay for full, dfx-static and dfx-partial configuration using xlnx_overlay_dt lopper script
+  -g {full,dfx}, --gen-pl-overlay {full,dfx}
+                        Generate pl overlay for full, dfx configuration using xlnx_overlay_dt lopper script
   -d <domain_file>, --domain-file <domain_file>
                         Path to domain file (.yaml/.dts)
   -p <psu_init_path>, --psu-init-path <psu_init_path>
