@@ -230,7 +230,7 @@ def register_commands(subparsers):
                                        ' <PATH_TO_SDTDIR>] [other options]'
                                        )
     parser_sdt.add_argument('-g', '--gen-pl-overlay', choices=['full', 'dfx'],
-                            help='Generate pl overlay for full, dfx-static and dfx-partial configuration using xlnx_overlay_dt lopper script')
+                            help='Generate pl overlay for full, dfx configuration using xlnx_overlay_dt lopper script')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
                             help='Path to domain file (.yaml/.dts)', type=os.path.realpath)
     parser_sdt.add_argument('-p', '--psu-init-path', metavar='<psu_init_path>',
