@@ -88,10 +88,8 @@ psu_ethernet:
         OneOf:
           - items:
             - enum:
+              - xlnx,zynqmp-gem
               - cdns,zynqmp-gem
-              - cdns,zynq-gem
-            - enum:
-              - cdns,versal-gem
     device_type: ethernet
 
 psv_ethernet:
@@ -100,11 +98,32 @@ psv_ethernet:
         OneOf:
           - items:
             - enum:
-              - cdns,zynqmp-gem
-              - cdns,zynq-gem
-            - enum:
+              - xlnx,versal-gem
               - cdns,versal-gem
+              - cdns,gem
     device_type: ethernet
+
+
+psv_pmc_sd:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - xlnx,versal-8.9a
+              - arasan,sdhci-8.9a
+    device_type: sd
+
+psu_sd:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - xlnx,zynqmp-8.9a
+              - arasan,sdhci-8.9a
+    device_type: sd
+
 
 psu_qspi:
     properties:

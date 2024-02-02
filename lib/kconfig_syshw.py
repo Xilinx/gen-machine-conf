@@ -289,7 +289,7 @@ def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
         serialconfstr += '\nconfig %s_%s_MAC\n' % (eth_Kconf, slave.upper())
         serialconfstr += '\tstring "Ethernet MAC address"\n'
         serialconfstr += '\tdefault "ff:ff:ff:ff:ff:ff"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && %s_%s_MAC_AUTO\n' % (
+        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_MAC_AUTO\n' % (
             eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
         serialconfstr += '\thelp\n'
         serialconfstr += '\tDefault mac set to ff:ff:ff:ff:ff:ff invalid mac address to read from EEPROM\n'
