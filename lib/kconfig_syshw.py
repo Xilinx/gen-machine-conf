@@ -89,7 +89,8 @@ def GenConf_memory(IpsToAdd, slavesdict, proc_ipname, arch):
         memoryconfstr += '\nconfig %s_BASEADDR\n' % memKconf
         memoryconfstr += '\thex "System memory base address"\n'
         memoryconfstr += '\tdefault %s\n' % baseaddr
-        memoryconfstr += '\trange %s %s\n' % (baseaddr, banksize)
+        memoryconfstr += '\trange %s %s\n' % (baseaddr,
+                                hex(int(highaddr, base=16) - 0x2000000))
         memoryconfstr += '\tdepends on %s_SELECT\n' % memKconf
         memoryconfstr += '\thelp\n'
         memoryconfstr += '\tStart address of the system memory.\n'
