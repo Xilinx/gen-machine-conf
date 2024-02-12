@@ -149,16 +149,23 @@ def ParseXsa(args):
 
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
+    ipinfo_file = os.path.join(genmachine_scripts, 'data', 'ipinfo.yaml')
+    plnx_syshw_file = os.path.join(args.output, 'plnx_syshw_data')
+    system_conffile = os.path.join(args.output, 'config')
+
+    if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False):
+        # When multiple xsa/sdt files configured with same memory ip with different
+        # size offsets mconf/conf will use the old configs instead of new
+        # to fix that removing old MEMORY related configs from sysconfig
+        # for the first time with every new XSA configured.
+        common_utils.RemoveConfigs('CONFIG_SUBSYSTEM_MEMORY_', system_conffile)
 
     # Generate Kconfig.syshw only when hw_file changes
     if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file) or \
             not os.path.exists(Kconfig_syshw):
         GenXsctSystemHwFile(genmachine_scripts, Kconfig_syshw,
                             args.hw_file, args.output)
-    ipinfo_file = os.path.join(genmachine_scripts, 'data', 'ipinfo.yaml')
-    plnx_syshw_file = os.path.join(args.output, 'plnx_syshw_data')
-    system_conffile = os.path.join(args.output, 'config')
-    
+
     if not args.soc_variant:
         device_id = GetDeviceId(plnx_syshw_file)
         args.soc_variant = project_config.DetectSocVariant(device_id)

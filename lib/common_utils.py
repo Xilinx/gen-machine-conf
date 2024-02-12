@@ -247,6 +247,21 @@ def UpdateConfigValue(macro, value, filename):
     file_data.close()
 
 
+def RemoveConfigs(macro, filename):
+    # Remove configs from file if given macro match
+    lines = []
+    if os.path.exists(filename):
+        with open(filename, 'r') as file_data:
+            lines = file_data.readlines()
+        file_data.close()
+    with open(filename, 'w') as file_data:
+        for line in lines:
+            if line.startswith(macro):
+                continue
+            file_data.write(line)
+    file_data.close()
+
+
 def GetConfigValue(macro, filename, Type='bool', end_macro='=y'):
     lines = []
     if os.path.exists(filename):
