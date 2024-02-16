@@ -17,6 +17,50 @@ import pathlib
 
 logger = logging.getLogger('Gen-Machineconf')
 
+def find_file(search_file: str, search_path: str):
+    """
+    This api find the file in sub-directories and returns absolute path of
+    file, if file exists
+
+    Args:
+        | search_file: The regex pattern to be searched in file names
+        | search_path: The directory that needs to be searched
+    Returns:
+        string: Path of the first file that matches the pattern
+    """
+    file_list = list(pathlib.Path(search_path).glob(f"**/{search_file}"))
+    if len(file_list) > 1:
+        raise Exception('More than one {search_file} found')
+    elif len(file_list) == 0:
+        return None
+    elif os.path.isfile(file_list[0]):
+        return file_list[0]
+
+def get_domain_name(proc_name: str, yaml_file: str):
+    schema = common_utils.ReadYaml(yaml_file)["domains"]
+    for domain in schema:
+        if domain == "default":
+            if schema[domain].get("domains", {}):
+                for dom in schema[domain]["domains"]:
+                    domain_name = schema[domain]["domains"][dom]["cpus"][0]["cluster_cpu"]
+                    if domain_name == proc_name:
+                        return dom
+    return None
+
+def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
+    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
+    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s -f --enhanced %s -- isospec -v -v --audit %s %s' % (
+                             lopper, outdir, hw_file, iss_file, domain_yaml)
+    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
+    return stdout
+
+def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name, domain_yaml):
+    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
+    domain_args = "--auto -x '*.yaml'"
+    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s -f --enhanced -t %s -a domain_access %s -i %s %s %s' % (
+                             lopper, outdir, domain_name, domain_args, domain_yaml, hw_file, dts_file)
+    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
+    return stdout
 
 def RunLopperUsingDomainFile(domain_files, outdir, dts_path, hw_file,
                              dts_file='', lopper_args=''):
@@ -93,14 +137,26 @@ class CreateMultiConfigFiles():
         if self.args.domain_file:
             lopper_args = '-x "*.yaml"'
             domain_files.append(self.args.domain_file)
+
+        if self.domain_yaml:
+            domain_name = get_domain_name(self.cpuname, self.domain_yaml)
+            if domain_name:
+                domain_dts_file = os.path.join(self.args.dts_path, '%s.dts'
+                                               % domain_name.lower())
+                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
+		                              domain_dts_file, domain_name, self.domain_yaml)
+            else:
+                domain_dts_file = self.args.hw_file
+        else:
+            domain_dts_file = self.args.hw_file
         RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
-                                 self.args.hw_file, dts_file, lopper_args)
+                                 domain_dts_file, dts_file, lopper_args)
 
         # Build baremetal multiconfig
         if self.args.domain_file:
             lopper_args = '--enhanced -x "*.yaml"'
         GetLopperBaremetalDrvList(self.cpuname, self.args.output, self.args.dts_path,
-                                  self.args.hw_file, lopper_args)
+                                  domain_dts_file, lopper_args)
 
         common_utils.RenameFile(os.path.join(
             self.args.output, 'libxil.conf'), libxil)
@@ -393,7 +449,14 @@ class CreateMultiConfigFiles():
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.domain_yaml:
+            domain_name = get_domain_name(self.cpuname, self.domain_yaml)
+            if domain_name:
+                ps_dts_file = os.path.join(self.args.dts_path, '%s.dts'
+                                           % domain_name.lower())
+                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
+		                       ps_dts_file, domain_name, self.domain_yaml)
+        elif self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -693,6 +756,12 @@ class CreateMultiConfigFiles():
         self.MultiConfDict = {}
         self.cpu_info_dict = cpu_info_dict
         self.args = args
+        self.domain_yaml = None
+        iss_file = find_file("*.iss",  os.path.dirname(self.args.hw_file.rstrip(os.path.sep)))
+        if iss_file:
+            self.domain_yaml = os.path.join(self.args.config_dir, "domains.yaml")
+            RunLopperGenDomainYaml(self.args.hw_file, iss_file, self.args.dts_path,
+                                   self.domain_yaml, self.args.config_dir)
         # self.ReturnConfFiles if true returns the file names which is required
         # to create Kconfig
         self.ReturnConfFiles = file_names_only
