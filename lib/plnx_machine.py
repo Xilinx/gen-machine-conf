@@ -238,9 +238,8 @@ def GeneratePlnxConfig(args, machine_conf_file):
     system_conffile = os.path.join(args.output, 'config')
     rootfs_conffile = os.path.join(args.output, 'rootfs_config')
     if not os.path.isfile(system_conffile):
-        logger.error('Failed to generate .conf file, Unable to find config'
+        raise Exception('Failed to generate .conf file, Unable to find config'
                      ' file at: %s' % args.output)
-        sys.exit(255)
     arch = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_ARCH_',
                                        system_conffile, 'choice', '=y').lower()
 

@@ -25,17 +25,17 @@ import common_utils
 logger, console_h = logger_setup.setup_logger('Gen-Machineconf')
 plugins = []
 
+global exc_backtrace
+exc_backtrace = False
 
 # Validate the hw_description given and justify xsct/sdt flow.
 def validate_hwfile(hw_description):
     if not os.path.exists(hw_description):
-        logger.error('Given path doesnot exists: %s', hw_description)
-        sys.exit(255)
+        raise Exception('Given path does not exists: %s' % hw_description)
     elif os.path.isfile(hw_description):
         hw_ext = pathlib.Path(hw_description).suffix
         if hw_ext != '.xsa':
-            logger.error('Only .xsa files are supported given %s' % hw_ext)
-            sys.exit(255)
+            raise Exception('Only .xsa files are supported given %s' % hw_ext)
         hw_ext = 'xsct'
     elif os.path.isdir(hw_description):
         sdtfiles = []
@@ -43,19 +43,16 @@ def validate_hwfile(hw_description):
             if file.endswith('.dts'):
                 sdtfiles.append(file)
         if not sdtfiles:
-            logger.error('No .dts file found in given directory %s' %
+            raise Exception('No .dts file found in given directory %s' %
                          hw_description)
-            sys.exit(255)
         if len(sdtfiles) > 1:
-            logger.error(
+            raise Exception(
                 'More than one .dts files found in given directory %s' % hw_description)
-            sys.exit(255)
         hw_ext = 'sdt'
         hw_description = os.path.join(hw_description, sdtfiles[0])
     else:
-        logger.error(
+        raise Exception(
             'Only .xsa file or System Device-tree directory supported.')
-        sys.exit(255)
     hw_description = os.path.abspath(hw_description)
     return hw_ext, hw_description
 
@@ -188,16 +185,18 @@ def main():
     logger_setup.setup_logger_file(args.logfile)
     if args.debug:
         console_h.setLevel(logging.DEBUG)
+        global exc_backtrace
+        exc_backtrace = True
 
     # Add nativesysroot path
     common_utils.AddNativeSysrootPath(args.native_sysroot)
 
     # We need conf and mconf
     if not common_utils.check_tool('mconf', 'kconfig-frontends-native', 'Tool mconf is required'):
-        sys.exit(255)
+        raise Exception("Tool mconf is required but not found")
 
     if not common_utils.check_tool('conf', 'kconfig-frontends-native', 'Tool conf is required'):
-        sys.exit(255)
+        raise Exception("Tool conf is required but not found")
 
     ret = args.func(args)
     return ret
@@ -206,8 +205,15 @@ def main():
 if __name__ == "__main__":
     try:
         ret = main()
-    except Exception:
+    except (AttributeError, IndexError, KeyError, NameError) as e:
         ret = 1
         import traceback
         traceback.print_exc()
+        logger.error(e)
+    except Exception as e:
+        ret = 1
+        if exc_backtrace:
+            import traceback
+            traceback.print_exc()
+        logger.error(e)
     sys.exit(ret)

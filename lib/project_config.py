@@ -122,8 +122,7 @@ def GenKconfigProj(soc_family, soc_variant, output, petalinux,
                         genmachine_scripts, 'configs', 'Kconfig.*'))
 
     if not os.path.isfile(Kconfig_syshw):
-        logger.error('%s is not found in tool' % file_path)
-        sys.exit(255)
+        raise Exception('%s is not found in tool' % file_path)
 
     if not os.path.isfile(system_conffile):
         common_utils.CopyFile(template_cfgfile, system_conffile)

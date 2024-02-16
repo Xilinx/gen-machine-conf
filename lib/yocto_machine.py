@@ -415,9 +415,8 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
         if os.path.isdir(args.fpga):
             pdis = glob.glob(os.path.join(args.fpga, '*.pdi'))
             if not pdis:
-                logger.error('Unable to find a pdi file in %s, \
+                raise Exception('Unable to find a pdi file in %s, \
                         use the -i/--fpga option to point to the directory containing a .pdi file' % args.fpga)
-                sys.exit(255)
             elif len(pdis) > 1:
                 logger.warning(
                     'Multiple PDI files found, using first found %s', pdis[0])
@@ -445,9 +444,8 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
 def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict=''):
     genmachine_scripts = project_config.GenMachineScriptsPath()
     if not os.path.isfile(system_conffile):
-        logger.error('Failed to generate .conf file, Unable to find config'
+        raise Exception('Failed to generate .conf file, Unable to find config'
                      ' file at: %s' % args.output)
-        sys.exit(255)
     arch = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_ARCH_',
                                        system_conffile, 'choice', '=y').lower()
 
@@ -484,9 +482,8 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     machinejson_file = os.path.join(
         genmachine_scripts, 'data', 'machineconf.json')
     if not os.path.isfile(machinejson_file):
-        logger.error('Machine json file doesnot exist at: %s' %
+        raise Exception('Machine json file doesnot exist at: %s' %
                      machinejson_file)
-        sys.exit(255)
     # Get the machine file name from sys config
     yocto_machine_name = common_utils.GetConfigValue('CONFIG_YOCTO_MACHINE_NAME',
                                                      system_conffile)

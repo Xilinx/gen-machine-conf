@@ -134,9 +134,8 @@ def GetSysConsoleBootargs(system_conffile, soc_family, soc_variant):
     else:
         return ''
     if not serial_devfile:
-        logger.error('Unknown serial ipname %s for %s.' %
+        raise Exception('Unknown serial ipname %s for %s.' %
                      (serialipname, serialname))
-        sys.exit(255)
     no_alias = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', system_conffile)
     serial_no = ''
@@ -151,8 +150,7 @@ def GetSysConsoleBootargs(system_conffile, soc_family, soc_variant):
     baudrate = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_' % serialname, system_conffile, 'choice', '=y')
     if not baudrate:
-        logger.error('Failed to get baudrate of %s' % serialname)
-        sys.exit(255)
+        raise Exception('Failed to get baudrate of %s' % serialname)
     early_printk = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_BOOTARGS_EARLYPRINTK', system_conffile)
     if early_printk == 'y':

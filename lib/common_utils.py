@@ -55,8 +55,7 @@ def CreateDir(dirpath):
         try:
             os.makedirs(dirpath, exist_ok=True)
         except IOError:
-            logger.error('Unable to create directory at %s' % dirpath)
-            sys.exit(255)
+            raise Exception('Unable to create directory at %s' % dirpath)
 
 
 def CreateFile(filepath):
@@ -154,9 +153,8 @@ def AddNativeSysrootPath(native_sysroot):
 
     # Note the PATH setting following poky/scripts/oe-run-native
     if not os.path.isdir(native_sysroot):
-        logger.error('Native sysroot path does not exists: %s'
+        raise Exception('Native sysroot path does not exists: %s'
                      % native_sysroot)
-        sys.exit(255)
     else:
         # This list is BACKWARDS of oe-run-native, ensures we get the same final order
         # Skip python3-native, as this breaks subsequent calls to bitbake
@@ -185,9 +183,8 @@ def FindNativeSysroot(recipe):
         return
 
     if not HaveBitbake():
-        logger.error('No bitbake command found '
+        raise Exception('No bitbake command found '
                      'to get %s sysroot path' % recipe)
-        sys.exit(255)
 
     # Make sure the sysroot is available to us
     logger.info('Constructing %s recipe sysroot' % recipe)
@@ -374,8 +371,7 @@ def ReadYaml(yamlfile):
         try:
             return yaml.safe_load(yaml_fd)
         except yaml.YAMLError as exc:
-            logger.error(exc)
-            sys.exit(255)
+            raise Exception(exc)
 
 
 def GetLopperUtilsPath():
@@ -385,20 +381,18 @@ def GetLopperUtilsPath():
                    'environment or lopper can be built by bitbake. See README-setup '
                    'in meta-xilinx layer for more details.')
     if not lopper:
-        sys.exit(255)
+        raise Exception('lopper not found')
     lopper_dir = os.path.dirname(lopper)
     lops_dir = glob.glob(os.path.join(os.path.dirname(lopper_dir),
                                       'lib', 'python*', 'site-packages', 'lopper', 'lops'))[0]
     if not os.path.isdir(lops_dir):
-        logger.error("The lopper 'lops' are missing.")
-        sys.exit(255)
+        raise Exception("The lopper 'lops' are missing.")
 
     embeddedsw = os.path.join(os.path.dirname(
         lopper_dir), 'share', 'embeddedsw')
 
     if not os.path.isdir(embeddedsw):
-        logger.error("The embeddedsw configuration files are missing.")
-        sys.exit(255)
+        raise Exception("The embeddedsw configuration files are missing.")
 
     return lopper, lopper_dir, lops_dir, embeddedsw
 

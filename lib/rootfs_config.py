@@ -58,8 +58,7 @@ def GenRootfsConfig(args, system_conffile):
 
     for file_path in [template_rfsfile, template_Kconfig, rfsconfig_py]:
         if not os.path.isfile(file_path):
-            logger.error('%s is not found in tool' % file_path)
-            sys.exit(255)
+            raise Exception('%s is not found in tool' % file_path)
 
     if not os.path.isfile(rootfs_conffile):
         common_utils.CopyFile(template_rfsfile, rootfs_conffile)

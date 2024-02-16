@@ -57,8 +57,7 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
     logger.debug('Generating System HW file')
     kconfig_syshw.GenKconfigSysHW(plnx_syshw_file, ipinfo_schema, Kconfig_syshw)
     if not os.path.exists(Kconfig_syshw):
-        logger.error('Failed to Generate Kconfig_syshw File')
-        sys.exit(255)
+        raise Exception('Failed to Generate Kconfig_syshw File')
 
 
 def PrintsSystemConfiguration(args, model, device_id, cpu_info_dict):
@@ -82,8 +81,7 @@ def PrintsSystemConfiguration(args, model, device_id, cpu_info_dict):
 
 def ParseSDT(args):
     if args.hw_flow == 'xsct':
-        logger.error('Invalide HW source Specified for System-Device-Tree.')
-        sys.exit(255)
+        raise Exception('Invalide HW source Specified for System-Device-Tree.')
     config_dtsdir = os.path.join(args.config_dir, 'dts')
     multiconfig_dir = os.path.join(args.config_dir, 'multiconfig')
     machine_include_dir = os.path.join(args.config_dir, 'machine', 'include')
@@ -134,8 +132,7 @@ def ParseSDT(args):
         genmachine_scripts, 'configs', 'config_%s' % args.soc_family)
 
     if not os.path.isfile(template_cfgfile):
-        logger.error('Unsupported soc_family: %s' % args.soc_family)
-        sys.exit(255)
+        raise Exception('Unsupported soc_family: %s' % args.soc_family)
 
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')

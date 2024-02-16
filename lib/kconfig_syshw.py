@@ -18,9 +18,8 @@ logger = logging.getLogger('Gen-Machineconf')
 def GenConf_processor(procdata):
     ''' Generate Processor Info as Kconfig'''
     if not procdata:
-        logger.error('ERROR: No CPU can be found in the system. Please review your hardware system. '
+        raise Exception('ERROR: No CPU can be found in the system. Please review your hardware system. '
               'Valid processors are: microblaze, ps7_cortexa9, psu_cortexa53, psv_cortexa72, psx_cortexa78.')
-        sys.exit(255)
     KconfStr = 'SUBSYSTEM_PROCESSOR'
     confstr = ''
     procconfstr = '\nchoice\n'

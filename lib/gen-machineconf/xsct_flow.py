@@ -27,21 +27,18 @@ logger = logging.getLogger('Gen-Machineconf')
 def AddXsctUtilsPath(xsct_tool):
     if xsct_tool:
         if not os.path.isdir(xsct_tool):
-            logger.error('XSCT_TOOL path not found: %s' % xsct_tool)
-            sys.exit(255)
+            raise Exception('XSCT_TOOL path not found: %s' % xsct_tool)
         else:
             os.environ["PATH"] += os.pathsep + os.path.join(xsct_tool, 'bin')
     else:
         if not common_utils.HaveBitbake():
-            logger.error('No --xsct-tool specified or bitbake command found '
+            raise Exception('No --xsct-tool specified or bitbake command found '
                          'to get XILINX_SDK_TOOLCHAIN')
-            sys.exit(255)
 
         try:
             xilinx_xsct_tool = common_utils.GetBitbakeVars(['XILINX_SDK_TOOLCHAIN'])['XILINX_SDK_TOOLCHAIN']
         except KeyError:
-            logger.error('Unable to get XILINX_SDK_TOOLCHAIN path, please verify meta-xilinx-tools layer is available.')
-            sys.exit(255)
+            raise Exception('Unable to get XILINX_SDK_TOOLCHAIN path, please verify meta-xilinx-tools layer is available.')
 
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
             mconf_provides = "xsct-native"
@@ -49,17 +46,15 @@ def AddXsctUtilsPath(xsct_tool):
             subprocess.check_call(["bitbake", mconf_provides])
 
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
-            logger.error('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
-                         ' please set a valid one, or' % xilinx_xsct_tool)
-            logger.error(
-                'Use --xsct-tool option to specify the SDK_XSCT path')
-            sys.exit(255)
+            raise Exception('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
+                         ' please set a valid one, or'
+                         'Use --xsct-tool option to specify the SDK_XSCT path' % xilinx_xsct_tool)
         elif xilinx_xsct_tool:
             os.environ["PATH"] += os.pathsep + xilinx_xsct_tool + '/bin'
 
     xsct_exe = common_utils.check_tool('xsct', 'xsct-native', 'xsct command not found')
     if not xsct_exe:
-        sys.exit(255)
+        raise Exception("xsct command not found")
     else:
         logger.debug('Using xsct from : %s' % xsct_exe)
 
@@ -103,8 +98,7 @@ def GenXsctSystemHwFile(genmachine_scripts,
     logger.debug('Generating System HW file')
     common_utils.RunCmd(cmd, output, shell=True)
     if not os.path.exists(Kconfig_syshw):
-        logger.error('Failed to Generate Kconfig_syshw File')
-        sys.exit(255)
+        raise Exception('Failed to Generate Kconfig_syshw File')
 
 
 def GetFlashInfo(genmachine_scripts, output, system_conffile, hw_file):
@@ -126,8 +120,7 @@ def GetFlashInfo(genmachine_scripts, output, system_conffile, hw_file):
 
 def ParseXsa(args):
     if args.hw_flow == 'sdt':
-        logger.error('Invalide HW source Specified for XSCT Flow.')
-        sys.exit(255)
+        raise Exception('Invalide HW source Specified for XSCT Flow.')
     AddXsctUtilsPath(args.xsct_tool)
     if not args.soc_family:
         logger.info('Getting Platform info from HW file')
@@ -144,8 +137,7 @@ def ParseXsa(args):
         genmachine_scripts, 'configs', 'config_%s' % args.soc_family)
 
     if not os.path.isfile(template_cfgfile):
-        logger.error('Unsupported soc_family: %s' % args.soc_family)
-        sys.exit(255)
+        raise Exception('Unsupported soc_family: %s' % args.soc_family)
 
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
