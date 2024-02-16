@@ -418,8 +418,16 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
                 raise Exception('Unable to find a pdi file in %s, \
                         use the -i/--fpga option to point to the directory containing a .pdi file' % args.fpga)
             elif len(pdis) > 1:
-                logger.warning(
-                    'Multiple PDI files found, using first found %s', pdis[0])
+                # To handle the segmented flow where we will have *_boot.pdi and
+                # *_pld.pdi and picking up *_boot.pdi for base boot.
+                seg_pdis = glob.glob(os.path.join(args.fpga, '*_boot.pdi'))
+                if seg_pdis:
+                    logger.warning(
+                        'Multiple PDI files found, using *_boot.pdi for segmented configuration %s', seg_pdis[0])
+                    pdis = seg_pdis
+                else:
+                    logger.warning(
+                        'Multiple PDI files found, using the first available pdi %s', pdis[0])
             args.fpga = pdis[0]
         if args.fpga:
             machine_override_string += '\n# Versal PDI\n'
