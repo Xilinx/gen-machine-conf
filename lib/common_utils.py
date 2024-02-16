@@ -182,19 +182,26 @@ def FindNativeSysroot(recipe):
     if recipe in FindNativeSysroot.recipe_list:
         return
 
-    if not HaveBitbake():
-        raise Exception('No bitbake command found '
-                     'to get %s sysroot path' % recipe)
-
-    # Make sure the sysroot is available to us
-    logger.info('Constructing %s recipe sysroot' % recipe)
-
-    subprocess.check_call(["bitbake", "-c", "addto_recipe_sysroot", recipe])
-
     try:
         recipe_staging_dir = GetBitbakeVars(['STAGING_DIR_NATIVE'], recipe)['STAGING_DIR_NATIVE']
+    except TypeError:
+        recipe_staging_dir = None
     except KeyError:
         recipe_staging_dir = None
+    except Exception as e:
+        raise Exception("Unable to get required sysroot path.\n%s" % e)
+
+    if not recipe_staging_dir:
+        raise Exception("Unable to get required %s sysroot path" % recipe)
+
+    if not os.path.exists(recipe_staging_dir):
+        # Make sure the sysroot is available to us
+        logger.info('Constructing %s recipe sysroot...' % recipe)
+
+        RunBitbakeCmd(recipe, "addto_recipe_sysroot")
+
+        if not recipe_staging_dir:
+            raise Exception("Unable to get %s sysroot path after building" % recipe)
 
     AddNativeSysrootPath(recipe_staging_dir)
 
@@ -324,13 +331,16 @@ def check_tool(tool, recipe=None, failed_msg=None):
     tool_path = shutil.which(tool)
     if not tool_path:
         if recipe:
-            FindNativeSysroot(recipe)
+            try:
+                FindNativeSysroot(recipe)
+            except Exception as e:
+                failed_msg += "\n" + str(e)
 
         tool_path = shutil.which(tool)
         if not tool_path:
             if failed_msg:
-                logger.error(failed_msg)
-            return None
+                raise Exception(failed_msg)
+            raise Exception('%s is required but not found in the path' % tool)
     return tool_path
 
 
@@ -377,11 +387,10 @@ def ReadYaml(yamlfile):
 def GetLopperUtilsPath():
     lopper = check_tool('lopper',
                    'esw-conf-native',
-                   'Unable to find find lopper, please ensure this is in your '
+                   'Unable to find lopper, please ensure this is in your '
                    'environment or lopper can be built by bitbake. See README-setup '
                    'in meta-xilinx layer for more details.')
-    if not lopper:
-        raise Exception('lopper not found')
+
     lopper_dir = os.path.dirname(lopper)
     lops_dir = glob.glob(os.path.join(os.path.dirname(lopper_dir),
                                       'lib', 'python*', 'site-packages', 'lopper', 'lops'))[0]
@@ -399,18 +408,37 @@ def GetLopperUtilsPath():
 
 def HaveBitbake():
     '''If bitbake is available, return True'''
-    if not HaveBitbake.have_bitbake:
-        if shutil.which('bitbake'):
-            logger.debug("Bitbake found.")
+
+    if HaveBitbake.have_bitbake == None:
+        # Check if we can load bitbake, if so we can augment the plugin path
+        HaveBitbake.have_bitbake = False
+        try:
+            import bb.tinfoil
             HaveBitbake.have_bitbake = True
-        else:
-            logger.debug("No bitbake found.")
-            HaveBitbake.have_bitbake = False
+        except:
+            pass
+
     return HaveBitbake.have_bitbake
+
+def InitBitbake(recipes=False):
+    '''Initialize Bitbake (tinfoil) for use as a helper tool, you must shutodwn after you are done!'''
+    logger.debug('Initialize tinfoil...')
+
+    if HaveBitbake():
+        if not HaveBitbake.tinfoil:
+            HaveBitbake.tinfoil = bb.tinfoil.Tinfoil(tracking=False)
+            HaveBitbake.tinfoil.prepare(config_only=not recipes, quiet=2)
+            HaveBitbake.tinfoil_recipe = recipes
+        else:
+            if recipes and HaveBitbake.tinfoil_recipe == False:
+                HaveBitbake.tinfoil.parse_recipes()
+                HaveBitbake.tinfoil_recipe = True
 
 # Default
 HaveBitbake.have_bitbake = None
 
+HaveBitbake.tinfoil = None
+HaveBitbake.tinfoil_recipe = False
 
 def GetBitbakeVars(variables, recipe=None):
     '''Return back the values of bitbake variables with an optional recipe'''
@@ -418,17 +446,42 @@ def GetBitbakeVars(variables, recipe=None):
 
     if not HaveBitbake():
         logger.debug('No bitbake found skip getting %s' % ''.join(variables))
-        return {}
+        if isinstance(variables, dict):
+            return {}
+        else:
+            return None
 
-    command = 'bitbake -e'
+    result = None
     if recipe:
-        command = command + ' ' + recipe
+        InitBitbake(True)
+        d = HaveBitbake.tinfoil.parse_recipe(recipe)
+    else:
+        InitBitbake(False)
+        d = HaveBitbake.tinfoil.config_data
 
-    stdout, stderr = RunCmd(command, os.getcwd(), shell=True)
-    bbval = {}
-    for line in stdout.splitlines():
-        for variable in variables:
-            if line.startswith(variable + "="):
-                logger.debug(line)
-                bbval[variable] = line.split('=')[1].replace('"', '')
-    return bbval
+    if isinstance(variables, list):
+        result = {}
+        for each_var in variables:
+            result[each_var] = d.getVar(each_var)
+    else:
+        result = d.getVar(variables)
+
+    # How to process a recipe specific variable?
+    return result
+
+def RunBitbakeCmd(recipe, task=None):
+    '''Return back the values of bitbake variables with an optional recipe'''
+    logger.debug('Building %s and task %s' % (recipe, task))
+
+    if not HaveBitbake():
+        raise Exception('No bitbake found cannot build %s' % ''.join(recipe))
+
+    InitBitbake(True)
+
+    return HaveBitbake.tinfoil.build_targets(recipe, task)
+
+def ShutdownBitbake():
+    if HaveBitbake() and HaveBitbake.tinfoil:
+        HaveBitbake.tinfoil.shutdown()
+        HaveBitbake.tinfoil = None
+        HaveBitbake.tinfoil_recipe = False

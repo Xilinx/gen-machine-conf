@@ -118,15 +118,13 @@ def main():
 
     # Try to get BBPATH to load modules
     # We can skip this by setting SKIP_BBPATH_SEARCH variable from env
+    bbpath = ''
     if os.environ.get('SKIP_BBPATH_SEARCH'):
         logger.debug('SKIP_BBPATH_SEARCH is set, Skip getting '
                         'BBPATH to load gen-machineconf modules')
-        bbpath = ''
     else:
-        try:
-            logger.info('Getting bitbake variable BBPATH')
-            bbpath = common_utils.GetBitbakeVars(['BBPATH'])['BBPATH']
-        except KeyError:
+        bbpath = common_utils.GetBitbakeVars('BBPATH')
+        if not bbpath:
             bbpath = ''
 
     # Load the plugins from BBPATH and lib/gen-machineconf directory
@@ -192,11 +190,9 @@ def main():
     common_utils.AddNativeSysrootPath(args.native_sysroot)
 
     # We need conf and mconf
-    if not common_utils.check_tool('mconf', 'kconfig-frontends-native', 'Tool mconf is required'):
-        raise Exception("Tool mconf is required but not found")
+    common_utils.check_tool('mconf', 'kconfig-frontends-native', 'Tool mconf is required but not found')
 
-    if not common_utils.check_tool('conf', 'kconfig-frontends-native', 'Tool conf is required'):
-        raise Exception("Tool conf is required but not found")
+    common_utils.check_tool('conf', 'kconfig-frontends-native', 'Tool conf is required but not found')
 
     ret = args.func(args)
     return ret
@@ -216,4 +212,6 @@ if __name__ == "__main__":
             import traceback
             traceback.print_exc()
         logger.error(e)
+    finally:
+        common_utils.ShutdownBitbake()
     sys.exit(ret)

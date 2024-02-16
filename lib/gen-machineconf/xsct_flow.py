@@ -41,22 +41,17 @@ def AddXsctUtilsPath(xsct_tool):
             raise Exception('Unable to get XILINX_SDK_TOOLCHAIN path, please verify meta-xilinx-tools layer is available.')
 
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
-            mconf_provides = "xsct-native"
-            logger.debug('INFO: Running CMD: bitbake %s' % mconf_provides)
-            subprocess.check_call(["bitbake", mconf_provides])
+            logger.info('Installing xsct...')
+            common_utils.RunBitbakeCmd('xsct-native')
 
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
-            raise Exception('XILINX_SDK_TOOLCHAIN set to "%s" is doesn\'t exists'
-                         ' please set a valid one, or'
+            raise Exception('Looking for xsct in "%s" but the path does not exist. '
                          'Use --xsct-tool option to specify the SDK_XSCT path' % xilinx_xsct_tool)
         elif xilinx_xsct_tool:
             os.environ["PATH"] += os.pathsep + xilinx_xsct_tool + '/bin'
 
-    xsct_exe = common_utils.check_tool('xsct', 'xsct-native', 'xsct command not found')
-    if not xsct_exe:
-        raise Exception("xsct command not found")
-    else:
-        logger.debug('Using xsct from : %s' % xsct_exe)
+    xsct_exe = common_utils.check_tool('xsct', None, 'xsct command not found')
+    logger.debug('Using xsct from : %s' % xsct_exe)
 
 
 def GetSocInfo(hw_file):
