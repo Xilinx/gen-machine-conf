@@ -159,6 +159,8 @@ def ParseXsa(args):
     else:
         logger.debug('Using the soc_variant specified by user:%s' % args.soc_variant)
 
+    project_config.PrintSystemConfiguration(args, None, device_id, None)
+
     project_config.GenKconfigProj(args.soc_family, args.soc_variant,
                                   args.output, args.petalinux, system_conffile)
     # Update the sysconfig with command line arguments
@@ -169,6 +171,11 @@ def ParseXsa(args):
                                args.output, 'project')
     post_process_config.PostProcessSysConf(
         args, system_conffile, ipinfo_file, plnx_syshw_file)
+    # In case machine name updated in config
+    cfg_machine = common_utils.GetConfigValue('CONFIG_YOCTO_MACHINE_NAME',
+                                                     system_conffile)
+    if cfg_machine:
+        args.machine = cfg_machine
 
     if args.petalinux:
         GetFlashInfo(genmachine_scripts, args.output,

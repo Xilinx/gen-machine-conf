@@ -60,25 +60,6 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
         raise Exception('Failed to Generate Kconfig_syshw File')
 
 
-def PrintsSystemConfiguration(args, model, device_id, cpu_info_dict):
-    cpumap = {'pmu-microblaze': 'zynqmp-pmu', 'pmc-microblaze': 'versal-plm',
-              'psm-microblaze': 'versal-psm', 'xlnx,microblaze': 'microblaze'
-              }
-    logger.plain('System Configuration:')
-    logger.plain('MODEL       = "%s"' % model)
-    logger.plain('MACHINE     = "%s"' % args.machine)
-    logger.plain('DEVICE_ID   = "%s"' % device_id)
-    logger.plain('SOC_FAMILY  = "%s"' % args.soc_family)
-    logger.plain('SOC_VARIANT = "%s"' % args.soc_variant)
-    logger.plain('CPUs:')
-    for cpu in cpu_info_dict.keys():
-        _cpu = cpu_info_dict[cpu].get('cpu')
-        _cpu = cpumap.get(_cpu, _cpu)
-        logger.plain('\t= %s %s %s' % (
-            cpu, _cpu.replace(',', ' '),
-            cpu_info_dict[cpu].get('core')))
-
-
 def ParseSDT(args):
     if args.hw_flow == 'xsct':
         raise Exception('Invalide HW source Specified for System-Device-Tree.')
@@ -94,6 +75,9 @@ def ParseSDT(args):
                                                          args.output, args.output,
                                                          args.hw_file, '')[0]
     local_machine_conf, device_id, model = machine_info.strip().split(' ', 2)
+
+    if not args.machine:
+        args.machine = local_machine_conf
 
     if not args.psu_init_path:
         args.psu_init_path = args.hw_description
@@ -147,15 +131,14 @@ def ParseSDT(args):
         # for the first time with every new XSA configured.
         common_utils.RemoveConfigs('CONFIG_SUBSYSTEM_MEMORY_', system_conffile)
 
+    project_config.PrintSystemConfiguration(args, model, device_id, cpu_info_dict)
+
     # Generate Kconfig.syshw only when hw_file changes
     if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file) or \
             not os.path.exists(Kconfig_syshw):
         GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw,
                            proc_type, args.hw_file, args.output)
     
-    if not args.machine and not os.path.isfile(system_conffile):
-        args.machine = local_machine_conf
-
     project_config.GenKconfigProj(args.soc_family, args.soc_variant,
                                   args.output, args.petalinux, system_conffile,
                                   multiconfig_targets, multiconfig_min)
@@ -203,7 +186,6 @@ def ParseSDT(args):
     common_utils.CreateDir(args.bbconf_dir)
     common_utils.CreateDir(args.dts_path)
     if GenMultiConf:
-        PrintsSystemConfiguration(args, model, device_id, cpu_info_dict)
         MCObject = multiconfigs.CreateMultiConfigFiles(args, cpu_info_dict,
                                                        system_conffile=system_conffile)
         MultiConfDict = MCObject.ParseCpuDict()

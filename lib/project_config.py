@@ -213,3 +213,24 @@ def PreProcessSysConf(args, system_conffile, mctargets=[]):
             logger.warning('Unable to detect config type: %s. Using CONFIG_%s' % (
                             config, config))
             ApplyConfValue('CONFIG_%s' % config, system_conffile)
+
+
+def PrintSystemConfiguration(args, model, device_id, cpu_info_dict=None):
+    cpumap = {'pmu-microblaze': 'zynqmp-pmu', 'pmc-microblaze': 'versal-plm',
+              'psm-microblaze': 'versal-psm', 'xlnx,microblaze': 'microblaze'
+              }
+    logger.debug('Hardware Configuration:')
+    if model:
+        logger.debug('MODEL       = "%s"' % model)
+    logger.debug('MACHINE     = "%s"' % args.machine)
+    logger.debug('DEVICE_ID   = "%s"' % device_id)
+    logger.debug('SOC_FAMILY  = "%s"' % args.soc_family)
+    logger.debug('SOC_VARIANT = "%s"' % args.soc_variant)
+    if cpu_info_dict:
+        logger.debug('CPUs:')
+        for cpu in cpu_info_dict.keys():
+            _cpu = cpu_info_dict[cpu].get('cpu')
+            _cpu = cpumap.get(_cpu, _cpu)
+            logger.debug('\t= %s %s %s' % (
+                cpu, _cpu.replace(',', ' '),
+                cpu_info_dict[cpu].get('core')))
