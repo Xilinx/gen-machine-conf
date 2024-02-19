@@ -12,13 +12,13 @@ import os
 import common_utils
 import sys
 import shutil
+import re
 import project_config
 import post_process_config
 import rootfs_config
-import plnx_machine
 import yocto_machine
+import plnx_machine
 import update_buildconf
-import re
 import subprocess
 
 logger = logging.getLogger('Gen-Machineconf')
@@ -74,17 +74,6 @@ def GetSocInfo(hw_file):
     return proc_type
 
 
-def GetDeviceId(plnx_syshw_file):
-    device_id = ''
-    with open(plnx_syshw_file, 'r') as fp:
-        lines = fp.readlines()
-        for line in lines:
-            if line.startswith('device_id:'):
-                device_id = line.split(':')[1]
-                break
-    return device_id.strip()
-
-
 def GenXsctSystemHwFile(genmachine_scripts,
                         Kconfig_syshw, hw_file, output):
     logger.info('Generating Kconfig for project')
@@ -116,23 +105,77 @@ def GetFlashInfo(genmachine_scripts, output, system_conffile, hw_file):
 def ParseXsa(args):
     if args.hw_flow == 'sdt':
         raise Exception('Invalide HW source Specified for XSCT Flow.')
-    AddXsctUtilsPath(args.xsct_tool)
-    if not args.soc_family:
+
+    def gatherHWInfo(hw_file):
+        nonlocal Kconfig_syshw
+        nonlocal plnx_syshw_file
+        nonlocal project_cfgdir
+        nonlocal genmachine_scripts
+
+        hw_info = {}
+
         logger.info('Getting Platform info from HW file')
-        proc_type = GetSocInfo(args.hw_file)
-        args.soc_family = project_config.DetectSocFamily(proc_type)
-    else:
-        logger.debug('Using the soc_family specified by user:%s' % args.soc_family)
-    
+
+        if args.machine:
+            logger.debug('Using the machine specified by user:%s' % args.machine)
+            hw_info['machine'] = args.machine
+
+        if args.soc_family:
+            logger.debug('Using the soc_family specified by user:%s' % args.soc_family)
+            hw_info['soc_family'] = args.soc_family
+
+        if args.soc_variant:
+            logger.debug('Using the soc_variant specified by user:%s' % args.soc_variant)
+            hw_info['soc_variant'] = args.soc_variant
+
+        # Generate Kconfig.syshw only when hw_file changes
+        if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file) or \
+            not os.path.exists(Kconfig_syshw):
+
+            if not args.soc_family:
+                hw_info['proc_type'] = GetSocInfo(args.hw_file)
+                hw_info['soc_family'] = project_config.DetectSocFamily(hw_info['proc_type'])
+
+            template_cfgfile = os.path.join(
+                genmachine_scripts, 'configs', 'config_%s' % hw_info['soc_family'])
+
+            if not os.path.isfile(template_cfgfile):
+                raise Exception('Unsupported soc_family: %s' % hw_info['soc_family'])
+
+            GenXsctSystemHwFile(genmachine_scripts, Kconfig_syshw,
+                                args.hw_file, args.output)
+
+        import yaml
+
+        with open(plnx_syshw_file, 'r') as fp:
+            syshw_data = yaml.safe_load(fp)
+
+        if 'machine' not in hw_info:
+            hw_info['machine'] = None
+
+        hw_info['device_id'] = syshw_data['device_id']
+
+        hw_info['model'] = ''
+
+        processor = syshw_data['processor']
+        if 'proc_type' not in hw_info:
+            hw_info['proc_type'] = processor[list(processor.keys())[0]]['ip_name']
+        if 'soc_family' not in hw_info:
+            hw_info['soc_family'] = project_config.DetectSocFamily(hw_info['proc_type'])
+        if 'soc_variant' not in hw_info:
+            hw_info['soc_variant'] = project_config.DetectSocVariant(hw_info['device_id'])
+
+        return hw_info
+
+
+    #### Setup:
+
+    AddXsctUtilsPath(args.xsct_tool)
+
     genmachine_scripts = project_config.GenMachineScriptsPath()
 
     project_cfgdir = os.path.join(args.output, 'configs')
     common_utils.CreateDir(project_cfgdir)
-    template_cfgfile = os.path.join(
-        genmachine_scripts, 'configs', 'config_%s' % args.soc_family)
-
-    if not os.path.isfile(template_cfgfile):
-        raise Exception('Unsupported soc_family: %s' % args.soc_family)
 
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
@@ -140,26 +183,24 @@ def ParseXsa(args):
     plnx_syshw_file = os.path.join(args.output, 'plnx_syshw_data')
     system_conffile = os.path.join(args.output, 'config')
 
+
+    #### Gather:
+    hw_info = gatherHWInfo(args.hw_file)
+
+    if hw_info['machine']:
+        args.machine = hw_info['machine']
+    args.soc_family = hw_info['soc_family']
+    args.soc_variant = hw_info['soc_variant']
+
+    project_config.PrintSystemConfiguration(args, None, hw_info['device_id'], None)
+
+    #### Generate Kconfig:
     if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False):
         # When multiple xsa/sdt files configured with same memory ip with different
         # size offsets mconf/conf will use the old configs instead of new
         # to fix that removing old MEMORY related configs from sysconfig
         # for the first time with every new XSA configured.
         common_utils.RemoveConfigs('CONFIG_SUBSYSTEM_MEMORY_', system_conffile)
-
-    # Generate Kconfig.syshw only when hw_file changes
-    if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file) or \
-            not os.path.exists(Kconfig_syshw):
-        GenXsctSystemHwFile(genmachine_scripts, Kconfig_syshw,
-                            args.hw_file, args.output)
-
-    if not args.soc_variant:
-        device_id = GetDeviceId(plnx_syshw_file)
-        args.soc_variant = project_config.DetectSocVariant(device_id)
-    else:
-        logger.debug('Using the soc_variant specified by user:%s' % args.soc_variant)
-
-    project_config.PrintSystemConfiguration(args, None, device_id, None)
 
     project_config.GenKconfigProj(args.soc_family, args.soc_variant,
                                   args.output, args.petalinux, system_conffile)
@@ -169,8 +210,11 @@ def ParseXsa(args):
     common_utils.RunMenuconfig(Kconfig, system_conffile,
                                True if args.menuconfig == 'project' else False,
                                args.output, 'project')
+
+    #### Process the configuration:
     post_process_config.PostProcessSysConf(
         args, system_conffile, ipinfo_file, plnx_syshw_file)
+
     # In case machine name updated in config
     cfg_machine = common_utils.GetConfigValue('CONFIG_YOCTO_MACHINE_NAME',
                                                      system_conffile)
@@ -182,6 +226,7 @@ def ParseXsa(args):
                      system_conffile, args.hw_file)
         rootfs_config.GenRootfsConfig(args, system_conffile)
 
+    #### Generate the configuration:
     if args.petalinux:
         # Layers should be added before generating machine conf files
         update_buildconf.AddUserLayers(args)
