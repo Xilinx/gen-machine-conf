@@ -284,5 +284,5 @@ def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, mctar
             args, plnx_conf_file, machine_conf_file)
     else:
         update_buildconf.GenLocalConf(args.localconf,
-                                      machine_conf_file, mctargets,
+                                      machine_conf_file,
                                       system_conffile, args.petalinux)

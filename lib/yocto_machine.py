@@ -437,8 +437,9 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
                 args.fpga)
             machine_override_string += 'PDI_PATH[vardepsexclude] += "PDI_PATH_DIR"\n'
 
-    machine_override_string += '\n# Exclude BASE_TMPDIR from hash calculations\n'
-    machine_override_string += 'BB_HASHEXCLUDE_COMMON:append = " BASE_TMPDIR"\n'
+    machine_override_string += '\n# Exclude MC_TMPDIR_PREFIX from hash calculations\n'
+    machine_override_string += 'MC_TMPDIR_PREFIX ??= "${TMPDIR}"\n'
+    machine_override_string += 'BB_HASHEXCLUDE_COMMON:append = " MC_TMPDIR_PREFIX"\n'
     machine_override_string += '\n# Update bootbin to use proper device tree\n'
     machine_override_string += 'BIF_PARTITION_IMAGE[device-tree] = "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
     machine_override_string += '\n# Remap boot files to ensure the right device tree is listed first\n'
@@ -541,6 +542,11 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     machine_override_string += '#@NAME: %s\n' % machine_conf_file
     machine_override_string += '#@DESCRIPTION: Machine configuration for the '\
         '%s boards.\n' % machine_conf_file
+
+    if MultiConfDict:
+        multiconfig_min = common_utils.GetConfigValue('CONFIG_YOCTO_BBMC_', system_conffile,
+                                                      'choicelist', '=y').lower().replace('_', '-')
+        machine_override_string += '\nBBMULTICONFIG += "%s"\n' % multiconfig_min
 
     # Add config machine overrides into machine conf file
     overrides = common_utils.GetConfigValue(

@@ -280,7 +280,7 @@ def GeneratePlnxConfig(args, machine_conf_file):
     if tmp_dir:
         override_string += 'TMPDIR = "%s"\n' % tmp_dir
         if hw_flow == 'sdt':
-            override_string += 'BASE_TMPDIR = "%s-multiconfig"\n' % tmp_dir
+            override_string += 'MC_TMPDIR_PREFIX = "%s-multiconfig/tmp"\n' % tmp_dir
     if hw_flow == 'sdt':
         bbmultitargets = common_utils.GetConfigValue('CONFIG_YOCTO_BBMC_', system_conffile,
                                                      'choicelist', '=y').lower().replace('_', '-')

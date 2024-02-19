@@ -167,7 +167,10 @@ class CreateMultiConfigFiles():
         conf_file_str = 'CONFIG_DTFILE = "%s"\n' % dts_file
         conf_file_str += 'ESW_MACHINE = "%s"\n' % self.cpuname
         conf_file_str += 'DEFAULTTUNE = "%s"\n' % tune
-        conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s"\n' % mc_name
+        conf_file_str += 'DEF_MC_TMPDIR_PREFIX := "${@d.getVar(\'MC_TMPDIR_PREFIX\', False) or d.getVar(\'TMPDIR\', False)}"\n'
+        conf_file_str += 'MC_TMPDIR_PREFIX ?= "${DEF_MC_TMPDIR_PREFIX}"\n'
+        conf_file_str += 'BB_HASHEXCLUDE_COMMON:append = " MC_TMPDIR_PREFIX"\n'
+        conf_file_str += 'TMPDIR = "${MC_TMPDIR_PREFIX}-%s"\n' % mc_name
         conf_file_str += 'DISTRO = "%s"\n' % distro_name
         conf_file_str += extra_conf
         common_utils.AddStrToFile(conf_file, conf_file_str)
@@ -188,18 +191,18 @@ class CreateMultiConfigFiles():
             return
         extra_conf_str = ''
         if domain == 'fsbl':
-            logger.info('Generating cortex-a53 Baremetal configuration for FSBL')
+            logger.info('Generating cortex-a53 baremetal configuration for FSBL')
             for psu_init_f in ['psu_init.c', 'psu_init.h']:
                 if not os.path.exists(os.path.join(
                         self.args.psu_init_path, psu_init_f)):
                     logger.warning('Unable to find %s in %s' % (
                         psu_init_f, self.args.psu_init_path))
             self.MultiConfDict['FsblMcDepends'] = 'mc::%s:fsbl-firmware:do_deploy' % mc_name
-            self.MultiConfDict['FsblDeployDir'] = '${BASE_TMPDIR}/tmp-%s/deploy/images/${MACHINE}' % mc_name
+            self.MultiConfDict['FsblDeployDir'] = '${MC_TMPDIR_PREFIX}-%s/deploy/images/${MACHINE}' % mc_name
             extra_conf_str = 'PSU_INIT_PATH = "%s"\n' % self.args.psu_init_path
         else:
             logger.info(
-                'Generating cortex-a53 Baremetal configuration for core %s [ %s ]' % (self.core, domain))
+                'Generating cortex-a53 baremetal configuration for core %s [ %s ]' % (self.core, domain))
 
         distro_name = 'xilinx-standalone%s' % lto
         self.GenLibxilFeatures(
@@ -214,7 +217,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'Generating cortex-a72 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-a72 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-standalone-nolto'
         self.GenLibxilFeatures(
@@ -231,7 +234,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'Generating cortex-a78 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-a78 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-standalone-nolto'
         self.GenLibxilFeatures(
@@ -251,18 +254,18 @@ class CreateMultiConfigFiles():
             return
         extra_conf_str = ''
         if domain == 'fsbl':
-            logger.info('Generating cortex-r5 Baremetal configuration for FSBL')
+            logger.info('Generating cortex-r5 baremetal configuration for FSBL')
             for psu_init_f in ['psu_init.c', 'psu_init.h']:
                 if not os.path.exists(os.path.join(
                         self.args.psu_init_path, psu_init_f)):
                     logger.warning('Unable to find %s in %s' % (
                         psu_init_f, self.args.psu_init_path))
             self.MultiConfDict['R5FsblMcDepends'] = 'mc::%s:fsbl-firmware:do_deploy' % mc_name
-            self.MultiConfDict['R5FsblDeployDir'] = '${BASE_TMPDIR}/tmp-%s/deploy/images/${MACHINE}' % mc_name
+            self.MultiConfDict['R5FsblDeployDir'] = '${MC_TMPDIR_PREFIX}-%s/deploy/images/${MACHINE}' % mc_name
             extra_conf_str = 'PSU_INIT_PATH = "%s"\n' % self.args.psu_init_path
         else:
             logger.info(
-                'Generating cortex-r5 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+                'Generating cortex-r5 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-standalone%s' % lto
         self.GenLibxilFeatures('lop-r5-imux.dts', mc_name,
@@ -281,7 +284,7 @@ class CreateMultiConfigFiles():
             return
 
         logger.info(
-                'Generating cortex-r52 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+                'Generating cortex-r52 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-standalone%s' % lto
         self.GenLibxilFeatures('lop-r52-imux.dts', mc_name,
@@ -369,7 +372,8 @@ class CreateMultiConfigFiles():
             mc_name = ''
             dts_file = os.path.join(self.args.dts_path if self.args.dts_path else '',
                                     'cortexa53-%s-linux.dts' % self.args.soc_family)
-            conf_file = ''
+            conf_file = os.path.join(self.args.config_dir,
+                                     'multiconfig', 'default.conf')
         else:
             mc_name = 'cortexa53-%s-%s-linux' % (
                 self.args.soc_family, self.domain)
@@ -384,7 +388,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
-        logger.info('Generating cortex-a53 for Linux [ %s ]' % self.domain)
+        logger.info('Generating cortex-a53 Linux configuration [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
         # in lopper. This script provides full, dfx(static) pl overlays.
         ps_dts_file = ''
@@ -419,17 +423,22 @@ class CreateMultiConfigFiles():
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             '-f')
-        if conf_file:
-            conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
-            conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
-            common_utils.AddStrToFile(conf_file, conf_file_str)
+        conf_file_str = 'CONFIG_DTFILE = "%s"\n' % dts_file
+        if conf_file.endswith('/default.conf'):
+            conf_file_str += 'DEF_MC_TMPDIR_PREFIX := "${@d.getVar(\'MC_TMPDIR_PREFIX\', False) or d.getVar(\'TMPDIR\', False)}"\n'
+            conf_file_str += 'MC_TMPDIR_PREFIX ?= "${DEF_MC_TMPDIR_PREFIX}"\n'
+            conf_file_str += 'BB_HASHEXCLUDE_COMMON:append = " MC_TMPDIR_PREFIX"\n'
+        else:
+            conf_file_str += 'TMPDIR = "${MC_TMPDIR_PREFIX}-%s"\n' % mc_name
+        common_utils.AddStrToFile(conf_file, conf_file_str)
 
     def CortexA72Linux(self):
         if self.domain == 'None':
             mc_name = ''
             dts_file = os.path.join(self.args.dts_path if self.args.dts_path else '',
                                     'cortexa72-%s-linux.dts' % self.args.soc_family)
-            conf_file = ''
+            conf_file = os.path.join(self.args.config_dir,
+                                     'multiconfig', 'default.conf')
         else:
             mc_name = 'cortexa72-%s-%s-linux' % (
                 self.args.soc_family, self.domain)
@@ -444,7 +453,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
-        logger.info('Generating cortex-a72 for Linux [ %s ]' % self.domain)
+        logger.info('Generating cortex-a72 Linux configuration [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
@@ -487,10 +496,14 @@ class CreateMultiConfigFiles():
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             '-f')
-        if conf_file:
-            conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
-            conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
-            common_utils.AddStrToFile(conf_file, conf_file_str)
+        conf_file_str = 'CONFIG_DTFILE = "%s"\n' % dts_file
+        if conf_file.endswith('/default.conf'):
+            conf_file_str += 'DEF_MC_TMPDIR_PREFIX := "${@d.getVar(\'MC_TMPDIR_PREFIX\', False) or d.getVar(\'TMPDIR\', False)}"\n'
+            conf_file_str += 'MC_TMPDIR_PREFIX ?= "${DEF_MC_TMPDIR_PREFIX}"\n'
+            conf_file_str += 'BB_HASHEXCLUDE_COMMON:append = " MC_TMPDIR_PREFIX"\n'
+        else:
+            conf_file_str += 'TMPDIR = "${MC_TMPDIR_PREFIX}-%s"\n' % mc_name
+        common_utils.AddStrToFile(conf_file, conf_file_str)
 
     # TODO - Use lop-a72* dts as a78 lop dts are still under development.
     #        Once a78 is available update lop dts.
@@ -499,7 +512,8 @@ class CreateMultiConfigFiles():
             mc_name = ''
             dts_file = os.path.join(self.args.dts_path if self.args.dts_path else '',
                                     'cortexa78-%s-linux.dts' % self.args.soc_family)
-            conf_file = ''
+            conf_file = os.path.join(self.args.config_dir,
+                                     'multiconfig', 'default.conf')
         else:
             mc_name = 'cortexa78-%s-%s-linux' % (
                 self.args.soc_family, self.domain)
@@ -514,7 +528,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
-        logger.info('Generating cortex-a78 for Linux [ %s ]' % self.domain)
+        logger.info('Generating cortex-a78 Linux configuration [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
@@ -550,10 +564,14 @@ class CreateMultiConfigFiles():
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             '-f')
-        if conf_file:
-            conf_file_str = 'CONFIG_DTFILE = "%s\n"' % dts_file
-            conf_file_str += 'TMPDIR = "${BASE_TMPDIR}/tmp-%s\n"' % mc_name
-            common_utils.AddStrToFile(conf_file, conf_file_str)
+        conf_file_str = 'CONFIG_DTFILE = "%s"\n' % dts_file
+        if conf_file.endswith('/default.conf'):
+            conf_file_str += 'DEF_MC_TMPDIR_PREFIX := "${@d.getVar(\'MC_TMPDIR_PREFIX\', False) or d.getVar(\'TMPDIR\', False)}"\n'
+            conf_file_str += 'MC_TMPDIR_PREFIX ?= "${DEF_MC_TMPDIR_PREFIX}"\n'
+            conf_file_str += 'BB_HASHEXCLUDE_COMMON:append = " MC_TMPDIR_PREFIX"\n'
+        else:
+            conf_file_str += 'TMPDIR = "${MC_TMPDIR_PREFIX}-%s"\n' % mc_name
+        common_utils.AddStrToFile(conf_file, conf_file_str)
 
     def MBTuneFeatures(self):
         if self.MBTunesDone:
@@ -576,10 +594,10 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
-        logger.info('Generating Microblaze Baremetal configuration for ZynqMP PMU')
+        logger.info('Generating microblaze baremetal configuration for ZynqMP PMU')
         self.MBTuneFeatures()
         self.MultiConfDict['PmuMcDepends'] = 'mc::%s:pmu-firmware:do_deploy' % mc_name
-        self.MultiConfDict['PmuFWDeployDir'] = '${BASE_TMPDIR}/tmp-%s/deploy/images/${MACHINE}' % mc_name
+        self.MultiConfDict['PmuFWDeployDir'] = '${MC_TMPDIR_PREFIX}-%s/deploy/images/${MACHINE}' % mc_name
         extra_conf_str = 'TARGET_CFLAGS += "-DVERSAL_PLM=1"\n'
         self.GenLibxilFeatures('', mc_name,
                                'xilinx-standalone', 'microblaze-pmu', extra_conf_str)
@@ -591,10 +609,10 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
-        logger.info('Generating Microblaze Baremetal configuration for Versal PMC (PLM)')
+        logger.info('Generating microblaze baremetal configuration for Versal PMC (PLM)')
         self.MBTuneFeatures()
         self.MultiConfDict['PlmMcDepends'] = 'mc::%s:plm-firmware:do_deploy' % mc_name
-        self.MultiConfDict['PlmDeployDir'] = '${BASE_TMPDIR}/tmp-%s/deploy/images/${MACHINE}' % mc_name
+        self.MultiConfDict['PlmDeployDir'] = '${MC_TMPDIR_PREFIX}-%s/deploy/images/${MACHINE}' % mc_name
         extra_conf_str = 'TARGET_CFLAGS += "-DVERSAL_PLM=1"\n'
         self.GenLibxilFeatures('', mc_name,
                                'xilinx-standalone', 'microblaze-pmc', extra_conf_str)
@@ -606,10 +624,10 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return mc_name
-        logger.info('Generating Microblaze Baremetal configuration for Versal PSM')
+        logger.info('Generating microblaze baremetal configuration for Versal PSM')
         self.MBTuneFeatures()
         self.MultiConfDict['PsmMcDepends'] = 'mc::%s:psm-firmware:do_deploy' % mc_name
-        self.MultiConfDict['PsmFWDeployDir'] = '${BASE_TMPDIR}/tmp-%s/deploy/images/${MACHINE}' % mc_name
+        self.MultiConfDict['PsmFWDeployDir'] = '${MC_TMPDIR_PREFIX}-%s/deploy/images/${MACHINE}' % mc_name
         extra_conf_str = 'TARGET_CFLAGS += "-DVERSAL_psm=1"\n'
         self.GenLibxilFeatures('', mc_name,
                                'xilinx-standalone', 'microblaze-psm', extra_conf_str)
@@ -705,10 +723,10 @@ class CreateMultiConfigFiles():
         self.MBTuneFeatures()
         if self.os_hint == 'None' or os_hint.startswith('baremetal'):
             logger.warning(
-                'Microblaze for Baremetal %s not yet implemented' % self.domain)
+                'Microblaze baremetal configuration is %s not yet implemented' % self.domain)
         elif self.os_hint == 'Linux':
             logger.warning(
-                'Microblaze for Linux %s not yet implemented' % self.domain)
+                'Microblaze Linux configuration is %s not yet implemented' % self.domain)
         else:
             logger.warning('Microblaze for unknown OS (%s), not yet implemented. %s' % (
                 self.os_hint, self.domain))

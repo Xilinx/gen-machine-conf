@@ -95,7 +95,7 @@ def AddUserLayers(args):
         common_utils.RunCmd(cmd, os.getcwd(), shell=True)
 
 
-def GenLocalConf(conf_file, machine_conf_file, multiconfigs_full, system_conffile, petalinux):
+def GenLocalConf(conf_file, machine_conf_file, system_conffile, petalinux):
     sdt_conf_str  = '# Use the newly generated MACHINE\n'
     sdt_conf_str += 'MACHINE = "%s"\n' % machine_conf_file
 
@@ -109,17 +109,9 @@ def GenLocalConf(conf_file, machine_conf_file, multiconfigs_full, system_conffil
         sdt_conf_str += 'SKIP_META_SECURITY_SANITY_CHECK = "1"\n'
         sdt_conf_str += 'SKIP_META_TPM_SANITY_CHECK = "1"\n'
 
-        sdt_conf_str += '\n# Each multiconfig will define it\'s own TMPDIR, this is the new default based\n'
-        sdt_conf_str += '# on BASE_TMPDIR for the Linux build\n'
-        sdt_conf_str += 'TMPDIR = "${BASE_TMPDIR}/tmp"\n'
-
-        sdt_conf_str += '\n# All of the TMPDIRs must be in a common parent directory. This is defined\n'
-        sdt_conf_str += '# as BASE_TMPDIR.\n'
-        sdt_conf_str += '# Adjust BASE_TMPDIR if you want to move the tmpdirs elsewhere, such as /tmp\n'
-        sdt_conf_str += 'BASE_TMPDIR ?= "${TOPDIR}"\n'
-
-        sdt_conf_str += '\n# The following is the set of multiconfigs for this configuration\n'
-        sdt_conf_str += 'BBMULTICONFIG = "%s"\n' % multiconfig_min
+        sdt_conf_str += '\n# Each generated multiconfig defines it\'s own TMPDIR, either edit the\n'
+        sdt_conf_str += '# multiconfig files, or uncomment and adjust MC_TMPDIR_PREFIX below\n'
+        sdt_conf_str += '#MC_TMPDIR_PREFIX = "${TOPDIR}/tmp"\n'
 
     if not conf_file:
         logger.note('To enable this, add the following to your local.conf:\n')
