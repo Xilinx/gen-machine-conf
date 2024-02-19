@@ -188,7 +188,7 @@ class CreateMultiConfigFiles():
             return
         extra_conf_str = ''
         if domain == 'fsbl':
-            logger.info('cortex-a53 FSBL Baremetal configuration')
+            logger.info('Generating cortex-a53 Baremetal configuration for FSBL')
             for psu_init_f in ['psu_init.c', 'psu_init.h']:
                 if not os.path.exists(os.path.join(
                         self.args.psu_init_path, psu_init_f)):
@@ -199,7 +199,7 @@ class CreateMultiConfigFiles():
             extra_conf_str = 'PSU_INIT_PATH = "%s"\n' % self.args.psu_init_path
         else:
             logger.info(
-                'cortex-a53 Baremetal configuration for core %s [ %s ]' % (self.core, domain))
+                'Generating cortex-a53 Baremetal configuration for core %s [ %s ]' % (self.core, domain))
 
         distro_name = 'xilinx-standalone%s' % lto
         self.GenLibxilFeatures(
@@ -214,7 +214,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'cortex-a72 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-a72 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-standalone-nolto'
         self.GenLibxilFeatures(
@@ -231,7 +231,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'cortex-a78 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-a78 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-standalone-nolto'
         self.GenLibxilFeatures(
@@ -251,7 +251,7 @@ class CreateMultiConfigFiles():
             return
         extra_conf_str = ''
         if domain == 'fsbl':
-            logger.info('cortex-r5 FSBL Baremetal configuration')
+            logger.info('Generating cortex-r5 Baremetal configuration for FSBL')
             for psu_init_f in ['psu_init.c', 'psu_init.h']:
                 if not os.path.exists(os.path.join(
                         self.args.psu_init_path, psu_init_f)):
@@ -262,7 +262,7 @@ class CreateMultiConfigFiles():
             extra_conf_str = 'PSU_INIT_PATH = "%s"\n' % self.args.psu_init_path
         else:
             logger.info(
-                'cortex-r5 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+                'Generating cortex-r5 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-standalone%s' % lto
         self.GenLibxilFeatures('lop-r5-imux.dts', mc_name,
@@ -281,7 +281,7 @@ class CreateMultiConfigFiles():
             return
 
         logger.info(
-                'cortex-r52 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
+                'Generating cortex-r52 Baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-standalone%s' % lto
         self.GenLibxilFeatures('lop-r52-imux.dts', mc_name,
@@ -296,7 +296,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'cortex-a53 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-a53 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-freertos'
         self.GenLibxilFeatures('lop-a53-imux.dts',
@@ -311,7 +311,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'cortex-a72 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-a72 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-freertos'
         self.GenLibxilFeatures('lop-a72-imux.dts',
@@ -328,7 +328,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'cortex-a78 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-a78 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-freertos'
         self.GenLibxilFeatures('lop-a78-imux.dts',
@@ -343,7 +343,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'cortex-r5 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-r5 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-freertos'
         self.GenLibxilFeatures('lop-r5-imux.dts',
@@ -358,7 +358,7 @@ class CreateMultiConfigFiles():
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
         logger.info(
-            'cortex-r52 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
+            'Generating cortex-r52 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
 
         distro_name = 'xilinx-freertos'
         self.GenLibxilFeatures('lop-r52-imux.dts',
@@ -384,7 +384,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
-        logger.info('cortex-a53 for Linux [ %s ]' % self.domain)
+        logger.info('Generating cortex-a53 for Linux [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
         # in lopper. This script provides full, dfx(static) pl overlays.
         ps_dts_file = ''
@@ -444,7 +444,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
-        logger.info('cortex-a72 for Linux [ %s ]' % self.domain)
+        logger.info('Generating cortex-a72 for Linux [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
@@ -514,7 +514,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or (mc_name and mc_name not in self.MultiConfUser):
             return
-        logger.info('cortex-a78 for Linux [ %s ]' % self.domain)
+        logger.info('Generating cortex-a78 for Linux [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_dt script
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
@@ -576,7 +576,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
-        logger.info('Microblaze ZynqMP PMU')
+        logger.info('Generating Microblaze Baremetal configuration for ZynqMP PMU')
         self.MBTuneFeatures()
         self.MultiConfDict['PmuMcDepends'] = 'mc::%s:pmu-firmware:do_deploy' % mc_name
         self.MultiConfDict['PmuFWDeployDir'] = '${BASE_TMPDIR}/tmp-%s/deploy/images/${MACHINE}' % mc_name
@@ -591,7 +591,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return
-        logger.info('Microblaze Versal PMC')
+        logger.info('Generating Microblaze Baremetal configuration for Versal PMC (PLM)')
         self.MBTuneFeatures()
         self.MultiConfDict['PlmMcDepends'] = 'mc::%s:plm-firmware:do_deploy' % mc_name
         self.MultiConfDict['PlmDeployDir'] = '${BASE_TMPDIR}/tmp-%s/deploy/images/${MACHINE}' % mc_name
@@ -606,7 +606,7 @@ class CreateMultiConfigFiles():
         # Return if mc_name not enabled by user
         if self.ReturnConfFiles or mc_name not in self.MultiConfUser:
             return mc_name
-        logger.info('Microblaze Versal PSM')
+        logger.info('Generating Microblaze Baremetal configuration for Versal PSM')
         self.MBTuneFeatures()
         self.MultiConfDict['PsmMcDepends'] = 'mc::%s:psm-firmware:do_deploy' % mc_name
         self.MultiConfDict['PsmFWDeployDir'] = '${BASE_TMPDIR}/tmp-%s/deploy/images/${MACHINE}' % mc_name
