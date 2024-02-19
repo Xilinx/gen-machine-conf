@@ -80,7 +80,7 @@ def ParseSDT(args):
         args.machine = local_machine_conf
 
     if not args.psu_init_path:
-        args.psu_init_path = args.hw_description
+        args.psu_init_path = os.path.dirname(args.hw_file)
 
     # Update FPGA path
     if not args.fpga:
