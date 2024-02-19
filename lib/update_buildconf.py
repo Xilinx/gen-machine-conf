@@ -39,11 +39,15 @@ def AddUserLayers(args):
     bb_layers = []
     proot = ''
     builddir = ''
+    bitbake_layers = ''
     system_conffile = os.path.join(args.output, 'config')
 
-    # Return if sysconf doesnot modified
-    bitbake_layers = common_utils.check_tool('bitbake-layers')
-    builddir = os.environ.get('BUILDDIR')
+    # Return if sysconf cannot be modified
+    try:
+        bitbake_layers = common_utils.check_tool('bitbake-layers')
+        builddir = os.environ.get('BUILDDIR')
+    except Exception:
+        pass
 
     if not bitbake_layers or not builddir or not \
             'UPDATE_USER_LAYERS' in os.environ.keys():
