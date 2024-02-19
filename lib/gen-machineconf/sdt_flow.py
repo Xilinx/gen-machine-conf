@@ -16,9 +16,6 @@ import re
 import project_config
 import post_process_config
 import rootfs_config
-import yocto_machine
-import plnx_machine
-import update_buildconf
 import multiconfigs
 import kconfig_syshw
 
@@ -132,10 +129,6 @@ def ParseSDT(args):
     system_conffile = os.path.join(args.output, 'config')
 
     config_dtsdir = os.path.join(args.config_dir, 'dts')
-    multiconfig_dir = os.path.join(args.config_dir, 'multiconfig')
-    machine_include_dir = os.path.join(args.config_dir, 'machine', 'include')
-    for dirpath in [multiconfig_dir, machine_include_dir]:
-        common_utils.CreateDir(dirpath)
 
 
     if not args.psu_init_path:
@@ -206,39 +199,10 @@ def ParseSDT(args):
         rootfs_config.GenRootfsConfig(args, system_conffile)
 
     #### Generate the configuration:
-    MultiConfDict = {}
-    GenMultiConf = True
-    # Dont re-trigger the multiconfigs if no changes in project file
-    if common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False) and \
-            common_utils.ValidateHashFile(args.output, 'SYSTEM_CONF', system_conffile, update=False) and \
-            os.path.exists(args.dts_path) and \
-            os.path.exists(plnx_syshw_file):
-        GenMultiConf = False
-    
-    args.bbconf_dir = os.path.join(machine_include_dir, args.machine)
-    common_utils.CreateDir(args.bbconf_dir)
-    common_utils.CreateDir(args.dts_path)
-    if GenMultiConf:
-        MCObject = multiconfigs.CreateMultiConfigFiles(args, hw_info['cpu_info_dict'],
-                                                       system_conffile=system_conffile)
-        MultiConfDict = MCObject.ParseCpuDict()
-
-    if args.petalinux:
-        # Layers should be added before generating machine conf files
-        update_buildconf.AddUserLayers(args)
-
-    machine_conf_file = yocto_machine.GenerateYoctoMachine(
-        args, system_conffile, plnx_syshw_file, MultiConfDict)
-
-    update_buildconf.GenLocalConf(args.localconf,
-                                machine_conf_file, multiconfig_targets,
-                                system_conffile, args.petalinux)
-
-    if args.petalinux:
-        plnx_conf_file = plnx_machine.GeneratePlnxConfig(
-            args, machine_conf_file)
-        update_buildconf.UpdateLocalConf(
-            args, plnx_conf_file, machine_conf_file)
+    project_config.GenerateConfiguration(args, hw_info,
+                                         system_conffile,
+                                         plnx_syshw_file,
+                                         multiconfig_targets)
 
 
 def register_commands(subparsers):

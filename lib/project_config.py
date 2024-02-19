@@ -234,3 +234,55 @@ def PrintSystemConfiguration(args, model, device_id, cpu_info_dict=None):
             logger.debug('\t= %s %s %s' % (
                 cpu, _cpu.replace(',', ' '),
                 cpu_info_dict[cpu].get('core')))
+
+def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, mctargets=[]):
+    import yocto_machine
+    import update_buildconf
+
+    logger.info('Generating configuration files')
+
+    multiconfig_dir = os.path.join(args.config_dir, 'multiconfig')
+    machine_include_dir = os.path.join(args.config_dir, 'machine', 'include')
+    for dirpath in [multiconfig_dir, machine_include_dir]:
+        common_utils.CreateDir(dirpath)
+
+    MultiConfDict = {}
+    GenMultiConf = True
+    # Dont re-trigger the multiconfigs if no changes in project file
+    if common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False) and \
+            common_utils.ValidateHashFile(args.output, 'SYSTEM_CONF', system_conffile, update=False) and \
+            os.path.exists(plnx_syshw_file) and \
+            (hasattr(args, 'dts_path') and os.path.exists(args.dts_path)):
+        GenMultiConf = False
+
+    args.bbconf_dir = os.path.join(machine_include_dir, args.machine)
+    common_utils.CreateDir(args.bbconf_dir)
+
+    if GenMultiConf and mctargets:
+        import multiconfigs
+
+        if hasattr(args, 'dts_path') and args.dts_path:
+            common_utils.CreateDir(args.dts_path)
+
+        MCObject = multiconfigs.CreateMultiConfigFiles(args, hw_info['cpu_info_dict'],
+                                                       system_conffile=system_conffile)
+        MultiConfDict = MCObject.ParseCpuDict()
+
+    if args.petalinux:
+        # Layers should be added before generating machine conf files
+        update_buildconf.AddUserLayers(args)
+
+    machine_conf_file = yocto_machine.GenerateYoctoMachine(
+        args, system_conffile, plnx_syshw_file, MultiConfDict)
+
+    if args.petalinux:
+        import plnx_machine
+
+        plnx_conf_file = plnx_machine.GeneratePlnxConfig(
+            args, machine_conf_file)
+        update_buildconf.UpdateLocalConf(
+            args, plnx_conf_file, machine_conf_file)
+    else:
+        update_buildconf.GenLocalConf(args.localconf,
+                                      machine_conf_file, mctargets,
+                                      system_conffile, args.petalinux)

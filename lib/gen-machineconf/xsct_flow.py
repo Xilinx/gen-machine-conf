@@ -16,9 +16,6 @@ import re
 import project_config
 import post_process_config
 import rootfs_config
-import yocto_machine
-import plnx_machine
-import update_buildconf
 import subprocess
 
 logger = logging.getLogger('Gen-Machineconf')
@@ -227,23 +224,9 @@ def ParseXsa(args):
         rootfs_config.GenRootfsConfig(args, system_conffile)
 
     #### Generate the configuration:
-    if args.petalinux:
-        # Layers should be added before generating machine conf files
-        update_buildconf.AddUserLayers(args)
-
-    machine_conf_file = yocto_machine.GenerateYoctoMachine(
-        args, system_conffile, plnx_syshw_file)
-
-    update_buildconf.GenLocalConf(args.localconf,
-                                machine_conf_file, None,
-                                system_conffile, args.petalinux)
-
-    if args.petalinux:
-        plnx_conf_file = plnx_machine.GeneratePlnxConfig(
-            args, machine_conf_file)
-        update_buildconf.UpdateLocalConf(
-            args, plnx_conf_file, machine_conf_file)
-
+    project_config.GenerateConfiguration(args, hw_info,
+                                         system_conffile,
+                                         plnx_syshw_file)
 
 def register_commands(subparsers):
     parser_xsa = subparsers.add_parser('parse-xsa',
