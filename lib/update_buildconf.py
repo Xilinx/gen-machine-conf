@@ -118,11 +118,7 @@ def GenLocalConf(conf_file, machine_conf_file, multiconfigs_full, system_conffil
         sdt_conf_str += '# Adjust BASE_TMPDIR if you want to move the tmpdirs elsewhere, such as /tmp\n'
         sdt_conf_str += 'BASE_TMPDIR ?= "${TOPDIR}"\n'
 
-        sdt_conf_str += '\n# The following is the full set of multiconfigs for this configuration\n'
-        if multiconfigs_full:
-            sdt_conf_str += '# A large list can cause a slow parse.\n'
-            sdt_conf_str += '#BBMULTICONFIG ?= "%s"\n' % (' '.join(multiconfigs_full))
-        sdt_conf_str += '# Alternatively trim the list to the minimum\n'
+        sdt_conf_str += '\n# The following is the set of multiconfigs for this configuration\n'
         sdt_conf_str += 'BBMULTICONFIG = "%s"\n' % multiconfig_min
 
     if not conf_file:
