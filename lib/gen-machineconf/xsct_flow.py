@@ -188,6 +188,11 @@ def ParseXsa(args):
 
     machine_conf_file = yocto_machine.GenerateYoctoMachine(
         args, system_conffile, plnx_syshw_file)
+
+    update_buildconf.GenLocalConf(args.localconf,
+                                machine_conf_file, None,
+                                system_conffile, args.petalinux)
+
     if args.petalinux:
         plnx_conf_file = plnx_machine.GeneratePlnxConfig(
             args, machine_conf_file)
@@ -203,5 +208,8 @@ def register_commands(subparsers):
                                        )
     parser_xsa.add_argument('--xsct-tool', metavar='[XSCT_TOOL_PATH]',
                             help='Vivado or Vitis XSCT path to use xsct commands')
+
+    parser_xsa.add_argument('-l', '--localconf', metavar='<config_file>',
+                            help='Write local.conf changes to this file', type=os.path.realpath)
 
     parser_xsa.set_defaults(func=ParseXsa)

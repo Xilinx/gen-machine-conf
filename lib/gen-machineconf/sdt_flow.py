@@ -197,7 +197,7 @@ def ParseSDT(args):
     machine_conf_file = yocto_machine.GenerateYoctoMachine(
         args, system_conffile, plnx_syshw_file, MultiConfDict)
 
-    update_buildconf.GenSdtConf(args.localconf,
+    update_buildconf.GenLocalConf(args.localconf,
                                 machine_conf_file, multiconfig_targets,
                                 system_conffile, args.petalinux)
 

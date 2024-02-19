@@ -95,40 +95,44 @@ def AddUserLayers(args):
         common_utils.RunCmd(cmd, os.getcwd(), shell=True)
 
 
-def GenSdtConf(conf_file, machine_conf_file, multiconfigs_full, system_conffile, petalinux):
-    sdt_conf_str = '# Avoid errors in some baremetal configs as these layers may be present\n'
-    sdt_conf_str += '# but are not used.  Note the following lines are optional and can be\n'
-    sdt_conf_str += '# safetly disabled.\n'
-    sdt_conf_str += 'SKIP_META_VIRT_SANITY_CHECK = "1"\n'
-    sdt_conf_str += 'SKIP_META_SECURITY_SANITY_CHECK = "1"\n'
-    sdt_conf_str += 'SKIP_META_TPM_SANITY_CHECK = "1"\n'
-
-    sdt_conf_str += '\n# Each multiconfig will define it\'s own TMPDIR, this is the new default based\n'
-    sdt_conf_str += '# on BASE_TMPDIR for the Linux build\n'
-    sdt_conf_str += 'TMPDIR = "${BASE_TMPDIR}/tmp"\n'
-
-    sdt_conf_str += '\n# Use the newly generated MACHINE\n'
+def GenLocalConf(conf_file, machine_conf_file, multiconfigs_full, system_conffile, petalinux):
+    sdt_conf_str  = '# Use the newly generated MACHINE\n'
     sdt_conf_str += 'MACHINE = "%s"\n' % machine_conf_file
 
-    sdt_conf_str += '\n# All of the TMPDIRs must be in a common parent directory. This is defined\n'
-    sdt_conf_str += '# as BASE_TMPDIR.\n'
-    sdt_conf_str += '# Adjust BASE_TMPDIR if you want to move the tmpdirs elsewhere, such as /tmp\n'
-    sdt_conf_str += 'BASE_TMPDIR ?= "${TOPDIR}"\n'
-
-    sdt_conf_str += '\n# The following is the full set of multiconfigs for this configuration\n'
-    sdt_conf_str += '# A large list can cause a slow parse.\n'
-    sdt_conf_str += '#BBMULTICONFIG ?= "%s"\n' % (' '.join(multiconfigs_full))
-    sdt_conf_str += '# Alternatively trim the list to the minimum\n'
     multiconfig_min = common_utils.GetConfigValue('CONFIG_YOCTO_BBMC_', system_conffile,
                                                   'choicelist', '=y').lower().replace('_', '-')
-    sdt_conf_str += 'BBMULTICONFIG = "%s"\n' % multiconfig_min
+    if multiconfig_min:
+        sdt_conf_str += '\n# Avoid errors in some baremetal configs as these layers may be present\n'
+        sdt_conf_str += '# but are not used.  Note the following lines are optional and can be\n'
+        sdt_conf_str += '# safetly disabled.\n'
+        sdt_conf_str += 'SKIP_META_VIRT_SANITY_CHECK = "1"\n'
+        sdt_conf_str += 'SKIP_META_SECURITY_SANITY_CHECK = "1"\n'
+        sdt_conf_str += 'SKIP_META_TPM_SANITY_CHECK = "1"\n'
+
+        sdt_conf_str += '\n# Each multiconfig will define it\'s own TMPDIR, this is the new default based\n'
+        sdt_conf_str += '# on BASE_TMPDIR for the Linux build\n'
+        sdt_conf_str += 'TMPDIR = "${BASE_TMPDIR}/tmp"\n'
+
+        sdt_conf_str += '\n# All of the TMPDIRs must be in a common parent directory. This is defined\n'
+        sdt_conf_str += '# as BASE_TMPDIR.\n'
+        sdt_conf_str += '# Adjust BASE_TMPDIR if you want to move the tmpdirs elsewhere, such as /tmp\n'
+        sdt_conf_str += 'BASE_TMPDIR ?= "${TOPDIR}"\n'
+
+        sdt_conf_str += '\n# The following is the full set of multiconfigs for this configuration\n'
+        if multiconfigs_full:
+            sdt_conf_str += '# A large list can cause a slow parse.\n'
+            sdt_conf_str += '#BBMULTICONFIG ?= "%s"\n' % (' '.join(multiconfigs_full))
+        sdt_conf_str += '# Alternatively trim the list to the minimum\n'
+        sdt_conf_str += 'BBMULTICONFIG = "%s"\n' % multiconfig_min
+
     if not conf_file:
         logger.note('To enable this, add the following to your local.conf:\n')
         logger.plain(sdt_conf_str)
     else:
         if not petalinux:
-            logger.note('Configuration for local.conf writter to %s' %
+            logger.note('Configuration for local.conf written to %s' %
                         conf_file)
+            logger.debug(sdt_conf_str)
         common_utils.CreateFile(conf_file)
         common_utils.AddStrToFile(conf_file, sdt_conf_str, 'a+')
 
