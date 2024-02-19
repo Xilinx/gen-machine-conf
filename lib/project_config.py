@@ -15,6 +15,7 @@ import yaml
 import common_utils
 import logging
 import glob
+import multiconfigs
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -110,14 +111,13 @@ def ConvertMCTargetsToKconfig(bbmctargets, multiconfig_min):
     return multiconfig_str
 
 
-def GenKconfigProj(soc_family, soc_variant, output, petalinux,
-                   system_conffile, bbmctargets='', multiconfig_min=''):
+def GenKconfigProj(args, system_conffile, hw_info):
     genmachine_scripts = GenMachineScriptsPath()
-    project_cfgdir = os.path.join(output, 'configs')
+    project_cfgdir = os.path.join(args.output, 'configs')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     template_cfgfile = os.path.join(
-        genmachine_scripts, 'configs/config_%s' % soc_family)
+        genmachine_scripts, 'configs/config_%s' % args.soc_family)
     Kconfig_files = glob.glob(os.path.join(
                         genmachine_scripts, 'configs', 'Kconfig.*'))
 
@@ -126,6 +126,21 @@ def GenKconfigProj(soc_family, soc_variant, output, petalinux,
 
     if not os.path.isfile(system_conffile):
         common_utils.CopyFile(template_cfgfile, system_conffile)
+
+    if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False):
+        # When multiple xsa/sdt files configured with same memory ip with different
+        # size offsets mconf/conf will use the old configs instead of new
+        # to fix that removing old MEMORY related configs from sysconfig
+        # for the first time with every new XSA configured.
+        common_utils.RemoveConfigs('CONFIG_SUBSYSTEM_MEMORY_', system_conffile)
+
+    if 'cpu_info_dict' in hw_info:
+        MCObject = multiconfigs.CreateMultiConfigFiles(
+            args, hw_info['cpu_info_dict'], file_names_only=True)
+        bbmctargets, multiconfig_min = MCObject.ParseCpuDict()
+    else:
+        bbmctargets = ''
+        multiconfig_min = ''
 
     Kconfig_BBMCTargets = ''
     if bbmctargets:
@@ -141,15 +156,15 @@ def GenKconfigProj(soc_family, soc_variant, output, petalinux,
                     os.path.join(project_cfgdir, os.path.basename(Kconfig_file)),
                     '@@multiconfigmenustr@@', Kconfig_BBMCTargets)
 
-    Kconfig_soc_family = soc_family.upper()
-    Kconfig_str = start_menu.format(Kconfig_soc_family, output)
-    if soc_variant:
-        Kconfig_soc_variant = soc_variant.upper()
+    Kconfig_soc_family = args.soc_family.upper()
+    Kconfig_str = start_menu.format(Kconfig_soc_family, args.output)
+    if args.soc_variant:
+        Kconfig_soc_variant = args.soc_variant.upper()
         Kconfig_str += socvariant_menu.format(
             Kconfig_soc_family, Kconfig_soc_variant)
     if Kconfig_BBMCTargets:
         Kconfig_str += Kconfig_sdt
-    if petalinux:
+    if args.petalinux:
         Kconfig_str += Kconfig_plnx
     Kconfig_str += '\nsource %s/Kconfig.main\n' % project_cfgdir
 
@@ -172,7 +187,7 @@ def ApplyConfValue(string, system_conffile):
         common_utils.UpdateConfigValue(conf, value, system_conffile)
 
 
-def PreProcessSysConf(args, system_conffile, mctargets=[]):
+def PreProcessSysConf(args, system_conffile, hw_info):
     if args.machine:
         common_utils.UpdateConfigValue('CONFIG_YOCTO_MACHINE_NAME',
                                        '"%s"' % args.machine, system_conffile)
@@ -187,7 +202,12 @@ def PreProcessSysConf(args, system_conffile, mctargets=[]):
                                        '"%s"' % args.dts_path, system_conffile)
 
     # Read the args.multiconfigfull and enable full target set
-    if hasattr(args, 'multiconfigfull') and args.multiconfigfull:
+    if hasattr(args, 'multiconfigfull') and args.multiconfigfull \
+       and 'cpu_info_dict' in hw_info:
+        MCObject = multiconfigs.CreateMultiConfigFiles(
+            args, hw_info['cpu_info_dict'], file_names_only=True)
+        mctargets, _ = MCObject.ParseCpuDict()
+
         for mctarget in mctargets:
             cfgtarget = 'CONFIG_YOCTO_BBMC_%s' % mctarget.upper().replace('-', '_')
             common_utils.UpdateConfigValue(cfgtarget, 'y', system_conffile)
@@ -241,11 +261,6 @@ def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, mctar
 
     logger.info('Generating configuration files')
 
-    multiconfig_dir = os.path.join(args.config_dir, 'multiconfig')
-    machine_include_dir = os.path.join(args.config_dir, 'machine', 'include')
-    for dirpath in [multiconfig_dir, machine_include_dir]:
-        common_utils.CreateDir(dirpath)
-
     MultiConfDict = {}
     GenMultiConf = True
     # Dont re-trigger the multiconfigs if no changes in project file
@@ -255,14 +270,17 @@ def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, mctar
             (hasattr(args, 'dts_path') and os.path.exists(args.dts_path)):
         GenMultiConf = False
 
-    args.bbconf_dir = os.path.join(machine_include_dir, args.machine)
-    common_utils.CreateDir(args.bbconf_dir)
-
-    if GenMultiConf and mctargets:
-        import multiconfigs
-
+    if GenMultiConf and 'cpu_info_dict' in hw_info:
         if hasattr(args, 'dts_path') and args.dts_path:
             common_utils.CreateDir(args.dts_path)
+
+        multiconfig_dir = os.path.join(args.config_dir, 'multiconfig')
+        machine_include_dir = os.path.join(args.config_dir, 'machine', 'include')
+        for dirpath in [multiconfig_dir, machine_include_dir]:
+            common_utils.CreateDir(dirpath)
+
+        args.bbconf_dir = os.path.join(machine_include_dir, args.machine)
+        common_utils.CreateDir(args.bbconf_dir)
 
         MCObject = multiconfigs.CreateMultiConfigFiles(args, hw_info['cpu_info_dict'],
                                                        system_conffile=system_conffile)

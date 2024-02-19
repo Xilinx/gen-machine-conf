@@ -150,24 +150,11 @@ def ParseSDT(args):
     project_config.PrintSystemConfiguration(args, hw_info['model'], hw_info['device_id'], hw_info['cpu_info_dict'])
 
     #### Generate Kconfig:
-    MCObject = multiconfigs.CreateMultiConfigFiles(
-        args, hw_info['cpu_info_dict'], file_names_only=True)
-    multiconfig_targets, multiconfig_min = MCObject.ParseCpuDict()
-
-    if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False):
-        # When multiple xsa/sdt files configured with same memory ip with different
-        # size offsets mconf/conf will use the old configs instead of new
-        # to fix that removing old MEMORY related configs from sysconfig
-        # for the first time with every new XSA configured.
-        common_utils.RemoveConfigs('CONFIG_SUBSYSTEM_MEMORY_', system_conffile)
-
-    project_config.GenKconfigProj(args.soc_family, args.soc_variant,
-                                  args.output, args.petalinux, system_conffile,
-                                  multiconfig_targets, multiconfig_min)
+    project_config.GenKconfigProj(args, system_conffile, hw_info)
 
     # Update the sysconfig with command line arguments
     # to reflect in menuconfig/config
-    project_config.PreProcessSysConf(args, system_conffile, multiconfig_targets)
+    project_config.PreProcessSysConf(args, system_conffile, hw_info)
     common_utils.RunMenuconfig(Kconfig, system_conffile,
                                True if args.menuconfig == 'project' else False,
                                args.output, 'project')
@@ -201,9 +188,7 @@ def ParseSDT(args):
     #### Generate the configuration:
     project_config.GenerateConfiguration(args, hw_info,
                                          system_conffile,
-                                         plnx_syshw_file,
-                                         multiconfig_targets)
-
+                                         plnx_syshw_file)
 
 def register_commands(subparsers):
     parser_sdt = subparsers.add_parser('parse-sdt',
