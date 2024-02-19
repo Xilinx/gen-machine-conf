@@ -122,9 +122,9 @@ def GenSdtConf(conf_file, machine_conf_file, multiconfigs_full, system_conffile,
     multiconfig_min = common_utils.GetConfigValue('CONFIG_YOCTO_BBMC_', system_conffile,
                                                   'choicelist', '=y').lower().replace('_', '-')
     sdt_conf_str += 'BBMULTICONFIG = "%s"\n' % multiconfig_min
-    if conf_file == '/dev/stdout':
+    if not conf_file:
         logger.note('To enable this, add the following to your local.conf:\n')
-        common_utils.AddStrToFile(conf_file, sdt_conf_str)
+        logger.plain(sdt_conf_str)
     else:
         if not petalinux:
             logger.note('Configuration for local.conf writter to %s' %
