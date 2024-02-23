@@ -38,13 +38,12 @@ def find_file(search_file: str, search_path: str):
 
 def get_domain_name(proc_name: str, yaml_file: str):
     schema = common_utils.ReadYaml(yaml_file)["domains"]
-    for domain in schema:
-        if domain == "default":
-            if schema[domain].get("domains", {}):
-                for dom in schema[domain]["domains"]:
-                    domain_name = schema[domain]["domains"][dom]["cpus"][0]["cluster_cpu"]
-                    if domain_name == proc_name:
-                        return dom
+    for subsystem in schema:
+        if schema[subsystem].get("domains", {}):
+            for dom in schema[subsystem]["domains"]:
+                domain_name = schema[subsystem]["domains"][dom]["cpus"][0]["cluster_cpu"]
+                if domain_name == proc_name:
+                    return dom
     return None
 
 def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
