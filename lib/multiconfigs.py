@@ -629,7 +629,7 @@ class CreateMultiConfigFiles():
         self.MultiConfDict['PsmFWDeployDir'] = '${MC_TMPDIR_PREFIX}-%s/deploy/images/${MACHINE}' % mc_name
         extra_conf_str = 'TARGET_CFLAGS += "-DVERSAL_psm=1"\n'
         self.GenLibxilFeatures('', mc_name,
-                               'xilinx-standalone', 'microblaze-psm', extra_conf_str)
+                               'xilinx-standalone-nolto', 'microblaze-psm', extra_conf_str)
 
     def ArmCortexA53Setup(self):
         if self.core == '0' and not self.a53FsblDone:
