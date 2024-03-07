@@ -235,6 +235,9 @@ def GenConf_serial(IpsToAdd, slavesdict, proc_ipname, arch):
         confstr += '\tprompt "System stdin/stdout baudrate for %s"\n' % slave
         confstr += '\tdefault %s_%s_BAUDRATE_115200\n' % (
             serial_Kconf, slave.upper())
+        confstr += '\thelp\n'
+        confstr += '\tBaudrate settings for serial Ip %s\n' % slave
+        confstr += '\tThe Baudrate setting applies only for U-boot/Linux serial Ip\n'
         for baudrate in def_baudrates:
             confstr += '\nconfig %s_%s_BAUDRATE_%s\n' % (
                 serial_Kconf, slave.upper(), baudrate)

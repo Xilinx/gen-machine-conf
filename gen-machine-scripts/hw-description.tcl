@@ -761,11 +761,13 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 		set baudratechoicestr ""
 		foreach str $tmpstr {
 			set kstr [plnx_fix_kconf_name ${str}]
-			set baudratechoicestr [format "%s%s\n\t%s\n\t%s\n" "${baudratechoicestr}" \
+			set baudratechoicestr [format "%s%s\n\t%s\n\t%s\n\t%s\n\t%s\n\t%s\n" "${baudratechoicestr}" \
 				"choice" \
 				"prompt \"System stdin/stdout baudrate for $str\"" \
-				"default ${serialkconfprefix}${kstr}_BAUDRATE_115200"]
-
+				"default ${serialkconfprefix}${kstr}_BAUDRATE_115200" \
+				"help" \
+				"Baudrate settings for serial Ip ${kstr}" \
+				"The Baudrate setting applies only for U-boot/Linux serial Ip"]
 			foreach b $baudrates($kstr) {
 				set baudratechoicestr [format "%s%s\n\t%s\t\n" "${baudratechoicestr}" \
 					"config ${serialkconfprefix}${kstr}_BAUDRATE_${b}" \
