@@ -118,8 +118,9 @@ def GenLocalConf(conf_file, machine_conf_file, system_conffile, petalinux):
         sdt_conf_str += '#MC_TMPDIR_PREFIX = "${TOPDIR}/tmp"\n'
 
     if not conf_file:
-        logger.note('To enable this, add the following to your local.conf:\n')
-        logger.plain(sdt_conf_str)
+        if not petalinux:
+            logger.note('To enable this, add the following to your local.conf:\n')
+            logger.plain(sdt_conf_str)
     else:
         if not petalinux:
             logger.note('Configuration for local.conf written to %s' %

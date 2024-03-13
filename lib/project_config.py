@@ -300,7 +300,7 @@ def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, mctar
             args, machine_conf_file)
         update_buildconf.UpdateLocalConf(
             args, plnx_conf_file, machine_conf_file)
-    else:
-        update_buildconf.GenLocalConf(args.localconf,
-                                      machine_conf_file,
-                                      system_conffile, args.petalinux)
+
+    update_buildconf.GenLocalConf(args.localconf,
+                                  machine_conf_file,
+                                  system_conffile, args.petalinux)
