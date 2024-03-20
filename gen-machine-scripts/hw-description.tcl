@@ -747,9 +747,23 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 					continue
 				}
 			}
-			set choicestr [format "%s%s\n\t%s\n" "${choicestr}" \
-		"config ${kconfprefix}${conf_comp}SERIAL_${kstr}_SELECT" \
-                "bool \"${str}\""]
+			# When coresight ip is enabled in petalinux-config
+			if { [string match -nocase "*coresight*" ${str} ] } {
+				# Adding coresight dcc support for zynqmp,versal and versal-net platforms
+				if { [regexp "psv_cortexa72*" $cpuname match] || [regexp "psx_cortexa78*" $cpuname match] || \
+				[regexp "psu_cortexa53*" $cpuname match] } {
+					# coresight ip is not supported for plm and pmufw so skipping in displaying menuconfig
+					if { "${component}" != "PLM" && "${component}" != "PMUFW" } {
+						set choicestr [format "%s%s\n\t%s\n" "${choicestr}" \
+					"config ${kconfprefix}${conf_comp}SERIAL_${kstr}_SELECT" \
+					"bool \"${str}\""]
+					}
+				}
+			} else {
+				set choicestr [format "%s%s\n\t%s\n" "${choicestr}" \
+			"config ${kconfprefix}${conf_comp}SERIAL_${kstr}_SELECT" \
+			"bool \"${str}\""]
+			}
 		}
 		set choicestr [format "%s%s\n%s\n\t%s\n" "${choicestr}" \
 			"config ${kconfprefix}${conf_comp}SERIAL_MANUAL_SELECT" \
@@ -802,6 +816,9 @@ proc plnx_gen_conf_serial {mapping kconfprefix cpuname cpuslaves} {
 				} elseif { [string match -nocase "*psv_sbsauart_1*" ${str} ] || \
 					[string match -nocase "*psx_sbsauart_1*" ${str} ] } {
 					set atf_console "pl011_1"
+				# when coresight dcc is enabled then set ATF_CONSOLE = dcc
+				} elseif { [regexp ".*coresight.*" ${str} match] } {
+					set atf_console "dcc"
 				}
 				if { "${atf_console}" == "" } {
 					set atf_console "dcc"
