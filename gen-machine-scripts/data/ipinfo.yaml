@@ -316,6 +316,12 @@ psv_pmc_qspi_ospi:
             flash_type: spi
             flash_prefix: spi0
 
+psv_pmc_ospi:
+    device_type:
+        flash:
+            flash_type: spi
+            flash_prefix: spi0
+
 psx_pmc_qspi:
     device_type:
         flash:
