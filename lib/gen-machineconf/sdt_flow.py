@@ -101,7 +101,7 @@ def ParseSDT(args):
             hw_info['soc_variant'] = project_config.DetectSocVariant(hw_info['device_id'])
 
         # Generate Kconfig.syshw only when hw_file changes
-        if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file) or \
+        if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False) or \
                 not os.path.exists(Kconfig_syshw):
             GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw,
                                hw_info['proc_type'], args.hw_file, args.output)

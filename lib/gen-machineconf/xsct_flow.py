@@ -126,7 +126,7 @@ def ParseXsa(args):
             hw_info['soc_variant'] = args.soc_variant
 
         # Generate Kconfig.syshw only when hw_file changes
-        if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file) or \
+        if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False) or \
             not os.path.exists(Kconfig_syshw):
 
             if not args.soc_family:

@@ -127,7 +127,7 @@ def GenKconfigProj(args, system_conffile, hw_info):
     if not os.path.isfile(system_conffile):
         common_utils.CopyFile(template_cfgfile, system_conffile)
 
-    if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False):
+    if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file):
         # When multiple xsa/sdt files configured with same memory ip with different
         # size offsets mconf/conf will use the old configs instead of new
         # to fix that removing old MEMORY related configs from sysconfig
