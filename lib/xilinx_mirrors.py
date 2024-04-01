@@ -135,7 +135,7 @@ def GenerateMirrors(args, arch):
     if network_sstate == "y" and network_sstate_url:
         network_sstate_url = '\tfile://.* %s/PATH;downloadfilename=PATH \\n \\\n' % network_sstate_url
     else:
-        local_sstate_url = ''
+        network_sstate_url = ''
 
     mirrors_string += '# Sstate mirror settings\n'
     mirrors_string += 'SSTATE_MIRRORS = " \\\n%s%s"\n' % (
