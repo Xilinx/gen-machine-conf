@@ -94,25 +94,25 @@ def main():
     required_args.add_argument('--hw-description', metavar='[<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>',
                                help='Specify Hardware(xsa) file or System Device-tree Directory',
                                )
-    optional_args.add_argument('--soc-family', metavar='',
+    optional_args.add_argument('--soc-family',
                                choices=['microblaze', 'zynq',
                                         'zynqmp', 'versal'],
                                help='SOC family type from choice list (usually auto detected).')
-    optional_args.add_argument('--soc-variant', metavar='',
+    optional_args.add_argument('--soc-variant',
                                help='SOC Variant: Ex: cg, dr, eg, ev, ai-prime, premium (usually auto detected).')
-    optional_args.add_argument('--machine-name', metavar='', dest='machine', type=str,
+    optional_args.add_argument('--machine-name', dest='machine', type=str,
                                help='Provide a name to generate machine configuration')
     optional_args.add_argument('-c', '--config-dir', metavar='<config_dir>',
                             help='Location of the build conf directory', type=os.path.realpath,
                             default=os.path.join(os.environ.get('BUILDDIR',''), 'conf'))
-    optional_args.add_argument('-r', '--require-machine', metavar='', type=str,
+    optional_args.add_argument('-r', '--require-machine', type=str,
                                help='This machine will be required, instead of the '
                                     'generic machine if defined')
-    optional_args.add_argument('-O', '--machine-overrides', metavar='', type=str,
+    optional_args.add_argument('-O', '--machine-overrides', type=str,
                                help='Provide additional overrides to the generated machine')
     optional_args.add_argument(
-        '--output', metavar='', help='Output directory name', default='')
-    optional_args.add_argument('--native-sysroot', metavar='',
+        '--output', help='Output directory name', default='')
+    optional_args.add_argument('--native-sysroot',
                                help='Native sysroot path to use the mconf/conf or lopper commands.')
     optional_args.add_argument('--menuconfig', help='UI menuconfig option '
                                'to update configuration(default is project).'
@@ -127,8 +127,7 @@ def main():
                                'to be added on top of default configs', action='append',
                                nargs='?', default=[], metavar='CONFIG_<macro>=y')
     optional_args.add_argument('--add-rootfsconfig', help='Specify a file with list of '
-                               'package names to add into rootfs menu entry',
-                               metavar='')
+                               'package names to add into rootfs menu entry')
     optional_args.add_argument(
         '-D', '--debug', help='Enable debug output', action='store_true')
 
