@@ -586,7 +586,10 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
 
     # include soc_family machine file if user not specified.
     if not req_conf_file:
-        req_conf_file = '%s-generic' % (soc_family)
+        if args.soc_variant:
+            req_conf_file = f'{soc_family}-{args.soc_variant}-generic'
+        else:
+            req_conf_file = f'{soc_family}-generic'
         # include versal net if soc_Variant is net
         if soc_family == 'versal' and args.soc_variant == 'net':
             req_conf_file = '%s-net-generic' % (soc_family)
