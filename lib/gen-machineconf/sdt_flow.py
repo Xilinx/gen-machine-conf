@@ -713,7 +713,7 @@ def ParseSDT(args):
     if args.hw_flow == 'xsct':
         raise Exception('Invalide HW source Specified for System-Device-Tree.')
 
-    def gatherHWInfo(hw_file):
+    def gatherHWInfo():
         hw_info = {}
 
         logger.info('Getting Platform info from HW file')
@@ -795,7 +795,7 @@ def ParseSDT(args):
 
 
     #### Gather:
-    hw_info = gatherHWInfo(args.hw_file)
+    hw_info = gatherHWInfo()
 
     if hw_info['machine']:
         args.machine = hw_info['machine']
