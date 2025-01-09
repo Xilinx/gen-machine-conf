@@ -602,7 +602,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
     def MicroblazeSetup(self):
         self.MBTuneFeatures()
-        if self.os_hint == 'None' or os_hint.startswith('baremetal'):
+        if self.os_hint == 'None' or self.os_hint.startswith('baremetal'):
             logger.warning(
                 'Microblaze baremetal configuration is %s not yet implemented' % self.domain)
         elif self.os_hint == 'Linux':
