@@ -122,7 +122,7 @@ def GenKconfigProj(args, system_conffile, hw_info, MCObject=None):
                         genmachine_scripts, 'configs', 'Kconfig.*'))
 
     if not os.path.isfile(Kconfig_syshw):
-        raise Exception('%s is not found in tool' % file_path)
+        raise Exception('%s is not found in tool' % Kconfig_syshw)
 
     if not os.path.isfile(system_conffile):
         common_utils.CopyFile(template_cfgfile, system_conffile)
