@@ -77,9 +77,9 @@ def AddUserLayers(args):
         layer_cnt += 1
 
     # Get the layers which to be add
-    add_layers = list(set(bb_layers).difference(old_layers))
+    add_layers = [l for l in bb_layers if l not in old_layers]
     # Get the layers which to be removed
-    remove_layers = list(set(old_layers).difference(bb_layers))
+    remove_layers = [l for l in old_layers if l not in bb_layers]
 
     if add_layers:
         logger.info('Adding user layers')
