@@ -74,7 +74,7 @@ Machinefeatures_soc = {
     'versal': {
         'ai-core': 'vdu', 'ai-edge': 'vdu'
     },
-    'versal2': {
+    'versal-2ve-2vm': {
         'common': 'vcu2 malig78ae'
     }
 }
@@ -580,7 +580,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
     machine_override_string += 'include conf/machine/include/%s/${BB_CURRENT_MC}-features.conf\n' % args.machine
     machine_override_string += 'LIBXIL_CONFIG = "conf/machine/include/%s/${BB_CURRENT_MC}-libxil.conf"\n' % args.machine
 
-    if args.soc_family in ('versal', 'versal2'):
+    if args.soc_family in ('versal', 'versal-2ve-2vm'):
         if os.path.isdir(args.pl):
             pdis = glob.glob(os.path.join(args.pl, '*.pdi'))
             if not pdis:
@@ -650,7 +650,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
 
 
 YoctoGenericMachines = ('microblaze-generic', 'zynq-generic',
-                        'zynqmp-generic','versal-generic', 'versal-net-generic', 'versal2-generic')
+                        'zynqmp-generic','versal-generic', 'versal-net-generic', 'versal-2ve-2vm-generic')
 
 def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict=''):
     genmachine_scripts = project_config.GenMachineScriptsPath()
