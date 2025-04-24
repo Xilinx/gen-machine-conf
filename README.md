@@ -76,7 +76,7 @@ If a directory is specified and it contains both a `.xsa` file and `system-top.d
 ```bash
 $ gen-machine-conf --help
 NOTE: Starting bitbake server...
-usage: gen-machine-conf [--hw-description [<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>] [--soc-family {microblaze,zynq,zynqmp,versal,versal2}]
+usage: gen-machine-conf [--hw-description [<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>] [--soc-family {microblaze,zynq,zynqmp,versal,versal-2ve-2vm}]
                         [--soc-variant SOC_VARIANT] [--machine-name MACHINE] [-c <config_dir>] [-r REQUIRE_MACHINE] [-O MACHINE_OVERRIDES]
                         [--output OUTPUT] [--native-sysroot NATIVE_SYSROOT] [--menuconfig [{project,rootfs}]] [--petalinux]
                         [--add-config [CONFIG_<macro>=y]] [--add-rootfsconfig ADD_ROOTFSCONFIG] [-D] [-h]
@@ -89,7 +89,7 @@ required arguments:
                         Specify Hardware(xsa) file or System Device-tree Directory
 
 options:
-  --soc-family {microblaze,zynq,zynqmp,versal,versal2}
+  --soc-family {microblaze,zynq,zynqmp,versal,versal-2ve-2vm}
                         SOC family type from choice list (usually auto detected).
   --soc-variant SOC_VARIANT
                         SOC Variant: Ex: cg, dr, eg, ev, ai-prime, premium (usually auto detected).
