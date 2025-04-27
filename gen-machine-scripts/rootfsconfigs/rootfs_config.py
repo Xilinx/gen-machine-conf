@@ -185,7 +185,7 @@ def update_cfg(cfg_file, xilinx_arch):
             packages['Init_manager'] + '"\n\n'
         cfg_file.write(init_managerstr)
     init_manager = packages['Init_manager']
-    if xilinx_arch in ('zynqmp', 'versal', 'versal-2ve-2vm'):
+    if xilinx_arch in ('zynqmp', 'versal', 'versal2'):
         if init_manager == 'sysvinit':
             unlock_sstates = 'SIGGEN_LOCKEDSIGS_TYPES = ""\n'
             cfg_file.write(unlock_sstates)
