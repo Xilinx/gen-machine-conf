@@ -83,7 +83,7 @@ def UpdateMemConfigs(args, system_conffile):
                 'CONFIG_SUBSYSTEM_MEMORY_%s_U__BOOT_TEXTBASE_OFFSET' % memory, system_conffile)
     else:
         # updating the dtb load address for u-boot
-        if args.soc_family in ['versal', 'versal2']:
+        if args.soc_family in ['versal', 'versal-2ve-2vm']:
             dtb_offset = '0x1000'
         elif args.soc_family in ['zynqmp', 'zynq']:
             dtb_offset = '0x100000'
