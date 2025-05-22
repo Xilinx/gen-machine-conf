@@ -751,6 +751,11 @@ def ParseSDT(args):
     if args.hw_flow == 'xsct':
         raise Exception('Invalide HW source Specified for System-Device-Tree.')
 
+    '''Check if vitis environment set and show the warning'''
+    if 'XILINX_VITIS' in os.environ.keys():
+        logger.warning('Vitis environment(XILINX_VITIS) found, '
+                        'this may lead to failures. Recommended to start with new bash shell')
+
     def gatherHWInfo():
         hw_info = {}
 
