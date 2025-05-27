@@ -30,8 +30,6 @@ def AddRemoteSources(component, Kcomponent):
         'linux-xlnx': ['KERNELURI', 'SRCREV', 'KBRANCH', 'LIC_FILES_CHKSUM'],
         'u-boot-xlnx': ['UBOOTURI', 'SRCREV', 'UBRANCH', 'LIC_FILES_CHKSUM'],
         'trusted-firmware-a': ['SRC_URI_TRUSTED_FIRMWARE_A', 'SRCREV_tfa', 'SRCBRANCH', 'LIC_FILES_CHKSUM'],
-        'plm-firmware': ['REPO', 'SRCREV', 'BRANCH', 'LIC_FILES_CHKSUM'],
-        'psm-firmware': ['REPO', 'SRCREV', 'BRANCH', 'LIC_FILES_CHKSUM'],
     }
     remort_source = ''
     if is_remote:
@@ -458,14 +456,6 @@ def GeneratePlnxConfig(args, machine_conf_file):
             'CONFIG_SUBSYSTEM_TF-A_DEBUG', system_conffile)
         if atf_debug:
             override_string += 'DEBUG_ATF = "1"\n'
-
-    if soc_family == 'versal':
-        override_string += '\n# PetaLinux tool PLM variables\n'
-        override_string += AddRemoteSources('plm-firmware', 'PLM')
-        override_string += AddExternalSources('plm-firmware', 'PLM')
-        override_string += AddRemoteSources('psm-firmware', 'PSM__FIRMWARE')
-        override_string += AddExternalSources(
-            'psm-firmware', 'PSM__FIRMWARE')
 
     if soc_family in ['zynqmp', 'zynq']:
         fsbl_bspcompiler_flags = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_FSBL_BSPCOMPILER_FLAGS',
