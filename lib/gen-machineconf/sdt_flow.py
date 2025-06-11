@@ -134,23 +134,14 @@ def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''
 
 
 class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
-    def GenLibxilFeatures(self, lopdts, extra_conf=''):
-        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
-        dts_file = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
-        conf_file = os.path.join(self.args.config_dir,
-                                 'multiconfig', '%s.conf' % mc_filename)
-        libxil = os.path.join(self.args.bbconf_dir,
-                              '%s-libxil.conf' % mc_filename)
-        features = os.path.join(self.args.bbconf_dir,
-                                '%s-features.conf' % mc_filename)
-        lopper_args = ''
+    def GenDomainDTS(self, dts_file, lopdts):
         # Build device tree
+        lopper_args = ''
         domain_files = [lopdts]
         subcommand_args = 'gen_domain_dts ' + self.cpuname
         if self.args.domain_file:
             lopper_args = '-x "*.yaml"'
             domain_files.append(self.args.domain_file)
-
             # if Domain file is present and RPU is target, attempt to invoke
             # openamp via gen_domain_dts plugin
             if lopdts in [ 'lop-r5-imux.dts', 'lop-r52-imux.dts' ]:
@@ -170,7 +161,20 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
         RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
                                  domain_dts_file, dts_file, lopper_args, subcommand_args)
+        # Return domain specific full dts file if domain file specified
+        return domain_dts_file
 
+    def GenLibxilFeatures(self, lopdts, extra_conf=''):
+        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
+        dts_file = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
+        conf_file = os.path.join(self.args.config_dir,
+                                 'multiconfig', '%s.conf' % mc_filename)
+        libxil = os.path.join(self.args.bbconf_dir,
+                              '%s-libxil.conf' % mc_filename)
+        features = os.path.join(self.args.bbconf_dir,
+                                '%s-features.conf' % mc_filename)
+        domain_dts_file = self.GenDomainDTS(dts_file, lopdts)
+        lopper_args = ''
         # Build baremetal multiconfig
         if self.args.domain_file:
             lopper_args = '--enhanced -x "*.yaml"'
@@ -285,6 +289,24 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         logger.info(
             'Generating cortex-r52 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
         self.GenLibxilFeatures('lop-r52-imux.dts')
+
+    def CortexR52Zephyr(self):
+        logger.info(
+            'Generating cortex-r52 Zephyr configuration for core %s [ %s ]' % (self.core, self.domain))
+        # Generate Domain specific dts file
+        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
+        ZephyrImuxDTS = os.path.join(self.args.output, '%s-imux.dts' % mc_filename)
+        domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, 'lop-r52-imux.dts')
+
+        # Generate zephyr dt
+        ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
+        RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+                                 ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        # Update multiconfig with dt file
+        conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
+        conf_file = os.path.join(self.args.config_dir,
+                                 'multiconfig', '%s.conf' % mc_filename)
+        common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
 
     def CortexA9Linux(self):
         mc_name = self.mcname
@@ -633,6 +655,8 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             self.CortexR52Baremetal()
         elif self.os_hint.startswith('freertos'):
             self.CortexR52FreeRtos()
+        elif self.os_hint.startswith('zephyr'):
+            self.CortexR52Zephyr()
         else:
             self.CortexR52Baremetal()
 

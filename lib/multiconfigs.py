@@ -46,7 +46,10 @@ class ParseMultiConfigFiles():
                 self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : 'fsbl' };
 
             # Iterate over the non-Linux OSes
-            for os_hint in [ 'baremetal', 'freertos' ]:
+            NonLinuxOS = [ 'baremetal', 'freertos' ]
+            if self.cpu in ['arm,cortex-r52']:
+                NonLinuxOS.append('zephyr')
+            for os_hint in NonLinuxOS:
                 mc_name = '%s-%s%s-%s' % (cpu, self.core, domain_suffix, os_hint)
                 self.MultiConfFiles.append(mc_name)
                 self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint };
