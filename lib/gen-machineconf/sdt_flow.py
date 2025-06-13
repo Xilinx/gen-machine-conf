@@ -138,14 +138,17 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Build device tree
         lopper_args = ''
         domain_files = [lopdts]
-        subcommand_args = 'gen_domain_dts ' + self.cpuname
+        subcommand_args = ''
+        #TODO: xilpm fails with domain dts for zynqmp platform, revert this once its fixed in lopper
+        if self.args.soc_family != 'zynqmp' :
+            subcommand_args = 'gen_domain_dts ' + self.cpuname
         if self.args.domain_file:
             lopper_args = '-x "*.yaml"'
             domain_files.append(self.args.domain_file)
             # if Domain file is present and RPU is target, attempt to invoke
             # openamp via gen_domain_dts plugin
             if lopdts in [ 'lop-r5-imux.dts', 'lop-r52-imux.dts' ]:
-                subcommand_args += ' --openamp_no_header '
+                subcommand_args = 'gen_domain_dts ' + self.cpuname + ' --openamp_no_header '
 
         if self.domain_yaml:
             domain_name = get_domain_name(self.cpuname, self.domain_yaml)
