@@ -28,6 +28,16 @@ plugins = []
 global exc_backtrace
 exc_backtrace = False
 
+__version__ = '2025.2'
+
+def DisplayVersion(unparsed_args):
+    '''Display Gen Machine Conf version and exit'''
+    logger.plain('***** Gen Machine Conf v%s' % __version__)
+    if {'-v', '--version'} & set(unparsed_args):
+        sys.exit(0)
+    return 0
+
+
 # Validate the hw_description given and justify xsct/sdt flow.
 def validate_hwfile(hw_description, subparser=None):
     if not os.path.exists(hw_description):
@@ -136,7 +146,8 @@ def main():
 
     parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS,
                         help='show this help message and exit')
-
+    parser.add_argument('-v', '--version', action='version', version=DisplayVersion(unparsed_args),
+                        help='show version information and exit')
     subparsers = parser.add_subparsers(title='subcommands', metavar='<subcommand>',
                                        dest='subcommand')
 

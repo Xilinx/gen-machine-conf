@@ -364,7 +364,8 @@ proc plnx_gen_conf_memory {mapping cpuname cpuslaves} {
 					set typestrmap [string map ${idmap} "${bank_type_property}"]
 					if {"${ipname}" == "axi_emc"} {
 						set isflash [hsi get_property CONFIG.EMC_BOARD_INTERFACE ${hd}]
-						if {"${isflash}" == "linear_flash"} {
+						# Assume Custom as flash
+						if {"${isflash}" == "linear_flash" || "${isflash}" == "Custom"} {
 							# It is flash
 							continue
 						}
@@ -558,7 +559,8 @@ proc plnx_gen_conf_flash {mapping cpuname cpuslaves} {
 					set highstrmap [string map ${idmap} "${bank_highaddr_property}"]
 					set typestrmap [string map ${idmap} "${bank_type_property}"]
 					set isflash [hsi get_property CONFIG.EMC_BOARD_INTERFACE ${hd}]
-					if {"${isflash}" != "linear_flash"} {
+					# Assume Custom as flash
+					if {"${isflash}" != "linear_flash" && "${isflash}" != "Custom"} {
 						# It is memory
 						continue
 					}

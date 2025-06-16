@@ -94,6 +94,7 @@ endif
 endmenu
 endif
 
+if SUBSYSTEM_ARCH_AARCH64
 menu "optee configuration"
 config SUBSYSTEM_OPTEE
 	bool "OP-TEE config"
@@ -101,6 +102,7 @@ config SUBSYSTEM_OPTEE
 	help
          Select this option for enable/disable OP-TEE
 endmenu
+endif
 
 if !SUBSYSTEM_COMPONENT_U__BOOT_NAME_NONE
 menu "u-boot Configuration"
