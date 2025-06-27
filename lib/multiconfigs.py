@@ -55,8 +55,21 @@ class ParseMultiConfigFiles():
                 self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint };
 
     def MicroblazeSetup(self):
+        logger.warn('Microblaze configuration detected, this is not supported.')
         # Do nothing, this is presumed to be Linux
         pass
+
+    def MicroblazeVSetup(self):
+        cpu = self.cpu.replace('xlnx,','')
+        if self.args.soc_family == 'microblaze':
+            mc_name = ''
+            os_hint = 'linux'
+            self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint};
+        # For Mb-v add zephyr as default MC
+        os_hint = 'zephyr'
+        mc_name = '%s-%s-%s' % (cpu, self.core, os_hint)
+        self.MultiConfFiles.append(mc_name)
+        self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint};
 
     def ParseCpuDict(self):
         for cpuname in self.cpu_info_dict.keys():
@@ -68,6 +81,8 @@ class ParseMultiConfigFiles():
                 self.ArmCortexSetup()
             elif self.cpu == 'xlnx,microblaze':
                 self.MicroblazeSetup()
+            elif self.cpu.startswith('xlnx,microblaze-riscv'):
+                self.MicroblazeVSetup()
             elif self.cpu == 'pmu-microblaze':
                 mc_name = 'microblaze-pmu'
                 self.MultiConfFiles.append(mc_name)
