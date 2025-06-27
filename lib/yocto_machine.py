@@ -530,12 +530,13 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mu
 def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, MultiConfDict):
     machine_override_string = ''
 
-    config_dtfile = MultiConfDict.get('LinuxDT')
-    config_dtfile = os.path.relpath(config_dtfile, start=args.config_dir)
+    config_dtfile = MultiConfDict.get('LinuxDT', '')
 
     machine_override_string += '\n# Set the default (linux) domain device tree\n'
-    machine_override_string += 'CONFIG_DTFILE_DIR := "${@bb.utils.which(d.getVar(\'BBPATH\'), \'conf/%s\')}"\n' % os.path.dirname(config_dtfile)
-    machine_override_string += 'CONFIG_DTFILE ?= "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(config_dtfile)
+    machine_override_string += 'CONFIG_DTFILE_DIR := "${@bb.utils.which(d.getVar(\'BBPATH\'), \'conf/%s\')}"\n' % args.machine
+    if config_dtfile:
+        config_dtfile = os.path.relpath(config_dtfile, start=args.config_dir)
+        machine_override_string += 'CONFIG_DTFILE ?= "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(config_dtfile)
     machine_override_string += 'CONFIG_DTFILE[vardepsexclude] += "CONFIG_DTFILE_DIR"\n'
 
     machine_override_string += YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict)
@@ -576,9 +577,10 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
     machine_override_string += 'SYSTEM_DTFILE = "${SYSTEM_DTFILE_DIR}/%s"\n' % \
                                os.path.basename(args.hw_file)
 
-    machine_override_string += '\n# Load the dynamic machine features\n'
-    machine_override_string += 'include conf/machine/include/%s/${BB_CURRENT_MC}-features.conf\n' % args.machine
-    machine_override_string += 'LIBXIL_CONFIG = "conf/machine/include/%s/${BB_CURRENT_MC}-libxil.conf"\n' % args.machine
+    if arch != 'microblaze':
+        machine_override_string += '\n# Load the dynamic machine features\n'
+        machine_override_string += 'include conf/machine/include/%s/${BB_CURRENT_MC}-features.conf\n' % args.machine
+        machine_override_string += 'LIBXIL_CONFIG = "conf/machine/include/%s/${BB_CURRENT_MC}-libxil.conf"\n' % args.machine
 
     if args.soc_family in ('versal', 'versal-2ve-2vm'):
         if os.path.isdir(args.pl):
@@ -613,7 +615,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
             machine_override_string += 'PDI_PATH = "${PDI_PATH_DIR}/%s"\n' % \
                                        os.path.basename(args.pl)
 
-    if args.soc_family in ['zynqmp', 'zynq'] and not args.gen_pl_overlay:
+    if args.soc_family in ['zynqmp', 'zynq', 'microblaze'] and not args.gen_pl_overlay:
         if os.path.isdir(args.pl):
             bit = glob.glob(os.path.join(args.pl, '*.bit'))
             if not bit:
@@ -679,6 +681,9 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     # include soc_family machine file if user not specified.
     if not req_conf_file:
         req_conf_file = '%s-generic' % (soc_family)
+        # include microblaze-v-generic if microblaze and sdt flow
+        if soc_family == 'microblaze' and args.hw_flow == 'sdt':
+            req_conf_file = '%s-v-generic' % (soc_family)
         # include versal net if soc_Variant is net
         if soc_family == 'versal' and args.soc_variant == 'net':
             req_conf_file = '%s-net-generic' % (soc_family)
