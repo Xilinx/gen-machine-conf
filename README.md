@@ -202,7 +202,7 @@ $ gen-machine-conf --soc-family <microblaze|zynq|zynqmp|versal> --hw-description
 
 > **Note:** MicroBlaze is not supported in system device tree generator at this time.
 
-> **Note:** Zinq-7000 does not support DFX static pl overlay
+> **Note:** Zynq-7000 does not support DFX static pl overlay
 
 
 ```bash
