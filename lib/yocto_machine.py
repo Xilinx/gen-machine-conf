@@ -531,11 +531,11 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
     machine_override_string = ''
 
     config_dtfile = MultiConfDict.get('LinuxDT', '')
+    config_dtfile_dir = os.path.relpath(args.dts_path, start=args.config_dir)
 
     machine_override_string += '\n# Set the default (linux) domain device tree\n'
-    machine_override_string += 'CONFIG_DTFILE_DIR := "${@bb.utils.which(d.getVar(\'BBPATH\'), \'conf/%s\')}"\n' % args.machine
+    machine_override_string += 'CONFIG_DTFILE_DIR := "${@bb.utils.which(d.getVar(\'BBPATH\'), \'conf/%s\')}"\n' % config_dtfile_dir
     if config_dtfile:
-        config_dtfile = os.path.relpath(config_dtfile, start=args.config_dir)
         machine_override_string += 'CONFIG_DTFILE ?= "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(config_dtfile)
     machine_override_string += 'CONFIG_DTFILE[vardepsexclude] += "CONFIG_DTFILE_DIR"\n'
 
