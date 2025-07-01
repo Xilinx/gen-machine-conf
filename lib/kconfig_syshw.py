@@ -201,7 +201,7 @@ def GenConf_serial(IpsToAdd, slavesdict, proc_ipname, arch):
                   }
     def_baudrates = ['600', '9600', '28800',
                      '115200', '230400', '460800', '921600']
-    for comp in serialdict.get(proc_ipname):
+    for comp in serialdict.get(proc_ipname, ''):
         confstr += '\nchoice\n'
         confstr += '\tprompt "%s Serial stdin/stdout"\n' % (
                 'U-boot/Linux' if comp == 'DTG' else comp)

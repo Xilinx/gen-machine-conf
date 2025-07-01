@@ -529,6 +529,45 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
 
+    def MBRiscVLinux(self):
+        dts_file = os.path.join(self.args.dts_path if self.args.dts_path else '',
+                                    'microblaze-riscv-linux.dts')
+        logger.warning('Microblaze riscv Linux configuration is not yet implemented')
+
+    def MBRiscVZephyr(self):
+        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
+        conf_file = os.path.join(self.args.config_dir,
+                                     'multiconfig', '%s.conf' % mc_filename)
+        DomainDTS = os.path.join(self.args.dts_path, '%s-domain.dts' % mc_filename)
+        BoardDTS = os.path.join(self.args.dts_path, '%s-board.dts' % mc_filename)
+        Mbv32Dts = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
+
+        logger.info('Generating microblaze riscv %s configuration [ %s ]' % (self.os_hint, self.domain))
+        # Generate Domain specific dts file
+        domain_dts_file = self.GenDomainDTS(DomainDTS, 'lop-microblaze-riscv.dts')
+        # TODO: lopper is not generating cflags.yaml into output directory to use this with zephyr_dt
+        # copy manually until the issue is fixed
+        common_utils.CopyFile(os.path.join(self.args.dts_path, 'cflags.yaml'),
+                              os.path.join(self.args.output, 'cflags.yaml'))
+        common_utils.RemoveFile(os.path.join(self.args.dts_path, 'cflags.yaml'))
+        # Generate zephyr dt
+        RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'], self.args.output, self.args.dts_path,
+                                 DomainDTS, BoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        # Generate zephyr mbv32 dt
+        RunLopperUsingDomainFile(['lop-mbv-zephyr-intc.dts'], self.args.output, self.args.dts_path,
+                                 BoardDTS, Mbv32Dts)
+        SocKconfigFile_S = os.path.join(self.args.output, 'Kconfig')
+        SocKconfigFile_D = os.path.join(self.args.dts_path, '%s-Kconfig' % mc_filename)
+        SocKconfigDefconfigFile_S = os.path.join(self.args.output, 'Kconfig.defconfig')
+        SocKconfigDefconfigFile_D = os.path.join(self.args.dts_path, '%s-Kconfig.defconfig' % mc_filename)
+        common_utils.CopyFile(SocKconfigFile_S, SocKconfigFile_D)
+        common_utils.CopyFile(SocKconfigDefconfigFile_S, SocKconfigDefconfigFile_D)
+        if conf_file:
+            conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(Mbv32Dts)
+            conf_file_str += 'ZEPHYR_SDT_SOC_KCONFIG  = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(SocKconfigFile_D)
+            conf_file_str += 'ZEPHYR_SDT_SOC_KCONFIG_DEFCONFIG  = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(SocKconfigDefconfigFile_D)
+            common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
+
     def MBTuneFeatures(self):
         if self.MBTunesDone:
             return
@@ -586,6 +625,13 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # TARGET_CFLAGS need to be update
         extra_conf_str = ''
         self.GenLibxilFeatures('', extra_conf_str)
+
+    def MBRiscVSetup(self):
+        if self.os_hint.startswith('linux'):
+            if not self.GenLinuxDts:
+                self.MBRiscVLinux()
+        elif self.os_hint.startswith('zephyr'):
+            self.MBRiscVZephyr()
 
     def ArmCortexA9Setup(self):
         if self.os_hint.startswith('linux'):
@@ -710,6 +756,8 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
                     self.PmcMicroblaze()
                 elif self.cpu == 'psm-microblaze':
                     self.PsmMicroblaze()
+                elif self.cpu.startswith('xlnx,microblaze-riscv'):
+                    self.MBRiscVSetup()
                 elif self.cpu == 'xlnx,asu-microblaze_riscv':
                     self.AsuMicroblaze()
                 else:

@@ -55,8 +55,21 @@ class ParseMultiConfigFiles():
                 self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint };
 
     def MicroblazeSetup(self):
+        logger.warn('Microblaze configuration detected, this is not supported.')
         # Do nothing, this is presumed to be Linux
         pass
+
+    def MicroblazeVSetup(self):
+        cpu = self.cpu.replace('xlnx,','')
+        if self.args.soc_family == 'microblaze':
+            mc_name = ''
+            os_hint = 'linux'
+            self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint};
+        # For Mb-v add zephyr as default MC
+        os_hint = 'zephyr'
+        mc_name = '%s-%s-%s' % (cpu, self.core, os_hint)
+        self.MultiConfFiles.append(mc_name)
+        self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint};
 
     def ParseCpuDict(self):
         for cpuname in self.cpu_info_dict.keys():
@@ -68,6 +81,8 @@ class ParseMultiConfigFiles():
                 self.ArmCortexSetup()
             elif self.cpu == 'xlnx,microblaze':
                 self.MicroblazeSetup()
+            elif self.cpu.startswith('xlnx,microblaze-riscv'):
+                self.MicroblazeVSetup()
             elif self.cpu == 'pmu-microblaze':
                 mc_name = 'microblaze-pmu'
                 self.MultiConfFiles.append(mc_name)
@@ -101,6 +116,19 @@ class ParseMultiConfigFiles():
         self.args = args
 
 class GenerateMultiConfigFiles():
+    def ZephyrConfigurations(self, mc_target):
+        ZephyrDict = {
+            'microblaze' : { 'board' : 'mbv32' },
+            'versal-net' : { 'board' : 'versalnet_rpu'},
+            'versal-2ve-2vm' : { 'board' : 'versal2_rpu'}
+            }
+        distro = 'amd-zephyr'
+        ZephyrVars = '# Zephyr RTOS settings.\n'
+        board = ZephyrDict[mc_target].get('board', '')
+        if board:
+            ZephyrVars += 'ZEPHYR_BOARD = "%s"\n' % board
+        return distro, ZephyrVars
+
     def GenerateMultiConfigs(self):
         tuneDict = { 'arm,cortex-a9'  : 'cortexa9',
                      'arm,cortex-a53' : 'cortexa53',
@@ -111,6 +139,7 @@ class GenerateMultiConfigFiles():
                      'pmu-microblaze' : 'microblaze-pmu',
                      'pmc-microblaze' : 'microblaze-pmc',
                      'psm-microblaze' : 'microblaze-psm',
+                     'xlnx,microblaze-riscv-1.0' : 'riscv32',
                      'xlnx,asu-microblaze_riscv' : 'microblaze-riscv-asu' }
 
         if not self.MultiConfUser or not self.MultiConfMap:
@@ -134,7 +163,7 @@ class GenerateMultiConfigFiles():
                        defaulttune = tuneDict[cpu]
 
                     distro = self.MultiConfMap[mc_name]['os_hint']
-
+                    McExtraVars = ''
                     if cpu == 'pmu-microblaze':
                         self.MultiConfDict['PmuTune'] = defaulttune
                         self.MultiConfDict['PmuMcDepends'] = 'mc::%s:pmu-firmware:do_deploy' % mc_filename
@@ -171,10 +200,20 @@ class GenerateMultiConfigFiles():
                         distro = 'xilinx-standalone%s' % lto
                     elif distro.startswith('freertos'):
                         distro = 'xilinx-freertos'
+                    elif distro.startswith('zephyr'):
+                        arch = self.args.soc_family
+                        if cpu.startswith('xlnx,microblaze-riscv'):
+                            McExtraVars += '#Risc-V Tune features\n'
+                            McExtraVars += 'require conf/machine/include/riscv/tune-riscv.inc\n'
+                            arch = 'microblaze'
+                        distro, ExtraVars = self.ZephyrConfigurations(arch)
+                        McExtraVars += ExtraVars
 
                     bbmulticonfig.append(mc_filename)
                     conf_file = os.path.join(self.args.config_dir, 'multiconfig', mc_filename + '.conf')
                     with open(conf_file, 'w') as file_f:
+                        if McExtraVars:
+                            file_f.write(McExtraVars)
                         file_f.write('TMPDIR .= "-${BB_CURRENT_MC}"\n')
                         file_f.write('\n')
                         file_f.write('DISTRO = "%s"\n' % distro)
