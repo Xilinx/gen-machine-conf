@@ -38,6 +38,27 @@ def DisplayVersion(unparsed_args):
     return 0
 
 
+def GetOutputDir(output, machine, hw_file):
+    ''' If user specified output directory use it
+        If not specified output directory,
+         - if machine name specified    - create subdirectory with machine name and use it
+         - if no machine name specified - create subdirectory with 10 digits of hw_file shakey
+    '''
+    _out_dir = ''
+    if not output:
+        if machine:
+            output = os.path.join(os.getcwd(), 'output', machine)
+            _out_dir = machine
+        else:
+            _suffix = common_utils.GetFileHashValue(hw_file)[0:10]
+            _out_dir = '%s-%s' % (os.path.basename(hw_file).split('.')[0], _suffix)
+        output = os.path.join(os.getcwd(), 'output', _out_dir)
+    else:
+        output = os.path.realpath(output)
+    common_utils.CreateDir(output)
+    return output, _out_dir
+
+
 def GetHWDescription(hw_description, output, petalinux):
     '''Fetch/Copy the user specified uri/dir/file to localpath
     and frame the yocto specific src_uri, s_dir variables'''
@@ -335,13 +356,8 @@ def main():
 
     args = parser.parse_args(unparsed_args, namespace=global_args)
 
-    # If user specified output directory use it if not add basename of hw_file
-    if not args.output:
-        args.output = os.path.join(os.getcwd(), 'output',
-                                   os.path.basename(args.hw_file).split('.')[0])
-    else:
-        args.output = os.path.realpath(args.output)
-    common_utils.CreateDir(args.output)
+    args.output, _out_dir = GetOutputDir(args.output, args.machine, args.hw_file)
+
 
     logger.info('Using HW file: %s' % args.hw_file)
     # Define log file
