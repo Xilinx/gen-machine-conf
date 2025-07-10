@@ -124,7 +124,7 @@ def GetHWDescription(hw_description, output, petalinux):
 
 
 # Validate the hw_description given and justify xsct/sdt flow.
-def validate_hwfile(hw_description, subparser=None):
+def ValidateHWFile(hw_description, subparser=None):
     if not os.path.exists(hw_description):
         raise Exception('Given path does not exists: %s' % hw_description)
     elif os.path.isfile(hw_description):
@@ -170,7 +170,6 @@ def validate_hwfile(hw_description, subparser=None):
     else:
         raise Exception(
            'Only .xsa file or System Device-tree directory supported.')
-    logger.info('Using HW file: %s' % hw_file)
 
     hw_dir = os.path.relpath(os.path.dirname(hw_file), start=hw_description)
 
@@ -312,7 +311,7 @@ def main():
                         global_args.hw_description, global_args.output, global_args.petalinux)
 
         # Validate the given hw_description and get xsct/sdt
-        global_args.hw_flow, global_args.hw_file, s_dir = validate_hwfile(hw_dir, _subparser)
+        global_args.hw_flow, global_args.hw_file, s_dir = ValidateHWFile(hw_dir, _subparser)
         if s_dir and s_dir != '.':
             global_args.s_dir = os.path.join(global_args.s_dir or "", s_dir)
             logger.debug('Update s_dir to %s' % global_args.s_dir)
@@ -344,6 +343,7 @@ def main():
         args.output = os.path.realpath(args.output)
     common_utils.CreateDir(args.output)
 
+    logger.info('Using HW file: %s' % args.hw_file)
     # Define log file
     args.logfile = os.path.join(args.output, 'gen-machineconf.log')
     common_utils.RenameFile(args.logfile,
