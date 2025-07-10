@@ -652,13 +652,13 @@ class bitbake():
             fetcher.download()
 
             # Unpack to hw-description
-            hw_dir = os.path.join(localdata.getVar('TOPDIR'), 'hw-description')
+            hw_dir = os.path.join(localdata.getVar('TOPDIR'), '.hw-description')
             RemoveDir(hw_dir)
             CreateDir(hw_dir)
             fetcher.unpack(hw_dir)
         except bb.fetch2.FetchError as e:
             raise FetchError(message=e, url=uri)
-
+        hw_dir_root = hw_dir
         # Get the S from url if exists, Helps if the specified path or url has multiple
         # SDT/XSA directories user can specify sub source directory. similar to
         # S variable in bb files.
@@ -681,4 +681,4 @@ class bitbake():
         if s_dir:
             hw_dir = os.path.join(hw_dir, s_dir)
 
-        return hw_dir, uri, s_dir, localpath
+        return hw_dir, hw_dir_root, uri, s_dir, localpath
