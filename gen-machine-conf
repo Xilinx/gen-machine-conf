@@ -38,8 +38,127 @@ def DisplayVersion(unparsed_args):
     return 0
 
 
+def GetOutputDir(output, machine, hw_file):
+    ''' If user specified output directory use it
+        If not specified output directory,
+         - if machine name specified    - create subdirectory with machine name and use it
+         - if no machine name specified - create subdirectory with 10 digits of hw_file shakey
+    '''
+    _out_dir = ''
+    if not output:
+        if machine:
+            output = os.path.join(os.getcwd(), 'output', machine)
+            _out_dir = machine
+        else:
+            _suffix = common_utils.GetFileHashValue(hw_file)[0:10]
+            _out_dir = '%s-%s' % (os.path.basename(hw_file).split('.')[0], _suffix)
+        output = os.path.join(os.getcwd(), 'output', _out_dir)
+    else:
+        output = os.path.realpath(output)
+    common_utils.CreateDir(output)
+    return output, _out_dir
+
+
+def RenameHWDir(hw_file, hw_dir_root, _out_dir, petalinux):
+    if 'PETALINUX' in os.environ.keys() or petalinux:
+        return hw_file
+    ''' Create the machine/sha_key subdirectory to the hw-description dir'''
+    if _out_dir:
+        hw_dir_base = os.path.dirname(hw_dir_root)
+        hw_descdir_dest = os.path.join(hw_dir_base, 'hw-description', _out_dir)
+        common_utils.RemoveDir(hw_descdir_dest)
+        common_utils.RenameDir(hw_dir_root, hw_descdir_dest)
+        hw_file = hw_file.replace(hw_dir_root, hw_descdir_dest)
+    return hw_file
+
+
+def GetHWDescription(hw_description, output, petalinux):
+    '''Fetch/Copy the user specified uri/dir/file to localpath
+    and frame the yocto specific src_uri, s_dir variables'''
+    # Make sure bitbake has started, if it's available:
+    localpath = ''
+    # User passed in a path, make sure it's turned into an absolute,
+    # non-relative path, and verify it's valid!
+    if '://' not in hw_description:
+        path = hw_description
+        if not path.startswith('/'):
+            path = os.path.abspath(path)
+        if not os.path.exists(path):
+            raise Exception('Unable to find hw_description %s' % path)
+        path = os.path.realpath(path)
+        hw_description = path
+
+    # Special case for passing in system-top.dts, we really need the directory we're in
+    if '://' not in hw_description and hw_description.endswith('system-top.dts'):
+        dirname = os.path.dirname(hw_description)
+        # This looks like an sdtgen output dir, pass the path to the directory instead!
+        if os.path.exists(os.path.join(dirname, 'include')):
+            hw_description = dirname
+
+    if 'PETALINUX' in os.environ.keys() or petalinux:
+        # We can only copy actual file paths, not URIs.
+        if '://' in hw_description:
+            if not hw_description.startswith('file://'):
+                raise Exception('Unable to fetch URI, URI fetching requires bitbake.')
+            # Strip the file:// off
+            hw_description = hw_description[7:]
+
+        # PetaLinux workflow expects the hw_description path to be where we load and process from
+        if os.path.isfile(hw_description):
+            hw_dir = os.path.dirname(hw_description)
+        else:
+            hw_dir = hw_description
+        localpath = hw_description
+        src_uri = 'file://%s' % (hw_description)
+
+        # A file path ends up 'downloading' in a recipe with the full path,
+        # so the s_dir needs to have the dirname, but without a any leading '/'
+        s_dir = hw_dir.lstrip('/')
+        hw_dir_root = hw_dir
+    else:
+        try:
+            hw_dir, hw_dir_root, src_uri, s_dir, localpath = common_utils.Bitbake.fetchAndUnpackURI(hw_description)
+        except common_utils.FetchError as e:
+            common_utils.Bitbake.shutdown()
+            raise Exception('Unable to fetch %s: %s' % (hw_description, e))
+        except Exception as e:
+            logger.debug('Unable to fetch with bitbake, falling back to copy: %s' % e)
+            # We can only copy actual file paths, not URIs.
+            if '://' in hw_description:
+                if not hw_description.startswith('file://'):
+                    raise Exception('Unable to fetch URI, URI fetching requires bitbake.')
+
+                # Strip the file:// off
+                hw_description = hw_description[7:]
+
+            # Based on the args.output processing below to copy hw description
+            if not output:
+                hw_dir = os.path.join(os.getcwd(), 'output', '.hw-description')
+            else:
+                hw_dir = os.path.realpath(output)
+            common_utils.CreateDir(hw_dir)
+
+            target = os.path.join(hw_dir, os.path.basename(hw_description))
+
+            if os.path.isdir(hw_description):
+                common_utils.RemoveDir(target)
+                shutil.copytree(hw_description, target, dirs_exist_ok=True)
+                localpath = target
+            else:
+                shutil.copyfile(hw_description, target)
+                localpath = target
+
+            src_uri = 'file://%s' % (hw_description)
+
+            # A file path ends up 'downloading' in a recipe with the full path,
+            # so the s_dir needs to have the dirname, but without a any leading '/'
+            s_dir = os.path.dirname(hw_description).lstrip('/')
+            hw_dir_root = hw_dir
+    return hw_dir, hw_dir_root, src_uri, s_dir, localpath
+
+
 # Validate the hw_description given and justify xsct/sdt flow.
-def validate_hwfile(hw_description, subparser=None):
+def ValidateHWFile(hw_description, subparser=None):
     if not os.path.exists(hw_description):
         raise Exception('Given path does not exists: %s' % hw_description)
     elif os.path.isfile(hw_description):
@@ -85,7 +204,6 @@ def validate_hwfile(hw_description, subparser=None):
     else:
         raise Exception(
            'Only .xsa file or System Device-tree directory supported.')
-    logger.info('Using HW file: %s' % hw_file)
 
     hw_dir = os.path.relpath(os.path.dirname(hw_file), start=hw_description)
 
@@ -223,91 +341,11 @@ def main():
             break
 
     if not parserhelp:
-        # Make sure bitbake has started, if it's available:
-        localpath = ''
-
-        # User passed in a path, make sure it's turned into an absolute,
-        # non-relative path, and verify it's valid!
-        if '://' not in global_args.hw_description:
-            path = global_args.hw_description
-            if not path.startswith('/'):
-                path = os.path.abspath(path)
-            if not os.path.exists(path):
-                raise Exception('Unable to find hw_description %s' % path)
-            path = os.path.realpath(path)
-            global_args.hw_description = path
-
-        # Special case for passing in system-top.dts, we really need the directory we're in
-        if '://' not in global_args.hw_description and global_args.hw_description.endswith('system-top.dts'):
-            dirname = os.path.dirname(global_args.hw_description)
-            # This looks like an sdtgen output dir, pass the path to the directory instead!
-            if os.path.exists(os.path.join(dirname, 'include')):
-                global_args.hw_description = dirname
-
-        if 'PETALINUX' in os.environ.keys() or global_args.petalinux:
-            # We can only copy actual file paths, not URIs.
-            if '://' in global_args.hw_description:
-                if not global_args.hw_description.startswith('file://'):
-                    raise Exception('Unable to fetch URI, URI fetching requires bitbake.')
-
-                # Strip the file:// off
-                global_args.hw_description = global_args.hw_description[7:]
-
-            # PetaLinux workflow expects the hw_description path to be where we load and process from
-            if os.path.isfile(global_args.hw_description):
-                hw_dir = os.path.dirname(global_args.hw_description)
-            else:
-                hw_dir = global_args.hw_description
-            localpath = global_args.hw_description
-            global_args.src_uri = 'file://%s' % (global_args.hw_description)
-
-            # A file path ends up 'downloading' in a recipe with the full path,
-            # so the s_dir needs to have the dirname, but without a any leading '/'
-            global_args.s_dir = hw_dir.lstrip('/')
-        else:
-            try:
-                hw_dir, global_args.src_uri, global_args.s_dir, localpath = common_utils.Bitbake.fetchAndUnpackURI(global_args.hw_description)
-            except common_utils.FetchError as e:
-                common_utils.Bitbake.shutdown()
-                raise Exception('Unable to fetch %s: %s' % (global_args.hw_description, e))
-            except Exception as e:
-                logger.debug('Unable to fetch with bitbake, falling back to copy: %s' % e)
-
-                # We can only copy actual file paths, not URIs.
-                if '://' in global_args.hw_description:
-                    if not global_args.hw_description.startswith('file://'):
-                        raise Exception('Unable to fetch URI, URI fetching requires bitbake.')
-
-                    # Strip the file:// off
-                    global_args.hw_description = global_args.hw_description[7:]
-
-                # Based on the args.output processing below
-                if not global_args.output:
-                    global_args.output = os.path.join(os.getcwd(), 'output',
-                                   os.path.basename(global_args.hw_description).split('.')[0])
-                else:
-                    global_args.output = os.path.realpath(global_args.output)
-                common_utils.CreateDir(global_args.output)
-
-                hw_dir = global_args.output
-                target = os.path.join(hw_dir, os.path.basename(global_args.hw_description))
-
-                if os.path.isdir(global_args.hw_description):
-                    common_utils.RemoveDir(target)
-                    shutil.copytree(global_args.hw_description, target, dirs_exist_ok=True)
-                    localpath = target
-                else:
-                    shutil.copyfile(global_args.hw_description, target)
-                    localpath = target
-
-                global_args.src_uri = 'file://%s' % (global_args.hw_description)
-
-                # A file path ends up 'downloading' in a recipe with the full path,
-                # so the s_dir needs to have the dirname, but without a any leading '/'
-                global_args.s_dir = os.path.dirname(global_args.hw_description).lstrip('/')
+        hw_dir, hw_dir_root, global_args.src_uri, global_args.s_dir, localpath = GetHWDescription(
+                        global_args.hw_description, global_args.output, global_args.petalinux)
 
         # Validate the given hw_description and get xsct/sdt
-        global_args.hw_flow, global_args.hw_file, s_dir = validate_hwfile(hw_dir, _subparser)
+        global_args.hw_flow, global_args.hw_file, s_dir = ValidateHWFile(hw_dir, _subparser)
         if s_dir and s_dir != '.':
             global_args.s_dir = os.path.join(global_args.s_dir or "", s_dir)
             logger.debug('Update s_dir to %s' % global_args.s_dir)
@@ -331,14 +369,11 @@ def main():
 
     args = parser.parse_args(unparsed_args, namespace=global_args)
 
-    # If user specified output directory use it if not add basename of hw_file
-    if not args.output:
-        args.output = os.path.join(os.getcwd(), 'output',
-                                   os.path.basename(args.hw_file).split('.')[0])
-    else:
-        args.output = os.path.realpath(args.output)
-    common_utils.CreateDir(args.output)
+    args.output, _out_dir = GetOutputDir(args.output, args.machine, args.hw_file)
 
+    args.hw_file = RenameHWDir(args.hw_file, hw_dir_root, _out_dir, args.petalinux)
+
+    logger.info('Using HW file: %s' % args.hw_file)
     # Define log file
     args.logfile = os.path.join(args.output, 'gen-machineconf.log')
     common_utils.RenameFile(args.logfile,
