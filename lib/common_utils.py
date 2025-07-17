@@ -52,6 +52,20 @@ def load_plugins(plugins, pluginpath):
             plugins.append(plugin)
 
 
+TemplateYamlData = {}
+
+def ReadTemplateYaml(yamlfile):
+    '''
+    Reads the specified YAML file and stores the contents into the global TemplateYamlData.
+    '''
+    if not yamlfile:
+        return
+    if not os.path.isfile(yamlfile):
+        raise Exception('Specified yaml file doesnot exists: %s' % yamlfile)
+    global TemplateYamlData
+    TemplateYamlData = ReadYaml(yamlfile) or {}
+
+
 def CreateDir(dirpath):
     '''Creates Directory'''
     if not os.path.exists(dirpath):

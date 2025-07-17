@@ -219,6 +219,14 @@ def main():
     optional_args = parser._action_groups.pop()
     required_args = parser.add_argument_group('required arguments')
 
+    optional_args.add_argument('--template', metavar='Template yaml file', type=os.path.realpath,
+                               help='Yaml template file',
+                               )
+    #Parse the template arg as known arg to extract the yaml data
+    yaml_args, _ = parser.parse_known_args()
+    #Extract the YAML data into a global variable
+    common_utils.ReadTemplateYaml(yaml_args.template)
+
     required_args.add_argument('--hw-description', metavar='[<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>',
                                help='Specify Hardware(xsa) file or System Device-tree Directory',
                                )
