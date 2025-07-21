@@ -52,6 +52,52 @@ def load_plugins(plugins, pluginpath):
             plugins.append(plugin)
 
 
+TemplateYamlData = {}
+
+def ReadTemplateYaml(yamlfile):
+    '''
+    Reads the specified YAML file and stores the contents into the global TemplateYamlData.
+    '''
+    if not yamlfile:
+        return
+    if not os.path.isfile(yamlfile):
+        raise Exception('Specified yaml file doesnot exists: %s' % yamlfile)
+    global TemplateYamlData
+    TemplateYamlData = ReadYaml(yamlfile) or {}
+
+
+def AddYamlDefaultValues(arg=None, default=None):
+    '''
+    Looks for a matching argument in the YAML 'args' list and sets default value accordingly.
+    '''
+    global TemplateYamlData
+    TemplateYamlDataArgs = TemplateYamlData.get('args', [])
+    for yamlarg in TemplateYamlDataArgs or []:
+        if isinstance(yamlarg, str):
+            yamlarg = yamlarg.split()
+        index, value = ContainsAny(arg, yamlarg)
+        if value is not None:
+            # Safely get the next value if it exists
+            next_value = yamlarg[index + 1] if index + 1 < len(yamlarg) else ''
+
+            if not next_value or next_value.startswith('-'):
+                return True
+            return next_value
+    return default
+
+
+def ContainsAny(search_items, target_list):
+    '''
+    Returns the index and value of the first item in target_list that exists in search_items.
+    '''
+    if isinstance(search_items, str):
+        search_items = search_items.split()
+    for i, item in enumerate(target_list):
+        if item in search_items:
+            return i, item
+    return None, None
+
+
 def CreateDir(dirpath):
     '''Creates Directory'''
     if not os.path.exists(dirpath):

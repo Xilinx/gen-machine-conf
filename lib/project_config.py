@@ -226,6 +226,16 @@ def PreProcessSysConf(args, system_conffile, hw_info):
         common_utils.UpdateConfigValue('CONFIG_YOCTO_MC_DOMAIN_FILEPATH',
                                         '"%s"' % args.domain_file, system_conffile)
 
+    # Read the YAML kconfig variables and update the project configs
+    Yamlconfigs = common_utils.TemplateYamlData.get('kconfig', {})
+    for conf, value in (Yamlconfigs or {}).items():
+        if not conf or value is None:
+            continue
+        if value not in ('y', 'n', 'Y', 'N') and \
+                not (isinstance(value, str) and value.startswith('0x')):
+            value = '"%s"' % value
+        common_utils.UpdateConfigValue(conf, value, system_conffile)
+
     # Read the configs from CLI and update system conf file
     for config in args.add_config:
         # Default assume macro stars with CONFIG_ else file

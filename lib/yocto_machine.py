@@ -144,6 +144,46 @@ def GetBootCompSource(args, comp, mcdepends, deploydir, MultiConfDict, system_co
     return CompDepends, CompMcDepends, CompDeployDir, CompImageName, RemoveComp
 
 
+def UpdateYamlConfigs(dict_key, machine_override_string):
+    '''
+    Iterates each var and checks if it exists in machine_override_string using regex.
+    If found, replaces the line with var op "val".
+    If not found, appends var op "val" as a new line.
+    Returns the updated string with newline at the end.
+    '''
+    yaml_configs = YamlMachineConfs.get(dict_key, {})
+    if not isinstance(yaml_configs, dict) or not yaml_configs:
+        return machine_override_string
+
+    lines = machine_override_string.strip().split('\n')
+    first_new_added = False
+    for var, values in yaml_configs.items():
+        op = values.get('op', '=')
+        val = values.get('val', '')
+        pattern = re.compile(rf'^{re.escape(var)}\s+.*{re.escape(op)}')
+
+        found = False
+        new_lines = []
+
+        for line in lines:
+            if pattern.search(line):
+                new_lines.append(f'{var} {op} "{val}"')
+                found = True
+            else:
+                new_lines.append(line)
+
+        if not found:
+            if not first_new_added:
+                # Blank line before the first inserted one
+                new_lines.append('')
+                first_new_added = True
+            new_lines.append(f'{var} {op} "{val}"')
+
+        lines = new_lines  # carry over updated content to next iteration
+
+    return '\n'.join(lines) + '\n'
+
+
 def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
     machine_override_string = ''
     if arch == 'aarch64':
@@ -333,8 +373,8 @@ def YoctoMCFimwareConfigs(args, arch, dtg_machine, system_conffile, req_conf_fil
     return machine_override_string
 
 
-def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, MultiConfDict):
-    machine_override_string = ''
+def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
+                     MultiConfDict, machine_override_string):
 
     soc_family = args.soc_family
     soc_variant = args.soc_variant
@@ -500,12 +540,18 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mu
 
     machine_override_string += YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict)
 
+    # Add YAML pre yocto configs
+    machine_override_string = UpdateYamlConfigs('pre', machine_override_string)
+
     # Variables that changes based on hw design or board specific requirement must be
     # defined before calling the required inclusion file else pre-expansion value
     # defined in respective generic machine conf will be set.
     machine_override_string += '\n# Required generic machine inclusion\n'
     machine_override_string += 'require conf/machine/%s.conf\n' % \
         req_conf_file
+
+    # Add YAML post yocto configs
+    machine_override_string = UpdateYamlConfigs('post', machine_override_string)
 
     machine_override_string += '\n# This is an \'XSCT\' based BSP\n'
     xsct_version = common_utils.Bitbake.getVar('XILINX_XSCT_VERSION')
@@ -527,8 +573,8 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mu
     return machine_override_string
 
 
-def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, MultiConfDict):
-    machine_override_string = ''
+def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
+                    MultiConfDict, machine_override_string):
 
     config_dtfile = MultiConfDict.get('LinuxDT', '')
     config_dtfile_dir = os.path.relpath(args.dts_path, start=args.config_dir)
@@ -541,12 +587,18 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file, Mul
 
     machine_override_string += YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict)
 
+    # Add YAML pre yocto configs
+    machine_override_string = UpdateYamlConfigs('pre', machine_override_string)
+
     # Variables that changes based on hw design or board specific requirement must be
     # defined before calling the required inclusion file else pre-expansion value
     # defined in respective generic machine conf will be set.
     machine_override_string += '\n# Required generic machine inclusion\n'
     machine_override_string += 'require conf/machine/%s.conf\n' % \
         req_conf_file
+
+    # Add YAML post yocto configs
+    machine_override_string = UpdateYamlConfigs('post', machine_override_string)
 
     machine_override_string += '\n# This is an \'SDT\' based BSP\n'
     machine_override_string += 'XILINX_WITH_ESW = "sdt"\n'
@@ -662,6 +714,8 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     arch = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_ARCH_',
                                        system_conffile, 'choice', '=y').lower()
 
+    global YamlMachineConfs
+    YamlMachineConfs = common_utils.TemplateYamlData.get('machine', {}) or {}
     soc_family = args.soc_family
     import yaml
     global plnx_syshw_data
@@ -721,8 +775,9 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     # Start of ${MACHINE}-${DEVICE_ID}.conf
     machine_override_string += '#@TYPE: Machine\n'
     machine_override_string += '#@NAME: %s\n' % machine_conf_file
-    machine_override_string += '#@DESCRIPTION: Machine configuration for the '\
-        '%s boards.\n' % machine_conf_file
+    machine_description = 'Machine configuration for the %s boards.\n' % machine_conf_file
+    machine_override_string += '#@DESCRIPTION: %s\n' % YamlMachineConfs.get(
+                                                    'description', machine_description)
 
     if MultiConfDict and 'BBMULTICONFIG' in MultiConfDict and MultiConfDict['BBMULTICONFIG']:
         machine_override_string += '\nBBMULTICONFIG += "%s"\n' % MultiConfDict['BBMULTICONFIG']
@@ -744,11 +799,13 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
                                                      system_conffile, req_conf_file, MultiConfDict)
 
     if args.hw_flow == 'xsct':
-        machine_override_string += YoctoXsctConfigs(args, arch, dtg_machine,
-                                                    system_conffile, req_conf_file, MultiConfDict)
+        machine_override_string = YoctoXsctConfigs(args, arch, dtg_machine,
+                                                   system_conffile, req_conf_file,
+                                                   MultiConfDict, machine_override_string)
     elif args.hw_flow == 'sdt':
-        machine_override_string += YoctoSdtConfigs(args, arch, dtg_machine,
-                                                   system_conffile, req_conf_file, MultiConfDict)
+        machine_override_string = YoctoSdtConfigs(args, arch, dtg_machine,
+                                                  system_conffile, req_conf_file,
+                                                  MultiConfDict, machine_override_string)
 
     machine_override_string += '\n#### No additional settings should be after '\
         'the Postamble\n'

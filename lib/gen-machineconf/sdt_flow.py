@@ -986,20 +986,27 @@ def register_commands(subparsers):
                                        ' <PATH_TO_SDTDIR>] [other options]'
                                        )
     parser_sdt.add_argument('-g', '--gen-pl-overlay', choices=['full', 'dfx'],
+                            default=common_utils.AddYamlDefaultValues(['-g', '--gen-pl-overlay']),
                             help='Generate pl overlay for full, dfx configuration using xlnx_overlay_pl_dt lopper script')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
+                            default=common_utils.AddYamlDefaultValues(['-d', '--domain-file']),
                             help='Path to domain file (.yaml/.dts)', type=os.path.realpath)
     parser_sdt.add_argument('-i', '--psu-init-path', metavar='<psu_init_path>',
+                            default=common_utils.AddYamlDefaultValues(['-i', '--psu-init-path']),
                             help='Path to psu_init or ps7_init files, defaults to system device tree output directory',
                             type=os.path.realpath)
     parser_sdt.add_argument('-p', '--pl', metavar='<pl_path>',
+                            default=common_utils.AddYamlDefaultValues(['-p', '--pl']),
                             help='Path to pdi or bitstream file', type=os.path.realpath)
     parser_sdt.add_argument('-l', '--localconf', metavar='<config_file>',
+                            default=common_utils.AddYamlDefaultValues(['-l', '--localconf']),
                             help='Write local.conf changes to this file', type=os.path.realpath)
     parser_sdt.add_argument('--multiconfigfull', action='store_true',
+                            default=common_utils.AddYamlDefaultValues('--multiconfigfull', False),
                             help='Generate/Enable Full set of multiconfig .conf and .dts files. Default is minimal.'
                                 ' Search for CONFIG_YOCTO_BBMC prefix in --menuconfig to get the available multiconfig targets.')
     parser_sdt.add_argument('--dts-path', metavar='<dts_path>',
+                            default=common_utils.AddYamlDefaultValues('--dts-path'),
                             help='Absolute path or subdirectory of conf/dts to place DTS files in (usually auto detected from DTS)')
 
     parser_sdt.set_defaults(func=ParseSDT)
