@@ -124,7 +124,9 @@ class GenerateMultiConfigFiles():
             }
         distro = 'amd-zephyr'
         ZephyrVars = '# Zephyr RTOS settings.\n'
-        board = ZephyrDict[mc_target].get('board', '')
+        board = ''
+        if ZephyrDict.get(mc_target):
+            board = ZephyrDict[mc_target].get('board', '')
         if board:
             ZephyrVars += 'ZEPHYR_BOARD = "%s"\n' % board
         return distro, ZephyrVars
@@ -201,12 +203,14 @@ class GenerateMultiConfigFiles():
                     elif distro.startswith('freertos'):
                         distro = 'xilinx-freertos'
                     elif distro.startswith('zephyr'):
-                        arch = self.args.soc_family
+                        mc_target = self.args.soc_family
+                        if self.args.soc_family == 'versal' and self.args.soc_variant == 'net':
+                            mc_target += '-net'
                         if cpu.startswith('xlnx,microblaze-riscv'):
                             McExtraVars += '#Risc-V Tune features\n'
                             McExtraVars += 'require conf/machine/include/riscv/tune-riscv.inc\n'
-                            arch = 'microblaze'
-                        distro, ExtraVars = self.ZephyrConfigurations(arch)
+                            mc_target = 'microblaze'
+                        distro, ExtraVars = self.ZephyrConfigurations(mc_target)
                         McExtraVars += ExtraVars
 
                     bbmulticonfig.append(mc_filename)
