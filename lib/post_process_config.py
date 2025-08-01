@@ -109,6 +109,7 @@ def UpdateMemConfigs(args, system_conffile):
             bl33_offset = common_utils.GetConfigValue(
                 'CONFIG_TEXT_BASE', uboot_config)
             bl33_addr = bl33_offset
+        common_utils.UpdateConfigValue('CONFIG_SUBSYSTEM_AUTOCONFIG_U__BOOT', "y", system_conffile)
     bootscr_flash_offset = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_UBOOT_QSPI_BOOTSCR_OFFSET', system_conffile)
     bootscr_flash_size = common_utils.GetConfigValue(

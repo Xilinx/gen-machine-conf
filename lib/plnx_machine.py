@@ -434,9 +434,10 @@ def GeneratePlnxConfig(args, machine_conf_file):
     override_string += AddExternalSources('u-boot-xlnx', 'U__BOOT')
     uboot_autoconfig = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_AUTOCONFIG_U__BOOT',
                                                    system_conffile)
+    if uboot_autoconfig:
+        override_string += 'U_BOOT_AUTO_CONFIG:pn-u-boot-xlnx = "1"\n'
     if soc_family == 'microblaze':
         if uboot_autoconfig:
-            override_string += 'U_BOOT_AUTO_CONFIG:pn-u-boot-xlnx = "1"\n'
             auto_uboot_dir = os.path.join(args.output, 'u-boot-xlnx')
             if not os.path.isdir(auto_uboot_dir):
                 os.makedirs(auto_uboot_dir)
