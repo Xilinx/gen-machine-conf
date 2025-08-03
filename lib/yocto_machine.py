@@ -551,7 +551,7 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     # defined before calling the required inclusion file else pre-expansion value
     # defined in respective generic machine conf will be set.
     machine_override_string += '\n# Required generic machine inclusion\n'
-    machine_override_string += 'require conf/machine/%s.conf\n' % \
+    machine_override_string += 'require conf/machine/%s\n' % \
         req_conf_file
 
     # Add YAML post yocto configs
@@ -598,7 +598,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     # defined before calling the required inclusion file else pre-expansion value
     # defined in respective generic machine conf will be set.
     machine_override_string += '\n# Required generic machine inclusion\n'
-    machine_override_string += 'require conf/machine/%s.conf\n' % \
+    machine_override_string += 'require conf/machine/%s\n' % \
         req_conf_file
 
     # Add YAML post yocto configs
@@ -801,6 +801,11 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
 
     machine_override_string += YoctoMCFimwareConfigs(args, arch, dtg_machine,
                                                      system_conffile, req_conf_file, MultiConfDict)
+    # Required conf file ext can be .inc or .conf
+    # add check and modify
+    req_ext = os.path.splitext(req_conf_file)[1]
+    if not req_ext and req_ext not in ('.inc', '.conf'):
+        req_conf_file = req_conf_file + '.conf'
 
     if args.hw_flow == 'xsct':
         machine_override_string = YoctoXsctConfigs(args, arch, dtg_machine,
