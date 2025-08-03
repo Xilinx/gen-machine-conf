@@ -159,15 +159,19 @@ def UpdateYamlConfigs(dict_key, machine_override_string):
     first_new_added = False
     for var, values in yaml_configs.items():
         op = values.get('op', '=')
-        val = values.get('val', '')
         pattern = re.compile(rf'^{re.escape(var)}\s+.*{re.escape(op)}')
-
+        val = values.get('val')
+        # Skip adding value if not found in yaml
+        if val is not None:
+            _newline = f'{var} {op} "{val}"'
+        else:
+            _newline = f'{var} {op}'
         found = False
         new_lines = []
 
         for line in lines:
             if pattern.search(line):
-                new_lines.append(f'{var} {op} "{val}"')
+                new_lines.append(_newline)
                 found = True
             else:
                 new_lines.append(line)
@@ -177,7 +181,7 @@ def UpdateYamlConfigs(dict_key, machine_override_string):
                 # Blank line before the first inserted one
                 new_lines.append('')
                 first_new_added = True
-            new_lines.append(f'{var} {op} "{val}"')
+            new_lines.append(_newline)
 
         lines = new_lines  # carry over updated content to next iteration
 
