@@ -56,6 +56,43 @@ def GenCPUNames(cluster: str, cpu:str, cpumask_hex: str):
     cpunames = [f"{cpu_prefix}{cpu_type}_{i}" for i in bit_positions]
 
     return cpunames
+
+def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
+    """
+    Retrieves the domain name for a given processor name, CPU, and OS hint from a YAML configuration file.
+
+    Args:
+        proc_name (str): The name of the processor to search for.
+        cpu (str): The CPU identifier used for generating CPU names.
+        os_hint (str): The operating system type to match.
+        yaml_file (str): Path to the YAML file containing domain configurations.
+
+    Returns:
+        str or None: The domain name if found, otherwise None.
+    """
+    try:
+        yaml_content = common_utils.ReadYaml(yaml_file)
+        if not yaml_content or 'domains' not in yaml_content:
+            return None
+        schema = yaml_content['domains']
+        for subsystem in schema:
+            os_type = schema[subsystem].get('os,type', '')
+            for cpu_dict in schema[subsystem].get('cpus', []):
+                cluster = cpu_dict.get('cluster', '')
+                cpumask = cpu_dict.get('cpumask', '')
+                cpunames = GenCPUNames(cluster, cpu, cpumask)
+                if proc_name.endswith(tuple(cpunames)):
+                    if not os_type:
+                        logger.warning(f'OS type not defined for domain {subsystem} (proc_name: {proc_name}), skipping entry.')
+                        return None
+                    elif os_type.lower() == os_hint:
+                        logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} with os type {os_type}')
+                        return subsystem
+    except Exception as e:
+        raise Exception(f"Error in GetDomainName: {e}")
+    return None
+
+def get_domain_name(proc_name: str, yaml_file: str):
     schema = common_utils.ReadYaml(yaml_file)["domains"]
     for subsystem in schema:
         if schema[subsystem].get("domains", {}):
