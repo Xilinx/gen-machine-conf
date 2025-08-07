@@ -222,29 +222,18 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         if self.args.soc_family != 'zynqmp' :
             subcommand_args = 'gen_domain_dts ' + self.cpuname
         if self.args.domain_file:
-            lopper_args = '-x "*.yaml"'
-            domain_files.append(self.args.domain_file)
             # if Domain file is present and RPU is target, attempt to invoke
             # openamp via gen_domain_dts plugin
             if lopdts in [ 'lop-r5-imux.dts', 'lop-r52-imux.dts' ]:
                 subcommand_args = 'gen_domain_dts ' + self.cpuname + ' --openamp_no_header '
 
-        if self.domain_yaml:
-            domain_name = get_domain_name(self.cpuname, self.domain_yaml)
-            if domain_name:
-                domain_dts_file = os.path.join(self.args.dts_path, '%s.dts'
-                                               % domain_name.lower())
-                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
-		                              domain_dts_file, domain_name, self.domain_yaml)
-            else:
-                domain_dts_file = self.args.hw_file
-        else:
-            domain_dts_file = self.args.hw_file
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
 
         RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
-                                 domain_dts_file, dts_file, lopper_args, subcommand_args)
+                                 DTSFile, dts_file, lopper_args, subcommand_args)
         # Return domain specific full dts file if domain file specified
-        return domain_dts_file
+        return DTSFile
 
     def GenLibxilFeatures(self, lopdts, extra_conf=''):
         mc_filename = "%s-%s" % (self.args.machine, self.mcname)
