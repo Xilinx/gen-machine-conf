@@ -24,24 +24,7 @@ import kconfig_syshw
 logger = logging.getLogger('Gen-Machineconf')
 
 
-def find_file(search_file: str, search_path: str):
-    """
-    This api find the file in sub-directories and returns absolute path of
-    file, if file exists
 
-    Args:
-        | search_file: The regex pattern to be searched in file names
-        | search_path: The directory that needs to be searched
-    Returns:
-        string: Path of the first file that matches the pattern
-    """
-    file_list = list(pathlib.Path(search_path).glob(f"**/{search_file}"))
-    if len(file_list) > 1:
-        raise Exception('More than one {search_file} found')
-    elif len(file_list) == 0:
-        return None
-    elif os.path.isfile(file_list[0]):
-        return file_list[0]
 
 def get_domain_name(proc_name: str, yaml_file: str):
     schema = common_utils.ReadYaml(yaml_file)["domains"]
@@ -775,12 +758,6 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
         self.MBTunesDone = self.GenLinuxDts = False
         self.gen_pl_overlay = None
-        self.domain_yaml = None
-        iss_file = find_file("*.iss",  os.path.dirname(self.args.hw_file.rstrip(os.path.sep)))
-        if iss_file:
-            self.domain_yaml = os.path.join(self.args.config_dir, "domains.yaml")
-            RunLopperGenDomainYaml(self.args.hw_file, iss_file, self.args.dts_path,
-                                   self.domain_yaml, self.args.config_dir)
 
         if system_conffile:
             # Get the PL_DT_OVERLAY type from config
