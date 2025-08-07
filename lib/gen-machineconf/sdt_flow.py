@@ -183,6 +183,36 @@ def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''
 
 
 class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
+    def GenDTSWithYaml(self):
+        """
+        Generates a Device Tree Source (DTS) file using a specified YAML domain file if provided.
+
+        If a domain file is specified in the arguments, attempts to determine the domain name
+        for the current CPU and OS hint. If a domain is found, generates the DTS file using
+        the domain-specific YAML file and returns its path. If no domain is found, or if no
+        domain file is specified, uses the hardware file as the DTS source.
+
+        Returns:
+            str: The path to the generated or selected DTS file.
+        """
+        if self.args.domain_file:
+            domain_name = GetDomainName(self.cpuname, self.cpu,
+                                          self.os_hint, self.args.domain_file)
+            if domain_name:
+                yaml_dts_file = os.path.join(self.args.dts_path, '%s.dts'
+                                               % domain_name.lower())
+                logger.debug('Generating DTS %s with specified yaml file %s' % (yaml_dts_file, self.args.domain_file))
+                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
+                                      yaml_dts_file, '/domains/%s' % domain_name,
+                                      self.args.domain_file)
+            else:
+                logger.debug('No domain for cpu %s' % self.cpuname)
+                # No domain found; use the hardware file as the DTS source
+                yaml_dts_file = self.args.hw_file
+        else:
+            yaml_dts_file = self.args.hw_file
+
+        return yaml_dts_file
     def GenDomainDTS(self, dts_file, lopdts):
         # Build device tree
         lopper_args = ''
