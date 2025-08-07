@@ -92,16 +92,6 @@ def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
         raise Exception(f"Error in GetDomainName: {e}")
     return None
 
-def get_domain_name(proc_name: str, yaml_file: str):
-    schema = common_utils.ReadYaml(yaml_file)["domains"]
-    for subsystem in schema:
-        if schema[subsystem].get("domains", {}):
-            for dom in schema[subsystem]["domains"]:
-                domain_name = schema[subsystem]["domains"][dom]["cpus"][0]["cluster_cpu"]
-                if domain_name == proc_name:
-                    return dom
-    return None
-
 def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s -f --enhanced %s -- isospec -v -v --audit %s %s' % (
@@ -1054,7 +1044,7 @@ def register_commands(subparsers):
                             help='Generate pl overlay for full, dfx configuration using xlnx_overlay_pl_dt lopper script')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
                             default=common_utils.AddYamlDefaultValues(['-d', '--domain-file']),
-                            help='Path to domain file (.yaml/.dts)')
+                            help='Path to domain file (.yaml) to use for generating the device tree.')
     parser_sdt.add_argument('-i', '--psu-init-path', metavar='<psu_init_path>',
                             default=common_utils.AddYamlDefaultValues(['-i', '--psu-init-path']),
                             help='Path to psu_init or ps7_init files, defaults to system device tree output directory',
