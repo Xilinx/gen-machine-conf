@@ -626,6 +626,28 @@ class bitbake():
             self.tinfoil.recipes_parsed = True
             self.recipes_parsed = True
 
+    def expand(self, variable, recipe=None):
+       '''Return back the expanded values of bitbake variables with an optional recipe'''
+       if self.disabled:
+           return variable
+
+       logger.debug('Expanding bitbake variable %s from %s' % (variable, recipe))
+
+       d = None
+       try:
+           if recipe:
+               if not self.recipes_parsed:
+                   self.parse_recipes()
+               d = self.tinfoil.parse_recipe(recipe)
+           else:
+               if not self.tinfoilPrepared:
+                   self.prepare()
+               d = self.tinfoil.config_data
+       except:
+           # Something went wrong in bitbake, we accept that and return 'variable'
+           return variable
+       return d.expand(variable)
+
     def getVar(self, variable, recipe=None):
       '''Return back the values of bitbake variables with an optional recipe'''
       if self.disabled:
