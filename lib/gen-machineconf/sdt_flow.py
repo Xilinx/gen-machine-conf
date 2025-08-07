@@ -26,7 +26,36 @@ logger = logging.getLogger('Gen-Machineconf')
 
 
 
-def get_domain_name(proc_name: str, yaml_file: str):
+def GenCPUNames(cluster: str, cpu:str, cpumask_hex: str):
+    """
+    Generates a list of CPU names based on the cluster name, CPU string, and CPU mask.
+    Args:
+        cluster (str): The name of the CPU cluster, expected to match the pattern 'cpus_<type>[_<number>]'.
+        cpu (str): A string representing CPU identifiers, typically comma-separated and may include ranges.
+        cpumask_hex (str or int): A hexadecimal string or integer representing the CPU mask.
+
+    Returns:
+        list[str]: A list of CPU names in the format '<cpu_prefix><cpu_type>_<core_index>' for each core enabled in the mask.
+        If the cluster name does not match the expected pattern, returns an empty string.
+    """
+    match = re.match(r'cpus_(\w+?)(?:_\d+)?$', cluster)
+    if not match:
+        return ''
+    cpu_split = cpu.split(',')
+    if len(cpu_split) > 1:
+        cpu_prefix = cpu_split[1].split('-')[0]
+    else:
+        cpu_prefix = cpu_split[0].split('-')[0]
+    cpu_type = match.group(1)
+    if isinstance(cpumask_hex, int):
+        cpumask = cpumask_hex
+    else:
+        cpumask = int(str(cpumask_hex), 16)
+    bit_positions = [i for i in range(cpumask.bit_length()) if cpumask & (1 << i)]
+    # Generate cpunames like cortex<type>_<core_index>
+    cpunames = [f"{cpu_prefix}{cpu_type}_{i}" for i in bit_positions]
+
+    return cpunames
     schema = common_utils.ReadYaml(yaml_file)["domains"]
     for subsystem in schema:
         if schema[subsystem].get("domains", {}):
