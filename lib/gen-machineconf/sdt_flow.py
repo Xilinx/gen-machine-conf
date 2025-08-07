@@ -393,6 +393,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         self.GenLinuxDts = True
         self.MultiConfDict['LinuxDT'] = dts_file
         logger.info('Generating cortex-a9 Linux configuration [ %s ]' % self.domain)
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full, dfx(static) pl overlays.
         ps_dts_file = ''
@@ -402,7 +406,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa9-zynq %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -414,17 +418,14 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
-            ps_dts_file = self.args.hw_file
+            ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a9 Linux dts file: %s'
                          % ps_dts_file)
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa9-linux.dts it fails to build.
-        lopper_args = '-f --enhanced '
-        if self.args.domain_file:
-            lopper_args += '-x "*.yaml" '
-        domain_files = [self.args.domain_file]
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+        lop_files = []
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             '-f')
         if conf_file:
@@ -446,6 +447,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         logger.info('Generating cortex-a53 Linux configuration [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full, dfx(static) pl overlays.
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
         ps_dts_file = ''
         if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
@@ -453,7 +458,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa53-zynqmp %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -465,17 +470,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
-            ps_dts_file = self.args.hw_file
+            ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a53 Linux dts file: %s'
                          % ps_dts_file)
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa53-zynqmp-linux.dts it fails to build.
-        lopper_args = ' -f --enhanced '
-        if self.args.domain_file:
-            lopper_args += ' -x "*.yaml" '
-        domain_files = [self.args.domain_file, 'lop-a53-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+        lopper_args = ''
+        lop_files = ['lop-a53-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
         if conf_file:
@@ -499,23 +502,18 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
         ps_dts_file = ''
-        if self.domain_yaml:
-            domain_name = get_domain_name(self.cpuname, self.domain_yaml)
-            if domain_name:
-                ps_dts_file = os.path.join(self.args.dts_path, '%s.dts'
-                                           % domain_name.lower())
-                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
-		                       ps_dts_file, domain_name, self.domain_yaml)
-            else:
-                ps_dts_file = self.args.hw_file
-        elif self.gen_pl_overlay:
+        if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa72-versal %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -527,17 +525,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
-            ps_dts_file = self.args.hw_file
+            ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a72 Linux dts file: %s'
                          % ps_dts_file)
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa72-versal-linux.dts it fails to build.
         lopper_args = '-f --enhanced '
-        if self.args.domain_file:
-            lopper_args += ' -x "*.yaml" '
-        domain_files = [self.args.domain_file, 'lop-a72-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+        lop_files = ['lop-a72-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
         if conf_file:
@@ -561,6 +557,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
         ps_dts_file = ''
         if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
@@ -568,7 +568,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa78_0 %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -580,17 +580,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
-            ps_dts_file = self.args.hw_file
+            ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a78 Linux dts file: %s'
                          % ps_dts_file)
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa78-versal-linux.dts it fails to build.
         lopper_args = ' -f --enhanced '
-        if self.args.domain_file:
-            lopper_args += ' -x "*.yaml" '
-        domain_files = [self.args.domain_file, 'lop-a78-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+        lop_files = ['lop-a78-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
         if conf_file:
