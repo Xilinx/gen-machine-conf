@@ -24,33 +24,72 @@ import kconfig_syshw
 logger = logging.getLogger('Gen-Machineconf')
 
 
-def find_file(search_file: str, search_path: str):
+
+
+def GenCPUNames(cluster: str, cpu:str, cpumask_hex: str):
     """
-    This api find the file in sub-directories and returns absolute path of
-    file, if file exists
+    Generates a list of CPU names based on the cluster name, CPU string, and CPU mask.
+    Args:
+        cluster (str): The name of the CPU cluster, expected to match the pattern 'cpus_<type>[_<number>]'.
+        cpu (str): A string representing CPU identifiers, typically comma-separated and may include ranges.
+        cpumask_hex (str or int): A hexadecimal string or integer representing the CPU mask.
+
+    Returns:
+        list[str]: A list of CPU names in the format '<cpu_prefix><cpu_type>_<core_index>' for each core enabled in the mask.
+        If the cluster name does not match the expected pattern, returns an empty string.
+    """
+    match = re.match(r'cpus_(\w+?)(?:_\d+)?$', cluster)
+    if not match:
+        return ''
+    cpu_split = cpu.split(',')
+    if len(cpu_split) > 1:
+        cpu_prefix = cpu_split[1].split('-')[0]
+    else:
+        cpu_prefix = cpu_split[0].split('-')[0]
+    cpu_type = match.group(1)
+    if isinstance(cpumask_hex, int):
+        cpumask = cpumask_hex
+    else:
+        cpumask = int(str(cpumask_hex), 16)
+    bit_positions = [i for i in range(cpumask.bit_length()) if cpumask & (1 << i)]
+    # Generate cpunames like cortex<type>_<core_index>
+    cpunames = [f"{cpu_prefix}{cpu_type}_{i}" for i in bit_positions]
+
+    return cpunames
+
+def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
+    """
+    Retrieves the domain name for a given processor name, CPU, and OS hint from a YAML configuration file.
 
     Args:
-        | search_file: The regex pattern to be searched in file names
-        | search_path: The directory that needs to be searched
-    Returns:
-        string: Path of the first file that matches the pattern
-    """
-    file_list = list(pathlib.Path(search_path).glob(f"**/{search_file}"))
-    if len(file_list) > 1:
-        raise Exception('More than one {search_file} found')
-    elif len(file_list) == 0:
-        return None
-    elif os.path.isfile(file_list[0]):
-        return file_list[0]
+        proc_name (str): The name of the processor to search for.
+        cpu (str): The CPU identifier used for generating CPU names.
+        os_hint (str): The operating system type to match.
+        yaml_file (str): Path to the YAML file containing domain configurations.
 
-def get_domain_name(proc_name: str, yaml_file: str):
-    schema = common_utils.ReadYaml(yaml_file)["domains"]
-    for subsystem in schema:
-        if schema[subsystem].get("domains", {}):
-            for dom in schema[subsystem]["domains"]:
-                domain_name = schema[subsystem]["domains"][dom]["cpus"][0]["cluster_cpu"]
-                if domain_name == proc_name:
-                    return dom
+    Returns:
+        str or None: The domain name if found, otherwise None.
+    """
+    try:
+        yaml_content = common_utils.ReadYaml(yaml_file)
+        if not yaml_content or 'domains' not in yaml_content:
+            return None
+        schema = yaml_content['domains']
+        for subsystem in schema:
+            os_type = schema[subsystem].get('os,type', '')
+            for cpu_dict in schema[subsystem].get('cpus', []):
+                cluster = cpu_dict.get('cluster', '')
+                cpumask = cpu_dict.get('cpumask', '')
+                cpunames = GenCPUNames(cluster, cpu, cpumask)
+                if proc_name.endswith(tuple(cpunames)):
+                    if not os_type:
+                        logger.warning(f'OS type not defined for domain {subsystem} (proc_name: {proc_name}), skipping entry.')
+                        return None
+                    elif os_type.lower() == os_hint:
+                        logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} with os type {os_type}')
+                        return subsystem
+    except Exception as e:
+        raise Exception(f"Error in GetDomainName: {e}")
     return None
 
 def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
@@ -134,38 +173,58 @@ def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''
 
 
 class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
+    def GenDTSWithYaml(self):
+        """
+        Generates a Device Tree Source (DTS) file using a specified YAML domain file if provided.
+
+        If a domain file is specified in the arguments, attempts to determine the domain name
+        for the current CPU and OS hint. If a domain is found, generates the DTS file using
+        the domain-specific YAML file and returns its path. If no domain is found, or if no
+        domain file is specified, uses the hardware file as the DTS source.
+
+        Returns:
+            str: The path to the generated or selected DTS file.
+        """
+        if self.args.domain_file:
+            domain_name = GetDomainName(self.cpuname, self.cpu,
+                                          self.os_hint, self.args.domain_file)
+            if domain_name:
+                yaml_dts_file = os.path.join(self.args.dts_path, '%s.dts'
+                                               % domain_name.lower())
+                logger.debug('Generating DTS %s with specified yaml file %s' % (yaml_dts_file, self.args.domain_file))
+                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
+                                      yaml_dts_file, '/domains/%s' % domain_name,
+                                      self.args.domain_file)
+            else:
+                logger.debug('No domain for cpu %s' % self.cpuname)
+                # No domain found; use the hardware file as the DTS source
+                yaml_dts_file = self.args.hw_file
+        else:
+            yaml_dts_file = self.args.hw_file
+
+        return yaml_dts_file
+
     def GenDomainDTS(self, dts_file, lopdts):
         # Build device tree
         lopper_args = ''
         domain_files = [lopdts]
-        subcommand_args = ''
+        subcommand_args = f'gen_domain_dts {self.cpuname}'
         #TODO: xilpm fails with domain dts for zynqmp platform, revert this once its fixed in lopper
-        if self.args.soc_family != 'zynqmp' :
-            subcommand_args = 'gen_domain_dts ' + self.cpuname
+        if self.args.soc_family == 'zynqmp' and self.os_hint == 'fsbl':
+            subcommand_args = ''
         if self.args.domain_file:
-            lopper_args = '-x "*.yaml"'
-            domain_files.append(self.args.domain_file)
             # if Domain file is present and RPU is target, attempt to invoke
             # openamp via gen_domain_dts plugin
             if lopdts in [ 'lop-r5-imux.dts', 'lop-r52-imux.dts' ]:
-                subcommand_args = 'gen_domain_dts ' + self.cpuname + ' --openamp_no_header '
+                subcommand_args += ' --openamp_no_header '
 
-        if self.domain_yaml:
-            domain_name = get_domain_name(self.cpuname, self.domain_yaml)
-            if domain_name:
-                domain_dts_file = os.path.join(self.args.dts_path, '%s.dts'
-                                               % domain_name.lower())
-                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
-		                              domain_dts_file, domain_name, self.domain_yaml)
-            else:
-                domain_dts_file = self.args.hw_file
-        else:
-            domain_dts_file = self.args.hw_file
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
 
         RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
-                                 domain_dts_file, dts_file, lopper_args, subcommand_args)
+                                 DTSFile, dts_file, lopper_args, subcommand_args)
         # Return domain specific full dts file if domain file specified
-        return domain_dts_file
+        return DTSFile
 
     def GenLibxilFeatures(self, lopdts, extra_conf=''):
         mc_filename = "%s-%s" % (self.args.machine, self.mcname)
@@ -325,6 +384,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         self.GenLinuxDts = True
         self.MultiConfDict['LinuxDT'] = dts_file
         logger.info('Generating cortex-a9 Linux configuration [ %s ]' % self.domain)
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full, dfx(static) pl overlays.
         ps_dts_file = ''
@@ -334,7 +397,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa9-zynq %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -346,17 +409,14 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
-            ps_dts_file = self.args.hw_file
+            ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a9 Linux dts file: %s'
                          % ps_dts_file)
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa9-linux.dts it fails to build.
-        lopper_args = '-f --enhanced '
-        if self.args.domain_file:
-            lopper_args += '-x "*.yaml" '
-        domain_files = [self.args.domain_file]
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+        lop_files = []
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             '-f')
         if conf_file:
@@ -378,6 +438,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         logger.info('Generating cortex-a53 Linux configuration [ %s ]' % self.domain)
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full, dfx(static) pl overlays.
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
         ps_dts_file = ''
         if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
@@ -385,7 +449,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa53-zynqmp %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -397,17 +461,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
-            ps_dts_file = self.args.hw_file
+            ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a53 Linux dts file: %s'
                          % ps_dts_file)
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa53-zynqmp-linux.dts it fails to build.
-        lopper_args = ' -f --enhanced '
-        if self.args.domain_file:
-            lopper_args += ' -x "*.yaml" '
-        domain_files = [self.args.domain_file, 'lop-a53-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+        lopper_args = ''
+        lop_files = ['lop-a53-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
         if conf_file:
@@ -431,23 +493,18 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
         ps_dts_file = ''
-        if self.domain_yaml:
-            domain_name = get_domain_name(self.cpuname, self.domain_yaml)
-            if domain_name:
-                ps_dts_file = os.path.join(self.args.dts_path, '%s.dts'
-                                           % domain_name.lower())
-                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
-		                       ps_dts_file, domain_name, self.domain_yaml)
-            else:
-                ps_dts_file = self.args.hw_file
-        elif self.gen_pl_overlay:
+        if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa72-versal %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -459,17 +516,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
-            ps_dts_file = self.args.hw_file
+            ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a72 Linux dts file: %s'
                          % ps_dts_file)
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa72-versal-linux.dts it fails to build.
         lopper_args = '-f --enhanced '
-        if self.args.domain_file:
-            lopper_args += ' -x "*.yaml" '
-        domain_files = [self.args.domain_file, 'lop-a72-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+        lop_files = ['lop-a72-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
         if conf_file:
@@ -493,6 +548,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full(segmented configuration),
         # dfx(static) pl overlays.
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
         ps_dts_file = ''
         if self.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
@@ -500,7 +559,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, self.args.hw_file,
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa78_0 %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -512,17 +571,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Later user can use this pl.dtsi as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
         else:
-            ps_dts_file = self.args.hw_file
+            ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a78 Linux dts file: %s'
                          % ps_dts_file)
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa78-versal-linux.dts it fails to build.
         lopper_args = ' -f --enhanced '
-        if self.args.domain_file:
-            lopper_args += ' -x "*.yaml" '
-        domain_files = [self.args.domain_file, 'lop-a78-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, domain_files, ps_dts_file,
+        lop_files = ['lop-a78-imux.dts']
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
         if conf_file:
@@ -775,12 +832,6 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
         self.MBTunesDone = self.GenLinuxDts = False
         self.gen_pl_overlay = None
-        self.domain_yaml = None
-        iss_file = find_file("*.iss",  os.path.dirname(self.args.hw_file.rstrip(os.path.sep)))
-        if iss_file:
-            self.domain_yaml = os.path.join(self.args.config_dir, "domains.yaml")
-            RunLopperGenDomainYaml(self.args.hw_file, iss_file, self.args.dts_path,
-                                   self.domain_yaml, self.args.config_dir)
 
         if system_conffile:
             # Get the PL_DT_OVERLAY type from config
@@ -994,7 +1045,7 @@ def register_commands(subparsers):
                             help='Generate pl overlay for full, dfx configuration using xlnx_overlay_pl_dt lopper script')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
                             default=common_utils.AddYamlDefaultValues(['-d', '--domain-file']),
-                            help='Path to domain file (.yaml/.dts)')
+                            help='Path to domain file (.yaml) to use for generating the device tree.')
     parser_sdt.add_argument('-i', '--psu-init-path', metavar='<psu_init_path>',
                             default=common_utils.AddYamlDefaultValues(['-i', '--psu-init-path']),
                             help='Path to psu_init or ps7_init files, defaults to system device tree output directory',
