@@ -238,8 +238,6 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         domain_dts_file = self.GenDomainDTS(dts_file, lopdts)
         lopper_args = ''
         # Build baremetal multiconfig
-        if self.args.domain_file:
-            lopper_args = '--enhanced -x "*.yaml"'
         GetLopperBaremetalDrvList(self.cpuname, self.args.output, self.args.dts_path,
                                   domain_dts_file, lopper_args)
 
