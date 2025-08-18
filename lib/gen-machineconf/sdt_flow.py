@@ -216,7 +216,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # if Domain file is present and RPU is target, attempt to invoke
             # openamp via gen_domain_dts plugin
             if lopdts in [ 'lop-r5-imux.dts', 'lop-r52-imux.dts' ]:
-                subcommand_args += ' --openamp_no_header '
+                if self.args.soc_family == 'versal-2ve-2vm' and self.os_hint == 'zephyr':
+                    subcommand_args = ''
+                else:
+                    subcommand_args += ' --openamp_no_header '
 
         # Generate the DTs file using user specified domain yaml file
         DTSFile = self.GenDTSWithYaml()
