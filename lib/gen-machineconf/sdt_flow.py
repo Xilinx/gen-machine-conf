@@ -216,7 +216,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # if Domain file is present and RPU is target, attempt to invoke
             # openamp via gen_domain_dts plugin
             if lopdts in [ 'lop-r5-imux.dts', 'lop-r52-imux.dts' ]:
-                subcommand_args += ' --openamp_no_header '
+                if self.args.soc_family == 'versal-2ve-2vm' and self.os_hint == 'zephyr':
+                    subcommand_args = ''
+                else:
+                    subcommand_args += ' --openamp_no_header '
 
         # Generate the DTs file using user specified domain yaml file
         DTSFile = self.GenDTSWithYaml()
@@ -238,8 +241,6 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         domain_dts_file = self.GenDomainDTS(dts_file, lopdts)
         lopper_args = ''
         # Build baremetal multiconfig
-        if self.args.domain_file:
-            lopper_args = '--enhanced -x "*.yaml"'
         GetLopperBaremetalDrvList(self.cpuname, self.args.output, self.args.dts_path,
                                   domain_dts_file, lopper_args)
 
@@ -467,7 +468,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa53-zynqmp-linux.dts it fails to build.
-        lopper_args = ''
+        lopper_args = '-f --enhanced '
         lop_files = ['lop-a53-imux.dts']
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
