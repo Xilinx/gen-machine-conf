@@ -24,8 +24,6 @@ import kconfig_syshw
 logger = logging.getLogger('Gen-Machineconf')
 
 
-
-
 def GenCPUNames(cluster: str, cpu:str, cpumask_hex: str):
     """
     Generates a list of CPU names based on the cluster name, CPU string, and CPU mask.
@@ -185,22 +183,18 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         Returns:
             str: The path to the generated or selected DTS file.
         """
-        if self.args.domain_file:
-            domain_name = GetDomainName(self.cpuname, self.cpu,
-                                          self.os_hint, self.args.domain_file)
+        yaml_dts_file = self.args.hw_file
+        for _file in self.args.domain_file.split():
+            domain_name = GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
+            dts_file = yaml_dts_file
             if domain_name:
                 yaml_dts_file = os.path.join(self.args.dts_path, '%s.dts'
                                                % domain_name.lower())
-                logger.debug('Generating DTS %s with specified yaml file %s' % (yaml_dts_file, self.args.domain_file))
-                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
-                                      yaml_dts_file, '/domains/%s' % domain_name,
-                                      self.args.domain_file)
+                logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml file {_file}')
+                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, dts_file,
+                                      yaml_dts_file, '/domains/%s' % domain_name, _file)
             else:
-                logger.debug('No domain for cpu %s' % self.cpuname)
-                # No domain found; use the hardware file as the DTS source
-                yaml_dts_file = self.args.hw_file
-        else:
-            yaml_dts_file = self.args.hw_file
+                logger.debug(f'No domain for cpu {self.cpuname} in {_file}')
 
         return yaml_dts_file
 
@@ -1004,12 +998,12 @@ def ParseSDT(args):
     # In case domain file provided in config
     domain_file_cfg = common_utils.GetConfigValue('CONFIG_YOCTO_MC_DOMAIN_FILEPATH',
                                                     system_conffile)
-    if domain_file_cfg:
-        domain_file_cfg = os.path.expandvars(domain_file_cfg)
+    args.domain_file = ''
+    for _file in domain_file_cfg.split():
+        _file = os.path.expandvars(_file)
         # Expand the bitbake variables
-        domain_file_cfg = common_utils.Bitbake.expand(domain_file_cfg)
-        args.domain_file = os.path.realpath(domain_file_cfg)
-
+        _file = common_utils.Bitbake.expand(_file)
+        args.domain_file += os.path.realpath(_file) + ' '
 
     # In case dts_path updated in config
     cfg_dtspath = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',
@@ -1046,6 +1040,7 @@ def register_commands(subparsers):
                             help='Generate pl overlay for full, dfx configuration using xlnx_overlay_pl_dt lopper script')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
                             default=common_utils.AddYamlDefaultValues(['-d', '--domain-file']),
+                            action='append',
                             help='Path to domain file (.yaml) to use for generating the device tree.')
     parser_sdt.add_argument('-i', '--psu-init-path', metavar='<psu_init_path>',
                             default=common_utils.AddYamlDefaultValues(['-i', '--psu-init-path']),

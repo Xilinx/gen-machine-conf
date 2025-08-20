@@ -224,7 +224,8 @@ def PreProcessSysConf(args, system_conffile, hw_info):
     # Domain file path from args to config
     if hasattr(args, 'domain_file') and args.domain_file:
         common_utils.UpdateConfigValue('CONFIG_YOCTO_MC_DOMAIN_FILEPATH',
-                                        '"%s"' % args.domain_file, system_conffile)
+                                        '"%s"' % ' '.join(args.domain_file),
+                                       system_conffile)
 
     # Read the YAML kconfig variables and update the project configs
     Yamlconfigs = common_utils.TemplateYamlData.get('kconfig', {})
