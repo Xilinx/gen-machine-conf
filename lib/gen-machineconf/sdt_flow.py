@@ -119,7 +119,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         """
         yaml_dts_file = self.args.hw_file
         for _file in self.args.domain_file.split():
-            domain_name = GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
+            domain_name = common_utils.GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
             dts_file = yaml_dts_file
             if domain_name:
                 yaml_dts_file = os.path.join(self.args.dts_path, '%s.dts'
@@ -639,7 +639,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
     def ArmCortexA9Setup(self):
         if self.os_hint.startswith('linux'):
-            if not self.GenLinuxDts:
+            if not self.GenLinuxDts and not project_config.LinuxDisabledInYaml:
                 self.CortexA9Linux()
         elif self.os_hint == 'fsbl':
             self.CortexA9Baremetal()
@@ -654,7 +654,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
     def ArmCortexA53Setup(self):
         if self.os_hint.startswith('linux'):
-            if not self.GenLinuxDts:
+            if not self.GenLinuxDts and not project_config.LinuxDisabledInYaml:
                 self.CortexA53Linux()
         elif self.os_hint == 'fsbl':
             self.CortexA53Baremetal()
@@ -669,7 +669,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
     def ArmCortexA72Setup(self):
         if self.os_hint.startswith('linux'):
-            if not self.GenLinuxDts:
+            if not self.GenLinuxDts and not project_config.LinuxDisabledInYaml:
                 self.CortexA72Linux()
         elif self.os_hint.startswith('baremetal'):
             self.CortexA72Baremetal()
@@ -682,7 +682,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
     def ArmCortexA78Setup(self):
         if self.os_hint.startswith('linux'):
-            if not self.GenLinuxDts:
+            if not self.GenLinuxDts and not project_config.LinuxDisabledInYaml:
                 self.CortexA78Linux()
         elif self.os_hint.startswith('baremetal'):
             self.CortexA78Baremetal()
