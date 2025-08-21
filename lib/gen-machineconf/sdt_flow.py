@@ -365,6 +365,24 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
                                  'multiconfig', '%s.conf' % mc_filename)
         common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
 
+    def CortexA78Zephyr(self):
+        logger.info(
+            'Generating cortex-a78 Zephyr configuration for core %s [ %s ]' % (self.core, self.domain))
+        # Generate Domain specific dts file
+        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
+        ZephyrImuxDTS = os.path.join(self.args.output, '%s-imux.dts' % mc_filename)
+        domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, 'lop-a78-imux.dts')
+
+        # Generate zephyr dt
+        ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
+        RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+                                 ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        # Update multiconfig with dt file
+        conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
+        conf_file = os.path.join(self.args.config_dir,
+                                 'multiconfig', '%s.conf' % mc_filename)
+        common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
+
     def CortexA9Linux(self):
         mc_name = self.mcname
         if mc_name == '':
@@ -736,6 +754,8 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             self.CortexA78Baremetal()
         elif self.os_hint.startswith('freertos'):
             self.CortexA78FreeRtos()
+        elif self.os_hint.startswith('zephyr'):
+            self.CortexA78Zephyr()
         else:
             logger.warning('cortex-a78 for unknown OS (%s), \
                         parsing Baremetal. %s' % (self.os_hint, self.domain))

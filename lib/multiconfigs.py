@@ -47,7 +47,7 @@ class ParseMultiConfigFiles():
 
             # Iterate over the non-Linux OSes
             NonLinuxOS = [ 'baremetal', 'freertos' ]
-            if self.cpu in ['arm,cortex-r52']:
+            if self.cpu in ['arm,cortex-r52', 'arm,cortex-a78']:
                 NonLinuxOS.append('zephyr')
             for os_hint in NonLinuxOS:
                 mc_name = '%s-%s%s-%s' % (cpu, self.core, domain_suffix, os_hint)
