@@ -994,7 +994,7 @@ def register_commands(subparsers):
                             help='Generate pl overlay for full, dfx configuration using xlnx_overlay_pl_dt lopper script')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
                             default=common_utils.AddYamlDefaultValues(['-d', '--domain-file']),
-                            action='append',
+                            action=common_utils.AppendArgWithSpace,
                             help='Path to domain file (.yaml) to use for generating the device tree.')
     parser_sdt.add_argument('-i', '--psu-init-path', metavar='<psu_init_path>',
                             default=common_utils.AddYamlDefaultValues(['-i', '--psu-init-path']),
