@@ -8,6 +8,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import argparse
 import os
 import sys
 import logging
@@ -149,6 +150,21 @@ def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
     except Exception as e:
         raise Exception(f"Error in GetDomainName: {e}")
     return None
+
+
+class AppendArgWithSpace(argparse.Action):
+    """
+    Custom argparse Action that appends arguments with a space separator.
+    """
+    def __call__(self, _parser, namespace, values, _option_string=None):
+        """
+        Appends the provided value to the existing argument value with a space.
+        """
+        current = getattr(namespace, self.dest, None)
+        if current:
+            setattr(namespace, self.dest, current + " " + values)
+        else:
+            setattr(namespace, self.dest, values)
 
 
 def ContainsAny(search_items, target_list):
