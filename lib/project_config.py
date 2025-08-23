@@ -118,7 +118,7 @@ def ConvertMCTargetsToKconfig(bbmctargets, multiconfig_min):
 LinuxDisabledInYaml = False
 def MultiConfigYaml(yaml_file, multiconfig_dict):
     multiconf_yaml = []
-    for _file in yaml_file:
+    for _file in yaml_file.split():
         for mc_config in multiconfig_dict:
             _mc_config_dict = multiconfig_dict.get(mc_config)
             cpuname = _mc_config_dict.get('cpuname', '')
