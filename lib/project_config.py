@@ -115,6 +115,24 @@ def ConvertMCTargetsToKconfig(bbmctargets, multiconfig_min):
     return multiconfig_str
 
 
+LinuxDisabledInYaml = False
+def MultiConfigYaml(yaml_file, multiconfig_dict):
+    multiconf_yaml = []
+    for _file in yaml_file.split():
+        for mc_config in multiconfig_dict:
+            _mc_config_dict = multiconfig_dict.get(mc_config)
+            cpuname = _mc_config_dict.get('cpuname', '')
+            cpu = _mc_config_dict.get('cpu', '')
+            os_hint = _mc_config_dict.get('os_hint', '')
+            domain_name = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
+            if not domain_name and os_hint == 'linux':
+                global LinuxDisabledInYaml
+                LinuxDisabledInYaml = True
+            if domain_name:
+                multiconf_yaml.append(mc_config)
+    return multiconf_yaml
+
+
 def GenKconfigProj(args, system_conffile, hw_info, MCObject=None):
     genmachine_scripts = GenMachineScriptsPath()
     project_cfgdir = os.path.join(args.output, 'configs')
@@ -145,6 +163,9 @@ def GenKconfigProj(args, system_conffile, hw_info, MCObject=None):
     if MCObject:
         bbmctargets, multiconfig_min = MCObject.ParseCpuDict()
         hw_info['multiconfigs'] = MCObject.MultiConfMap
+        if hasattr(args, 'domain_file') and args.domain_file:
+            _multiconfig_min = MultiConfigYaml(args.domain_file, hw_info['multiconfigs'])
+            multiconfig_min =  list(dict.fromkeys(multiconfig_min + _multiconfig_min))
     else:
         bbmctargets = []
         multiconfig_min = []
@@ -224,7 +245,7 @@ def PreProcessSysConf(args, system_conffile, hw_info):
     # Domain file path from args to config
     if hasattr(args, 'domain_file') and args.domain_file:
         common_utils.UpdateConfigValue('CONFIG_YOCTO_MC_DOMAIN_FILEPATH',
-                                        '"%s"' % ' '.join(args.domain_file),
+                                       f'"{args.domain_file}"',
                                        system_conffile)
 
     # Read the YAML kconfig variables and update the project configs

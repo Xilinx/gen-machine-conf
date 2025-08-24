@@ -158,6 +158,7 @@ def UpdateYamlConfigs(dict_key, machine_override_string):
     lines = machine_override_string.strip().split('\n')
     first_new_added = False
     for var, values in yaml_configs.items():
+        comment = values.get('comment', '')
         op = values.get('op', '=')
         pattern = re.compile(rf'^{re.escape(var)}\s+.*{re.escape(op)}')
         val = values.get('val')
@@ -171,6 +172,8 @@ def UpdateYamlConfigs(dict_key, machine_override_string):
 
         for line in lines:
             if pattern.search(line):
+                if comment:
+                    new_lines.append(f'# {comment}')
                 new_lines.append(_newline)
                 found = True
             else:
@@ -181,6 +184,8 @@ def UpdateYamlConfigs(dict_key, machine_override_string):
                 # Blank line before the first inserted one
                 new_lines.append('')
                 first_new_added = True
+            if comment:
+                new_lines.append(f'# {comment}')
             new_lines.append(_newline)
 
         lines = new_lines  # carry over updated content to next iteration
