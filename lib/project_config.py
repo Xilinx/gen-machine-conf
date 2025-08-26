@@ -119,6 +119,10 @@ LinuxDisabledInYaml = False
 def MultiConfigYaml(yaml_file, multiconfig_dict):
     multiconf_yaml = []
     for _file in yaml_file.split():
+        _file = os.path.expandvars(_file)
+        # Expand the bitbake variables
+        _file = common_utils.Bitbake.expand(_file)
+        _file = os.path.realpath(_file)
         for mc_config in multiconfig_dict:
             _mc_config_dict = multiconfig_dict.get(mc_config)
             cpuname = _mc_config_dict.get('cpuname', '')
