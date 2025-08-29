@@ -23,6 +23,18 @@ import kconfig_syshw
 
 logger = logging.getLogger('Gen-Machineconf')
 
+def IncludeCustomDtsi(proc_name, cpu, os_hint, yaml_file, dts_file):
+    DomainCustomDtsi = ''
+    for _file in yaml_file.split():
+        domain_name, schema = common_utils.GetDomainName(proc_name, cpu, os_hint, _file)
+        if domain_name:
+            custom_dtsi = schema[domain_name].get('dtsi', '')
+            if custom_dtsi:
+                DomainCustomDtsi = f'{domain_name}_{os.path.basename(custom_dtsi)}'
+                common_utils.CopyFile(custom_dtsi, os.path.join(os.path.dirname(dts_file), DomainCustomDtsi))
+            else:
+                logger.debug(f'No custom-dtsi key found in the YAML file.')
+    return DomainCustomDtsi
 
 def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
@@ -119,7 +131,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         """
         yaml_dts_file = self.args.hw_file
         for _file in self.args.domain_file.split():
-            domain_name = common_utils.GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
+            domain_name,_ = common_utils.GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
             dts_file = yaml_dts_file
             if domain_name:
                 yaml_dts_file = os.path.join(self.args.dts_path, '%s.dts'
@@ -179,6 +191,9 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         common_utils.ReplaceStrFromFile(
             features, 'DISTRO_FEATURES', 'MACHINE_FEATURES')
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
+        DomainCustomDtsi = IncludeCustomDtsi(self.cpuname, self.cpu, self.os_hint, self.args.domain_file, dts_file)
+        if DomainCustomDtsi:
+            conf_file_str += f'EXTRA_DT_INCLUDE_FILES = "{DomainCustomDtsi}"\n'
         conf_file_str += 'ESW_MACHINE = "%s"\n' % self.cpuname
         conf_file_str += extra_conf
         common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -366,8 +381,13 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             '-f')
+        DomainCustomDtsi = IncludeCustomDtsi(self.cpuname, self.cpu, self.os_hint, self.args.domain_file, dts_file)
+        self.MultiConfDict['CustomLinuxDT'] = DomainCustomDtsi
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
+            if DomainCustomDtsi:
+                conf_file_str += f'EXTRA_DT_INCLUDE_FILES = "{DomainCustomDtsi}"\n'
+            common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
 
     def CortexA53Linux(self):
         mc_name = self.mcname
@@ -419,8 +439,12 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
+        DomainCustomDtsi = IncludeCustomDtsi(self.cpuname, self.cpu, self.os_hint, self.args.domain_file, dts_file)
+        self.MultiConfDict['CustomLinuxDT'] = DomainCustomDtsi
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
+            if DomainCustomDtsi:
+                conf_file_str += f'EXTRA_DT_INCLUDE_FILES = "{DomainCustomDtsi}"\n'
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
 
     def CortexA72Linux(self):
@@ -474,8 +498,12 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
+        DomainCustomDtsi = IncludeCustomDtsi(self.cpuname, self.cpu, self.os_hint, self.args.domain_file, dts_file)
+        self.MultiConfDict['CustomLinuxDT'] = DomainCustomDtsi
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
+            if DomainCustomDtsi:
+                conf_file_str += f'EXTRA_DT_INCLUDE_FILES = "{DomainCustomDtsi}"\n'
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
 
     def CortexA78Linux(self):
@@ -529,8 +557,12 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
+        DomainCustomDtsi = IncludeCustomDtsi(self.cpuname, self.cpu, self.os_hint, self.args.domain_file, dts_file)
+        self.MultiConfDict['CustomLinuxDT'] = DomainCustomDtsi
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
+            if DomainCustomDtsi:
+                conf_file_str += f'EXTRA_DT_INCLUDE_FILES = "{DomainCustomDtsi}"\n'
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
 
     def MBRiscVLinux(self):
