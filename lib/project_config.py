@@ -128,7 +128,7 @@ def MultiConfigYaml(yaml_file, multiconfig_dict):
             cpuname = _mc_config_dict.get('cpuname', '')
             cpu = _mc_config_dict.get('cpu', '')
             os_hint = _mc_config_dict.get('os_hint', '')
-            domain_name = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
+            domain_name,_ = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
             if not domain_name and os_hint == 'linux':
                 global LinuxDisabledInYaml
                 LinuxDisabledInYaml = True
