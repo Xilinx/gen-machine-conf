@@ -132,7 +132,7 @@ def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
     try:
         yaml_content = ReadYaml(yaml_file)
         if not yaml_content or 'domains' not in yaml_content:
-            return None
+            return None, None
         schema = yaml_content['domains']
         for subsystem in schema:
             os_type = schema[subsystem].get('os,type', '')
@@ -143,13 +143,13 @@ def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
                 if proc_name.endswith(tuple(cpunames)):
                     if not os_type:
                         logger.warning(f'OS type not defined for domain {subsystem} (proc_name: {proc_name}), skipping entry.')
-                        return None
+                        return None, None
                     elif os_type.lower() == os_hint:
                         logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} with os type {os_type}')
-                        return subsystem
+                        return subsystem, schema
     except Exception as e:
         raise Exception(f"Error in GetDomainName: {e}")
-    return None
+    return None, None
 
 
 class AppendArgWithSpace(argparse.Action):
