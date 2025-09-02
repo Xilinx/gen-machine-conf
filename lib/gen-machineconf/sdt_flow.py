@@ -90,10 +90,9 @@ def RunLopperSubcommand(outdir, dts_path, hw_file, subcommand_args, lopper_args=
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 
-def RunLopperPlOverlaycommand(outdir, dts_path, hw_file, ps_dts_file, subcommand_args, lopper_args=''):
+def RunLopperPlOverlaycommand(outdir, dts_path, sdt_gen_pl_dtsi,
+                              hw_file, ps_dts_file, subcommand_args, lopper_args=''):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    hw_dir = pathlib.Path(hw_file).parent
-    sdt_gen_pl_dtsi = f"{hw_dir}/pl.dtsi"
     cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -O %s %s %s %s -- %s %s' % (
         lopper, outdir, lopper_args, hw_file, ps_dts_file, subcommand_args, sdt_gen_pl_dtsi)
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
@@ -359,7 +358,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
+            # Get Actual pl.dtsi path
+            hw_dir = pathlib.Path(self.args.hw_file).parent
+            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa9-zynq %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -416,7 +418,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
+            # Get Actual pl.dtsi path
+            hw_dir = pathlib.Path(self.args.hw_file).parent
+            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa53-zynqmp %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -475,7 +480,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
+            # Get Actual pl.dtsi path
+            hw_dir = pathlib.Path(self.args.hw_file).parent
+            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa72-versal %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
@@ -534,7 +542,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, DTSFile,
+            # Get Actual pl.dtsi path
+            hw_dir = pathlib.Path(self.args.hw_file).parent
+            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
+            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa78_0 %s'
                                       % (self.gen_pl_overlay),
                                       '-f')
