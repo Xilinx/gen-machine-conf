@@ -43,11 +43,12 @@ def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
     stdout = common_utils.RunCmd(cmd, outdir, shell=True)
     return stdout
 
-def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name, domain_yaml):
+def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name, domain_yamls):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
+    domain_yamls = ' -i '.join(domain_yamls)
     domain_args = "--auto -x '*.yaml'"
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s -f --enhanced -t %s -a domain_access %s -i %s %s %s' % (
-                             lopper, outdir, domain_name, domain_args, domain_yaml, hw_file, dts_file)
+    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced -t {domain_name} \
+            -a domain_access {domain_args} -i {domain_yamls} {hw_file} {dts_file}'
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 
@@ -118,28 +119,31 @@ def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''
 class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
     def GenDTSWithYaml(self):
         """
-        Generates a Device Tree Source (DTS) file using a specified YAML domain file if provided.
+        Generates a Device Tree Source (DTS) file based on the provided YAML hardware and domain files.
 
-        If a domain file is specified in the arguments, attempts to determine the domain name
-        for the current CPU and OS hint. If a domain is found, generates the DTS file using
-        the domain-specific YAML file and returns its path. If no domain is found, or if no
-        domain file is specified, uses the hardware file as the DTS source.
+        This method determines the domain name from the specified domain files, sanitizes it for use as a filename,
+        and then generates a DTS file using the Lopper tool. If no valid domain name is found, it logs a debug message.
 
         Returns:
             str: The path to the generated or selected DTS file.
         """
         yaml_dts_file = self.args.hw_file
+        domain_name = ''
         for _file in self.args.domain_file.split():
-            domain_name,_ = common_utils.GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
-            dts_file = yaml_dts_file
+            # The second value from GetDomainName is intentionally ignored
+            domain_name, _ = common_utils.GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
             if domain_name:
-                yaml_dts_file = os.path.join(self.args.dts_path, '%s.dts'
-                                               % domain_name.lower())
-                logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml file {_file}')
-                RunLopperGenDomainDTS(self.args.output, self.args.dts_path, dts_file,
-                                      yaml_dts_file, '/domains/%s' % domain_name, _file)
-            else:
-                logger.debug(f'No domain for cpu {self.cpuname} in {_file}')
+                break
+
+        if domain_name:
+            # Sanitize domain_name to avoid invalid filename characters
+            sanitized_domain_name = re.sub(r'[^A-Za-z0-9_\-]', '_', domain_name.lower())
+            yaml_dts_file = os.path.join(self.args.dts_path, '%s.dts' % sanitized_domain_name)
+            logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {self.args.domain_file}')
+            RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
+                                  yaml_dts_file, '/domains/%s' % domain_name, self.args.domain_file.split())
+        else:
+            logger.debug(f'No domain for cpu {self.cpuname} in any domain files')
 
         return yaml_dts_file
 
