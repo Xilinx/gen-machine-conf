@@ -69,7 +69,15 @@ def ReadTemplateYaml(yamlfile):
 
 def AddYamlDefaultValues(arg=None, default=None):
     '''
-    Looks for a matching argument in the YAML 'args' list and sets default value accordingly.
+    Searches for a matching argument in the YAML 'args' list and sets the default value accordingly.
+
+    Args:
+        arg (str or list, optional): The argument(s) to search for in the YAML 'args' list.
+        default (any, optional): The default value to return if no match is found.
+
+    Returns:
+        str or bool: Returns a string of collected values if found, True if only the argument is present,
+                     or the provided default value if no match is found.
     '''
     global TemplateYamlData
     TemplateYamlDataArgs = TemplateYamlData.get('args', [])
@@ -78,12 +86,18 @@ def AddYamlDefaultValues(arg=None, default=None):
             yamlarg = yamlarg.split()
         index, value = ContainsAny(arg, yamlarg)
         if value is not None:
-            # Safely get the next value if it exists
-            next_value = yamlarg[index + 1] if index + 1 < len(yamlarg) else ''
-
-            if not next_value or next_value.startswith('-'):
+            next_index = index + 1
+            collected = []
+            while next_index < len(yamlarg):
+                next_value = yamlarg[next_index]
+                if not next_value or next_value.startswith('-'):
+                    break
+                collected.append(next_value)
+                next_index += 1
+            if collected:
+                return ' '.join(collected)
+            else:
                 return True
-            return next_value
     return default
 
 
