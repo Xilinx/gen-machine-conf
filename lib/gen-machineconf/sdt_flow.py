@@ -47,8 +47,10 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name, doma
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     domain_yamls = ' -i '.join(domain_yamls)
     domain_args = "--auto -x '*.yaml'"
-    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced -t {domain_name} \
-            -a domain_access {domain_args} -i {domain_yamls} {hw_file} {dts_file}'
+    domain_access_args = f'-t {domain_name} -a domain_access' \
+            if os.environ.get('ENABLE_DOMAIN_ACCESS', '') else ''
+    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced {domain_access_args} \
+            {domain_args} -i {domain_yamls} {hw_file} {dts_file}'
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 
@@ -138,7 +140,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         if domain_name:
             # Sanitize domain_name to avoid invalid filename characters
             sanitized_domain_name = re.sub(r'[^A-Za-z0-9_\-]', '_', domain_name.lower())
-            yaml_dts_file = os.path.join(self.args.dts_path, '%s.dts' % sanitized_domain_name)
+            yaml_dts_file = os.path.join(self.args.output, '%s.dts' % sanitized_domain_name)
             logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {self.args.domain_file}')
             RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
                                   yaml_dts_file, '/domains/%s' % domain_name, self.args.domain_file.split())
