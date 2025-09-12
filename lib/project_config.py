@@ -118,6 +118,7 @@ def ConvertMCTargetsToKconfig(bbmctargets, multiconfig_min):
 LinuxDisabledInYaml = False
 def MultiConfigYaml(yaml_file, multiconfig_dict):
     multiconf_yaml = []
+    os_hint_yaml = []
     for _file in yaml_file.split():
         _file = os.path.expandvars(_file)
         # Expand the bitbake variables
@@ -128,12 +129,15 @@ def MultiConfigYaml(yaml_file, multiconfig_dict):
             cpuname = _mc_config_dict.get('cpuname', '')
             cpu = _mc_config_dict.get('cpu', '')
             os_hint = _mc_config_dict.get('os_hint', '')
-            domain_name,_ = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
-            if not domain_name and os_hint == 'linux':
-                global LinuxDisabledInYaml
-                LinuxDisabledInYaml = True
+            domain_name, _ = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
             if domain_name:
+                os_hint_yaml.append(os_hint)
                 multiconf_yaml.append(mc_config)
+        # Check if linux is present once all yamls parsed
+        if 'linux' not in os_hint_yaml:
+            global LinuxDisabledInYaml
+            LinuxDisabledInYaml = True
+
     return multiconf_yaml
 
 
