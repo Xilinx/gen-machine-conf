@@ -33,6 +33,18 @@ def CheckIP(prop, system_conffile):
     return ''
 
 
+def CheckDeviceCount(device_type, system_conffile):
+    processor = common_utils.GetConfigValue(
+        'CONFIG_SUBSYSTEM_PROCESSOR_', system_conffile, 'choice', '_SELECT=y')
+    global plnx_syshw_data
+    slaves = plnx_syshw_data["processor"][processor]["slaves"]
+    device_ips = []
+    for key, value in slaves.items():
+       if isinstance(value, dict) and value.get('device_type', '') == device_type:
+           device_ips.append(key)
+    return device_ips
+
+
 def GetIPProperty(device_name, system_conffile, prop='ip_name'):
     processor = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_PROCESSOR_', system_conffile, 'choice', '_SELECT=y')
@@ -141,9 +153,14 @@ def GetSysConsoleBootargs(args, system_conffile, soc_family, soc_variant):
         'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', system_conffile)
     if args.hw_flow == 'sdt' and soc_family != 'zynq':
         no_alias = 'y'
+
     serial_no = ''
     if no_alias == 'y':
-        if "_" in serialname:
+        serial_ips = CheckDeviceCount('serial', system_conffile)
+        if len(serial_ips) < 2:
+            # Set serial no as 0 if only one serial ip is enabled
+            serial_no = '0'
+        elif "_" in serialname:
             try:
                 serial_no = serialname.lower().split(serialipname + '_')[1]
             except IndexError:
