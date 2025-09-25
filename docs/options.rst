@@ -164,6 +164,11 @@ If neither an output directory nor a machine name is specified, the function gen
 unique subdirectory name by combining the base name of the hardware file (without its extension)
 and the first ten characters of its SHA-256 hash, ensuring uniqueness and traceability.
 
+.. note::
+
+   If the same output directory is used for multiple designs with the same machine name,
+   the tool will reuse the existing project configurations(config) for the new designs.
+
 **Usage Example**
 
 .. code-block:: console
@@ -175,6 +180,15 @@ and the first ten characters of its SHA-256 hash, ensuring uniqueness and tracea
 
 Location of the build configuration directory. If not specified, it creates a conf directory
 folder in the current working directory.
+Tool will use the specified directory to create/modify files in dts, machine and
+multiconfig directories.
+
+.. note::
+
+   The tool does not erase files but may overwrite them. For example, if you disable a
+   multiconfig, the references to that multiconfig will be removed for generated conf files,
+   but any previously generated machines/multiconfigs/dts files will remain in directories.
+
 
 **Usage Example**
 
@@ -372,6 +386,12 @@ The --localconf option in the parse-sdt command allows you to specify a path to 
 changes to the Yocto local.conf configuration will be written.
 This is useful for customizing build settings, machine features, or other project-specific
 parameters that need to be reflected in the Yocto build environment.
+
+.. note::
+
+   Using this option users may encounter an issue where MACHINE=<machine-name> is hardcoded
+   in the local.conf file. In such cases, when a user specifies the MACHINE variable on the
+   command line, the value from local.conf takes precedence instead of the command-line input.
 
 **Usage Example**
 
