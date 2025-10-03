@@ -55,6 +55,18 @@ config SUBSYSTEM_DISTRO_PETALINUX
         help
 '''
 
+Kconfig_multitarget_dtsi = '''
+config YOCTO_BBMC_{0}_DTSI
+        string "DTSI path for {1} (optional)"
+        default ""
+        {2}
+        help
+         The specified files shall be directly merged into the domain DTS.
+         Includes are applied in their listed order.
+
+         Specify multiple files using space separation.
+'''
+
 Kconfig_multitarget = '''
 config YOCTO_BBMC_{0}
         bool "{1}"
@@ -105,12 +117,17 @@ def GenMachineScriptsPath():
 
 def ConvertMCTargetsToKconfig(bbmctargets, multiconfig_min):
     multiconfig_str = 'menu "Multiconfig Targets"'
+    multiconfig_str += Kconfig_multitarget_dtsi.format(
+                                        'LINUX', 'linux', '')
     for target in bbmctargets:
         enable = 'n'
         if target in multiconfig_min:
             enable = 'y'
+        target_K = target.upper().replace('-', '_')
         multiconfig_str += Kconfig_multitarget.format(
-            target.upper().replace('-', '_'), target, enable)
+                                target_K, target, enable)
+        multiconfig_str += Kconfig_multitarget_dtsi.format(
+                    target_K, target, f'depends on YOCTO_BBMC_{target_K}')
     multiconfig_str += 'endmenu'
     return multiconfig_str
 

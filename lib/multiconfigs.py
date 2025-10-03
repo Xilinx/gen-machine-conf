@@ -235,6 +235,7 @@ class GenerateMultiConfigFiles():
         self.MultiConfUser = []
         self.MultiConfDict = {}
         self.args = args
+        self.system_conffile = system_conffile
 
         # Get the BBMC targets from system config file and generate
         # multiconfig targets only for enabled
