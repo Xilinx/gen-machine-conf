@@ -23,48 +23,44 @@ import kconfig_syshw
 
 logger = logging.getLogger('Gen-Machineconf')
 
-def IncludeCustomDtsi(outdir, proc_name, cpu, os_hint, yaml_file, dts_file):
+def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
     """
-    This will process the specified YAML files, include the referenced DTSI files,
-    and update the final DTS file accordingly.
+    Includes custom DTSI files into a final DTS file based on configuration.
 
-    Args:
-        outdir (str): Output directory where processed files will be stored.
-        proc_name (str): Name of the processor.
-        cpu (str): CPU identifier.
-        os_hint (str): Operating system hint.
-        yaml_file (str): Space-separated list of YAML file paths containing domain and DTSI information.
-        dts_file (str): Path to the final DTS file to which DTSI files will be included.
+    This function retrieves DTSI file paths from the system configuration using domain-specific
+    configuration key. For each DTSI file:
+      - Expands environment and bitbake variables in the file path.
+      - Verifies the file exists.
+      - Copies the file to the output directory with a domain-specific name.
+      - Checks if the file is an overlay (contains '/plugin/;') and raises an exception if so.
+      - Appends an #include directive for the DTSI file to the final DTS file.
 
-    Raises:
-        Exception: If a DTSI file does not exist or is an overlay file (contains '/plugin/;').
+    If any DTSI files are included, it triggers the Lopper tool to process the final DTS file.
     """
-    DomainCustomDtsi = ''
-    for _file in yaml_file.split():
-        domain_name, schema = common_utils.GetDomainName(proc_name, cpu, os_hint, _file)
-        if domain_name and schema:
-            dtsi_files = schema[domain_name].get('dtsi', '')
-            if isinstance(dtsi_files, list):
-                dtsi_files = ' '.join(dtsi_files)
-            for dtsi_file in dtsi_files.split():
-                dtsi_file = os.path.expandvars(dtsi_file)
-                # Expand the bitbake variables
-                dtsi_file = common_utils.Bitbake.expand(dtsi_file)
-                dtsi_file = os.path.realpath(dtsi_file)
-                if not os.path.isfile(dtsi_file):
-                    raise Exception(f'Failed to get dtsi: {dtsi_file}')
-                DomainCustomDtsi = f'{domain_name}_{os.path.basename(dtsi_file)}'
-                common_utils.CopyFile(dtsi_file, os.path.join(outdir, DomainCustomDtsi))
-                with open(dtsi_file, 'r') as f:
-                    if any('/plugin/;' in line for line in f):
-                        raise Exception(f'{dtsi_file} is an overlay file and cannot be appended to the final dts file.')
-                common_utils.AddStrToFile(dts_file, f'#include "{dtsi_file}"\n', mode='a+')
-            if dtsi_files:
-                logger.debug(f'Generationg {dts_file} including {dtsi_files}')
-                RunLopperUsingDomainFile([], outdir, outdir, dts_file, dts_file)
-            else:
-                logger.debug(f'No dtsi key found in the YAML file.')
+    if not mcname:
+        mcname = 'linux'
+    dtsi_conf = f'CONFIG_YOCTO_BBMC_{mcname.upper()}_DTSI'
+    dtsi_files = common_utils.GetConfigValue(dtsi_conf, system_conffile)
 
+    for dtsi_file in dtsi_files.split():
+        dtsi_file = os.path.expandvars(dtsi_file)
+        # Expand the bitbake variables
+        dtsi_file = common_utils.Bitbake.expand(dtsi_file)
+        dtsi_file = os.path.realpath(dtsi_file)
+        if not os.path.isfile(dtsi_file):
+            raise Exception(f'Failed to get dtsi: {dtsi_file}')
+
+        DomainCustomDtsi = f'{mcname}_{os.path.basename(dtsi_file)}'
+        with open(dtsi_file, 'r') as f:
+            for line in f:
+                if '/plugin/;' in line:
+                    raise Exception(f'{dtsi_file} is an overlay file and cannot be appended to the final dts file.')
+                    break
+        common_utils.CopyFile(dtsi_file, os.path.join(outdir, DomainCustomDtsi))
+        common_utils.AddStrToFile(dts_file, f'#include "{dtsi_file}"\n', mode='a+')
+    if dtsi_files:
+        logger.debug(f'Generating {dts_file} including {dtsi_files}')
+        RunLopperUsingDomainFile([], outdir, outdir, dts_file, dts_file)
 
 def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
@@ -226,8 +222,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         common_utils.ReplaceStrFromFile(
             features, 'DISTRO_FEATURES', 'MACHINE_FEATURES')
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
-        IncludeCustomDtsi(self.args.output, self.cpuname, self.cpu,
-                                             self.os_hint, self.args.domain_file, dts_file)
+        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         conf_file_str += 'ESW_MACHINE = "%s"\n' % self.cpuname
         conf_file_str += extra_conf
         common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -418,8 +413,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             '-f')
-        IncludeCustomDtsi(self.args.output, self.cpuname, self.cpu,
-                                             self.os_hint, self.args.domain_file, dts_file)
+        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -477,8 +471,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
-        IncludeCustomDtsi(self.args.output, self.cpuname, self.cpu,
-                                             self.os_hint, self.args.domain_file, dts_file)
+        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -537,8 +530,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
-        IncludeCustomDtsi(self.args.output, self.cpuname, self.cpu,
-                                             self.os_hint, self.args.domain_file, dts_file)
+        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -597,8 +589,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
-        IncludeCustomDtsi(self.args.output, self.cpuname, self.cpu,
-                                             self.os_hint, self.args.domain_file, dts_file)
+        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')

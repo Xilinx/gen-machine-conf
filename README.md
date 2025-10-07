@@ -72,7 +72,3 @@ This repo depends on:
         https://git.yoctoproject.org/meta-xilinx-tools (official version)
         https://github.com/Xilinx/meta-xilinx-tools (development and amd xilinx release)
 	branch: langdale or amd xilinx release version (e.g. rel-v2023.1)
-
-	URI: https://github.com/Xilinx/meta-petalinux
-	branch: langdale or amd xilinx release version (e.g. rel-v2023.1)
-
