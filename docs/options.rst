@@ -32,7 +32,7 @@ such as multiple .xsa or system-top.dts files in the same directory.
 
     $ gen-machine-conf --hw-description ./design.xsa
     $ gen-machine-conf --hw-description ./sdt_output/
-    $ gen-machine-conf --hw-description https://petalinux.xilinx.com/bsp.tar.gz
+    $ gen-machine-conf --hw-description https://edf.amd.com/bsp.tar.gz
     $ gen-machine-conf --hw-description ./bsp.tar.gz
 
 --template <yaml_file>
@@ -57,7 +57,7 @@ it and apply them to arguments that are not explicitly set on the command line.
 .. code-block:: console
 
     args:
-        - --hw-description https://petalinux.xilinx.com/sswreleases/rel-v<VERSION>/hdf-examples/<VERSION>.tar.gz
+        - --hw-description https://edf.amd.com/sswreleases/rel-v<VERSION>/hdf-examples/<VERSION>.tar.gz
         - --machine-name versal-2ve-2vm-vek385-sdt-seg
         - -g full
         - --domain-file vek385.yaml openamp.yaml

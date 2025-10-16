@@ -10,7 +10,7 @@ The below examples generally take one of five forms:
 - parse-xsa Custom .xsa; This is an example of using the .xsa file
   output by AMD `Vivado <https://www.xilinx.com/products/design-tools/vivado.html>`_ Design Suite
 - parse-xsa .xsa from AMD; This is an example of using an AMD™ provided xsa from our JFrog Artifactory.
-  gen-machine-conf is capable of ingesting these directly from the web at https://petalinux.xilinx.com/sswreleases/rel-v<VERSION>/hdf-examples/<VERSION>
+  gen-machine-conf is capable of ingesting these directly from the web at https://edf.amd.com/sswreleases/rel-v<VERSION>/hdf-examples/<VERSION>
 - parse-sdt Without pl overlay; This method is for when users want their programmable logic loaded at
   boot by the AMD™ bootloaders
 - parse-sdt With full bitstream pl overlay; This method is used when users want to delay loading of
@@ -68,12 +68,12 @@ Using gen-machine-conf with native sysroot
 ------------------------------------------
 
 gen-machine-conf needs the additional host tools like conf, mconf and lopper tools. You can get these tools
-by downloading and installing pre-built buildtools installer from https://petalinux.xilinx.com/sswreleases/<VERSION>/sdkupdate/buildtools.
+by downloading and installing pre-built buildtools installer from https://edf.amd.com/sswreleases/<VERSION>/sdkupdate/buildtools.
 
 .. code-block:: console
 
   # Locate and download the pre-built buildtools
-  $ wget https://petalinux.xilinx.com/sswreleases/rel-v2025.2/sdkupdate/buildtools
+  $ wget https://edf.amd.com/sswreleases/rel-v2025.2/sdkupdate/buildtools
   $ chmod a+x ./buildtools
 
   # Execute the installation script
