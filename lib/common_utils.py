@@ -303,10 +303,13 @@ def AddNativeSysrootPath(native_sysroot):
     else:
         # This list is BACKWARDS of oe-run-native, ensures we get the same final order
         # Skip python3-native, as this breaks subsequent calls to bitbake
-        for entry in os.listdir(os.path.join(native_sysroot, 'usr', 'bin')):
-            special_bin_dir = os.path.join(native_sysroot, 'usr', 'bin', entry)
-            if os.path.isdir(special_bin_dir) and entry.endswith('-native') and entry != 'python3-native':
-                os.environ["PATH"] = special_bin_dir + os.pathsep + os.environ['PATH']
+        try:
+            for entry in os.listdir(os.path.join(native_sysroot, 'usr', 'bin')):
+                special_bin_dir = os.path.join(native_sysroot, 'usr', 'bin', entry)
+                if os.path.isdir(special_bin_dir) and entry.endswith('-native') and entry != 'python3-native':
+                    os.environ["PATH"] = special_bin_dir + os.pathsep + os.environ['PATH']
+        except FileNotFoundError as e:
+            logger.warning('Expected directory or file not found: %s' % (str(e)))
 
         for bindir in ['sbin', 'usr/sbin', 'bin', 'usr/bin']:
             add_path = os.path.join(native_sysroot, bindir)
@@ -473,6 +476,13 @@ def ValidateHashFile(output, macro, infile, update=True):
 
 def check_tool(tool, recipe=None, failed_msg=None, skip_path=False):
     '''Check the tool exists in PATH variable'''
+    if not failed_msg:
+        if recipe:
+            failed_msg = "The tool %s is required but not found.  This is usually built with the bitbake target of %s." % (tool, recipe)
+            if Bitbake.disabled:
+                failed_msg += "  However, bitbake is unavailable."
+        else:
+            failed_msg = "The tool %s is required but not found.  You may have to install this tool into your environment." % (tool)
     tool = tool.lower()
     if skip_path:
         tool_path = ''
@@ -487,9 +497,7 @@ def check_tool(tool, recipe=None, failed_msg=None, skip_path=False):
 
         tool_path = shutil.which(tool)
         if not tool_path:
-            if failed_msg:
-                raise Exception(failed_msg)
-            raise Exception('%s is required but not found in the path' % tool)
+            raise Exception(failed_msg)
     return tool_path
 
 
@@ -577,27 +585,42 @@ def CheckLopperUtilsPaths(lopper):
 
 
 def GetLopperUtilsPath():
-    lopper_err_msg = 'Unable to find lopper, please ensure this is in your '
-    lopper_err_msg += 'environment or lopper can be built by bitbake. See README.building.md '
-    lopper_err_msg += 'in meta-xilinx layer for more details.'
+    lopper_err_msg  = "Be sure that meta-virtualization, meta-xilinx-core, and meta-xilinx-standalone "
+    lopper_err_msg += "(and their dependencies) are part of your build configuration.  This may also "
+    lopper_err_msg += "mean your build's tmp directory is corrupted.  Often removing it will fix the issue."
 
-    lopper = check_tool('lopper', 'esw-conf-native', lopper_err_msg)
+    if Bitbake.disabled:
+        lopper_err_msg = "Bitbake is unavailable to build lopper and related components."
+
+    try:
+        lopper = check_tool('lopper', 'esw-conf-native', "The tool lopper is required but not found.  This is usually built as a dependency to the bitbake target of esw-conf-native.")
+    except Exception as e:
+        if not Bitbake.disabled:
+            raise Exception(str(e) + "  " + lopper_err_msg)
+        else:
+            raise e
 
     lopper, lopper_dir, lops_dir, embeddedsw = CheckLopperUtilsPaths(lopper)
 
     '''Check if lopper from PATH have all required directories, if not construct the sysroot'''
-    if (lops_dir and not os.path.isdir(lops_dir)) or not os.path.isdir(embeddedsw):
-        logger.warning("The lopper 'lops' or 'embeddedsw configuration' files are missing, Trying to get recipe sysroot using bitbake")
-        lopper = check_tool('lopper', 'esw-conf-native', lopper_err_msg, skip_path=True)
+    if (lops_dir and not os.path.isdir(lops_dir)) or (embeddedsw and not os.path.isdir(embeddedsw)):
+        logger.warning("The lopper 'lops' or 'embeddedsw configuration' files in your path are not correct, Trying to get recipe sysroot using bitbake.")
+        try:
+            lopper = check_tool('lopper', 'esw-conf-native', lopper_err_msg, skip_path=True)
+        except Exception as e:
+            if not Bitbake.disabled:
+                raise Exception(str(e) + "  " + lopper_err_msg)
+            else:
+                raise e
         lopper, lopper_dir, lops_dir, embeddedsw = CheckLopperUtilsPaths(lopper)
 
-    if not os.path.isdir(lops_dir):
-        raise Exception("The lopper 'lops' are missing.")
+    if (lops_dir and not os.path.isdir(lops_dir)):
+        raise Exception("The lopper 'lops'  in your path is not correct.  " + lopper_err_msg)
 
     embeddedsw = os.path.join(os.path.dirname(lopper_dir), 'share', 'embeddedsw')
 
-    if not os.path.isdir(embeddedsw):
-        raise Exception("The embeddedsw configuration files are missing.")
+    if embeddedsw and not os.path.isdir(embeddedsw):
+        raise Exception("The esw-conf configuration files are missing.  " + lopper_err_msg)
 
     return lopper, lopper_dir, lops_dir, embeddedsw
 
@@ -608,12 +631,10 @@ def startBitbake(disabled=False):
         if not disabled:
             try:
                 Bitbake.initialize()
-            except Exception:
-                logger.warning("Bitbake is not available, some functionality may be reduced.")
+            except Exception as e:
                 Bitbake.shutdown()
                 Bitbake.disabled = True
-        else:
-            logger.info("Bitbake is not available, some functionality may be reduced.")
+                raise e
 
 class FetchError(Exception):
     """Fetch exception transfered from bitbake"""
@@ -627,6 +648,7 @@ class FetchError(Exception):
 
 class bitbake():
     disabled = False
+    disabled_exception = None
     tinfoil = None
     tinfoilPrepared = False
     recipes_parsed = False
@@ -635,11 +657,13 @@ class bitbake():
     def __init__(self, config_only=False, prefile=[], disabled=False):
         if disabled:
             self.disabled = True
+            self.disabled_reason = "Not initialized"
         else:
             try:
                 import bb.tinfoil
             except Exception as e:
                 self.disabled = True
+                self.disabled_reason = "Import of bb.tinfoil failed: " + str(e)
 
         self.prepare_args = { 'config_only':config_only , 'prefile':prefile }
 
@@ -664,7 +688,7 @@ class bitbake():
 
     def initialize(self):
         if self.disabled:
-            raise Exception("Bitbake is not available")
+            raise Exception("Bitbake is not available: " + self.disabled_reason)
 
         self.tinfoil = bb.tinfoil.Tinfoil(tracking=False)
         self.tinfoilPrepared = False
@@ -700,10 +724,13 @@ class bitbake():
         if not self.tinfoil:
             self.initialize()
 
-        self.tinfoilConfig = bb.tinfoil.TinfoilConfigParameters(config_only=config_only, quiet=2, prefile=prefile)
-        self.tinfoil.prepare(config_only=config_only, quiet=2, config_params=self.tinfoilConfig)
-        self.tinfoilPrepared = True
-        self.recipes_parsed = False
+        try:
+            self.tinfoilConfig = bb.tinfoil.TinfoilConfigParameters(config_only=config_only, quiet=2, prefile=prefile)
+            self.tinfoil.prepare(config_only=config_only, quiet=2, config_params=self.tinfoilConfig)
+            self.tinfoilPrepared = True
+            self.recipes_parsed = False
+        except bb.BBHandledException as e:
+            raise Exception("Bitbake failed to start")
 
     def prepare_again(self):
         logger.debug('Prepare bitbake again (configuration change)')
