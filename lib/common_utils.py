@@ -65,6 +65,7 @@ def ReadTemplateYaml(yamlfile):
         raise Exception('Specified yaml file doesnot exists: %s' % yamlfile)
     global TemplateYamlData
     TemplateYamlData = ReadYaml(yamlfile) or {}
+    TemplateYamlData = CleanupEscapes(TemplateYamlData)
 
 
 def AddYamlDefaultValues(arg=None, default=None):
@@ -530,6 +531,24 @@ def ReadYaml(yamlfile):
             return yaml.safe_load(yaml_fd)
         except yaml.YAMLError as exc:
             raise Exception(exc)
+
+
+def CleanupEscapes(obj):
+    """
+    Recursively removes backslash escape sequences followed by any
+    whitespace, tab, or newline characters from strings within the given object.
+    """
+    if isinstance(obj, str):
+        # Remove backslash followed by any whitespace or tabs or newline
+        return re.sub(r'\\\s*', ' ', obj)
+    elif isinstance(obj, list):
+        return [CleanupEscapes(x) for x in obj]
+    elif isinstance(obj, tuple):
+        return tuple(CleanupEscapes(x) for x in obj)
+    elif isinstance(obj, dict):
+        return {k: CleanupEscapes(v) for k, v in obj.items()}
+    else:
+        return obj
 
 
 def GetFilesFromDir(dirpath, file_ext=''):
