@@ -600,7 +600,19 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
     def MBRiscVLinux(self):
         dts_file = os.path.join(self.args.dts_path if self.args.dts_path else '',
                                     'microblaze-riscv-linux.dts')
-        logger.warning('Microblaze riscv Linux configuration is not yet implemented')
+        self.GenLinuxDts = True
+        self.MultiConfDict['LinuxDT'] = dts_file
+        logger.info('Generating microblaze riscv Linux configuration [ %s ]' % self.domain)
+
+        # Generate the DTs file using user specified domain yaml file
+        DTSFile = self.GenDTSWithYaml()
+
+        # Generate Linux dts for Microblaze-V
+        lopper_args = ' -f --enhanced '
+        lop_files = []
+        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, DTSFile,
+                            dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
+                            lopper_args)
 
     def MBRiscVZephyr(self):
         mc_filename = "%s-%s" % (self.args.machine, self.mcname)
