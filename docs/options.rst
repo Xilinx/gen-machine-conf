@@ -34,6 +34,7 @@ such as multiple .xsa or system-top.dts files in the same directory.
     $ gen-machine-conf --hw-description ./sdt_output/
     $ gen-machine-conf --hw-description https://edf.amd.com/bsp.tar.gz
     $ gen-machine-conf --hw-description ./bsp.tar.gz
+    $ gen-machine-conf --hw-description "git://github.com/sdt.git;branch=<BRANCH>;rev=<SRCREV>;S=<SUBDIR>"
 
 --template <yaml_file>
 ~~~~~~~~~~~~~~~~~~~~~~

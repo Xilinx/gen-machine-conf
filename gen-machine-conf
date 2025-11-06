@@ -28,7 +28,7 @@ plugins = []
 global exc_backtrace
 exc_backtrace = False
 
-__version__ = '2025.2'
+__version__ = '2026.1'
 
 def DisplayVersion(unparsed_args):
     '''Display Gen Machine Conf version and exit'''
@@ -288,20 +288,37 @@ def main():
     subparsers = parser.add_subparsers(title='subcommands', metavar='<subcommand>',
                                        dest='subcommand')
 
+    # Check if help selected to skip hw_description check
+    parserhelp = False
+    if {'-h', '--help'} & set(unparsed_args):
+        parserhelp = True
+
     # PetaLinux configuration tool skips bitbake usage
     if 'PETALINUX' in os.environ.keys() or global_args.petalinux:
         common_utils.startBitbake(disabled=True)
     else:
         # Try to start bitbake
-        common_utils.startBitbake()
+        try:
+            common_utils.startBitbake()
+        except Exception as e:
+            if not parserhelp:
+                if global_args.native_sysroot:
+                    logger.debug(str(e))
+                    logger.warning("Unable to start the bitbake server, bitbake may be required to build any missing tools and configurations.")
+                else:
+                    logger.error(str(e))
+                    raise Exception("Unable to start the bitbake server, bitbake is required for various tools and configurations.  " \
+                                    "Be sure to have bitbake in your environment's PATH and PYTHONPATH.  See oe-init-build-env.")
         if not common_utils.Bitbake.disabled:
             try:
                 # prepare can fail if there is an invalid configuration
                 common_utils.Bitbake.prepare(True)
-            except:
-                logger.warning('Bitbake exception, bitbake is not available, some functionality may be reduced.')
+            except Exception as e:
                 common_utils.Bitbake.shutdown()
                 common_utils.Bitbake.disabled = True
+                logger.error("The error above must be corrected before running gen-machine-conf.\n")
+                if not parserhelp:
+                    raise e
 
     # Try to get BBPATH to load modules
     # We can skip this by setting SKIP_BBPATH_SEARCH variable from env
@@ -314,17 +331,6 @@ def main():
     else:
         bbpath = common_utils.Bitbake.getVar('BBPATH') or ''
 
-        # We can only check for duplicate machines when bbpath checking is available
-        if global_args.machine:
-            logger.debug('checking for machine %s' % global_args.machine)
-
-            for path in bbpath.split(':'):
-                check_path = os.path.join(path, 'conf/machine', global_args.machine + '.conf')
-                logger.debug('  checking %s' % check_path)
-                if os.path.exists(check_path) and check_path != os.path.join(global_args.config_dir, 'machine', global_args.machine + '.conf'):
-                    logger.warning('A machine %s was found in %s, this may conflict with the machine you specified.  It is recommended to use a different name for your machine.' % (global_args.machine, check_path))
-                    break
-
     # Load the plugins from BBPATH and lib/gen-machineconf directory
     for path in bbpath.split(':') + [scripts_path]:
         pluginpath = os.path.join(path, 'lib', 'gen-machineconf')
@@ -334,11 +340,6 @@ def main():
     for plugin in plugins:
         if hasattr(plugin, 'register_commands'):
             plugin.register_commands(subparsers)
-
-    # Check if help selected to skip hw_description check
-    parserhelp = False
-    if {'-h', '--help'} & set(unparsed_args):
-        parserhelp = True
 
     # Check the hw_description description given or not.
     # Adding check here as required=True with add_argument
@@ -409,11 +410,26 @@ def main():
     common_utils.AddNativeSysrootPath(args.native_sysroot)
 
     # We need conf and mconf
-    common_utils.check_tool('mconf', 'kconfig-frontends-native',
-            'Tool mconf is required but not found, Check the README.md for how to use --native-sysroot')
+    try:
+        common_utils.check_tool('mconf', 'kconfig-frontends-native')
+        common_utils.check_tool('conf', 'kconfig-frontends-native')
+    except Exception as e:
+        if not common_utils.Bitbake.disabled:
+            raise Exception(str(e) + "  This often means your build's tmp directory is corrupted.  Often removing it will fix the issue.")
+        else:
+            raise e
 
-    common_utils.check_tool('conf', 'kconfig-frontends-native',
-            'Tool conf is required but not found, Check the README.md for how to use --native-sysroot')
+    if not common_utils.Bitbake.disabled:
+        # We can only check for duplicate machines when bbpath checking is available
+        if global_args.machine:
+            logger.debug('checking for machine %s' % global_args.machine)
+
+            for path in bbpath.split(':'):
+                check_path = os.path.join(path, 'conf/machine', global_args.machine + '.conf')
+                logger.debug('  checking %s' % check_path)
+                if os.path.exists(check_path) and check_path != os.path.join(global_args.config_dir, 'machine', global_args.machine + '.conf'):
+                    logger.warning('A machine %s was found in %s, this may conflict with the machine you specified.  It is recommended to use a different name for your machine.' % (global_args.machine, check_path))
+                    break
 
     ret = args.func(args)
     return ret

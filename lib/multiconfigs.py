@@ -19,7 +19,7 @@ logger = logging.getLogger('Gen-Machineconf')
 
 class ParseMultiConfigFiles():
     def ArmCortexSetup(self):
-        cpu = self.cpu[4:].replace('-', '')
+        cpu = self.cpu[4:].replace('-', '').replace('.', '-')
         domain_suffix = '-%s' % self.domain if self.domain and self.domain != 'None' else ''
         if self.os_hint != 'None':
             if self.os_hint.startswith('linux'):
@@ -60,7 +60,7 @@ class ParseMultiConfigFiles():
         pass
 
     def MicroblazeVSetup(self):
-        cpu = self.cpu.replace('xlnx,','')
+        cpu = self.cpu.replace('xlnx,','').replace('.', '-')
         if self.args.soc_family == 'microblaze':
             mc_name = ''
             os_hint = 'linux'

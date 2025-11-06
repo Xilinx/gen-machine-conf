@@ -21,6 +21,15 @@ config SUBSYSTEM_DT_XSCT_WORKSPACE
 	help
 	  Provide the location to use as Device-tree XSCT workspace location.
 
+config SUBSYSTEM_DT_DOMAIN_ACCESS
+	bool "Enable Domain Access"
+	default n
+	depends on SUBSYSTEM_SDT_FLOW
+	help
+	  Enable this option to use the domain_access assist to generate domain-specific
+	  DTS files from the specified YAML files specified in the
+	  YOCTO_MC_DOMAIN_FILEPATH configuration
+
 config SUBSYSTEM_DTB_PADDING_SIZE
 	hex "DTB padding size"
 	default 0x1000
