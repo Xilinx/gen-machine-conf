@@ -254,10 +254,10 @@ def CopyFile(infile, dest, follow_symlinks=False):
 
 
 def RunCmd(command, out_dir, extraenv=None,
-           failed_msg='', shell=False, checkcall=False):
+           failed_msg='External command failed', shell=False, checkcall=False):
     '''Run Shell commands from python'''
     command = command.split() if not shell else command
-    logger.debug(command)
+    logger.debug('Command: %s' % command)
     env = os.environ.copy()
     if extraenv:
         for k in extraenv:
@@ -267,26 +267,39 @@ def RunCmd(command, out_dir, extraenv=None,
             command, env=extraenv, cwd=out_dir, shell=shell)
         return
     else:
-        process = subprocess.Popen(command,
+        try:
+            process = subprocess.Popen(command,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    env=env, shell=shell,
                                    executable='/bin/bash',
                                    cwd=out_dir)
-        stdout, stderr = process.communicate()
-        if process.returncode != 0:
-            raise Exception('\n%s\n%s\n%s' %
-                            (stdout.decode('utf-8'),
-                             stderr.decode('utf-8'),
-                             failed_msg))
-        else:
+
+            stdout, stderr = process.communicate()
+
             if not stdout is None:
                 stdout = stdout.decode("utf-8")
             if not stderr is None:
                 stderr = stderr.decode("utf-8")
-        logger.debug('\n%s\n%s\n%s' % (stdout, stderr, failed_msg))
-        return stdout, stderr
 
+            rc = process.returncode
+
+            logger.debug('\nstdout: %s\nstderr: %s\nrc: %s\n' % (stdout or "(blank)", stderr or "(blank)", rc))
+        except FileNotFoundError:
+            raise Exception('File Not Found: env:%s\ncommand: %s' %
+                            (env,
+                             command))
+
+        if rc != 0:
+            raise Exception('%s\nenv:%s\ncommand: %s\nstdout: %s\nstderr: %s\nrc: %s\n' %
+                            (failed_msg,
+                             env,
+                             command,
+                             stdout or "(blank)",
+                             stderr or "(blank)",
+                             rc))
+
+        return stdout, stderr
 
 # Check mconf utilities
 def AddNativeSysrootPath(native_sysroot):
