@@ -25,6 +25,10 @@ See detailed examples in [Gen-Machine-Conf Examples](docs/examples.rst)
 
 See detailed commandline options in [Gen-Machine-Conf options](docs/options.rst)
 
+See functional architecture diagram in [Gen-Machine-Conf Functional Diagram](docs/functional_diagram.rst)
+
+See detailed workflow flowcharts in [Gen-Machine-Conf Flowcharts](docs/flowcharts.rst)
+
 Maintainers, Patches/Submissions, Community
 -------------------------------------------
 
@@ -53,22 +57,22 @@ This repo depends on:
 
 	URI: https://git.yoctoproject.org/poky
 	layers: meta, meta-poky
-	branch: langdale
+	branch: scarthgap
 
 	URI: https://git.openembedded.org/meta-openembedded
 	layers: meta-oe, meta-perl, meta-python, meta-filesystems, meta-gnome,
             meta-multimedia, meta-networking, meta-webserver, meta-xfce,
             meta-initramfs.
-	branch: langdale
+	branch: scarthgap
 
 	URI:
         https://git.yoctoproject.org/meta-xilinx (official version)
         https://github.com/Xilinx/meta-xilinx (development and amd xilinx release)
 	layers: meta-xilinx-core, meta-xilinx-microblaze, meta-xilinx-bsp,
             meta-xilinx-standalone, meta-xilinx-vendor.
-	branch: langdale or amd xilinx release version (e.g. rel-v2023.1)
+	branch: scarthgap or amd xilinx release version (e.g. rel-v2026.1)
 
 	URI:
         https://git.yoctoproject.org/meta-xilinx-tools (official version)
         https://github.com/Xilinx/meta-xilinx-tools (development and amd xilinx release)
-	branch: langdale or amd xilinx release version (e.g. rel-v2023.1)
+	branch: scarthgap or amd xilinx release version (e.g. rel-v2026.1)
