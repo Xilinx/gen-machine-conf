@@ -625,11 +625,6 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         logger.info('Generating microblaze riscv %s configuration [ %s ]' % (self.os_hint, self.domain))
         # Generate Domain specific dts file
         domain_dts_file = self.GenDomainDTS(DomainDTS, 'lop-microblaze-riscv.dts')
-        # TODO: lopper is not generating cflags.yaml into output directory to use this with zephyr_dt
-        # copy manually until the issue is fixed
-        common_utils.CopyFile(os.path.join(self.args.dts_path, 'cflags.yaml'),
-                              os.path.join(self.args.output, 'cflags.yaml'))
-        common_utils.RemoveFile(os.path.join(self.args.dts_path, 'cflags.yaml'))
         # Generate zephyr dt
         RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'], self.args.output, self.args.dts_path,
                                  DomainDTS, BoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
@@ -661,24 +656,43 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
                                   mode='a+')
         self.MBTunesDone = True
 
-    # Asu part
     def MBRiscVTuneFeatures(self):
+        if self.MBVTunesDone:
+            return
         logger.info('Generating microblaze riscv processor tunes')
-        #stdout = RunLopperUsingDomainFile(['lop-microblaze-yocto.dts'],
-        #                                  self.args.output, os.getcwd(), self.args.hw_file)
-        MB_riscv_variables = '# compatible = "xlnx,asu-microblaze_riscv";\n'
-        MB_riscv_variables += 'TUNEVALID[rv32imac_zicsr_zifencei] = "Enable-march=rv32imac_zicsr_zifencei"\n'
-        MB_riscv_variables += 'TUNE_CCARGS:append = "${@bb.utils.contains(\'TUNE_FEATURES\', \'rv32imac_zicsr_zifencei\', \' -march=rv32imac_zicsr_zifencei\', \' \', d)}"\n'
-        MB_riscv_variables += 'AVAILTUNES += "microblaze-riscv-asu"\n'
-        MB_riscv_variables += 'TUNE_FEATURES:tune-microblaze-riscv-asu = "riscv32nf rv32imac_zicsr_zifencei"\n'
-        MB_riscv_variables += 'TUNE_ARCH:tune-microblaze-riscv-asu = "riscv32"\n'
-        MB_riscv_variables += 'TUNE_PKGARCH:tune-microblaze-riscv-asu = "riscv32nf"\n'
-        MB_riscv_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-riscv-asu = "${TUNE_PKGARCH}"\n'
-        microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
-        common_utils.AddStrToFile(microblaze_riscv_inc, MB_riscv_variables)
-        common_utils.AddStrToFile(microblaze_riscv_inc,
+        RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'],
+                                 self.args.output, os.getcwd(), self.args.hw_file)
+        cflags_file = os.path.join(self.args.output, 'cflags.yaml')
+        if not os.path.isfile(cflags_file):
+            raise Exception('cflags file does not exist: %s, required to generate the mb-v tune features' % cflags_file)
+        cflags_data = common_utils.ReadYaml(cflags_file) or {}
+        m_arch = ''
+        microblaze_riscv_inc = ''
+        if 'cflags' in cflags_data:
+            cflags_str = cflags_data['cflags']
+            # Extract -march value
+            march_match = re.search(r'-march=(\S+)', cflags_str)
+            if march_match:
+                m_arch = march_match.group(1)
+        if m_arch:
+            MBV_variables = '# compatible = "xlnx,microblaze_riscv";\n'
+            MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+            microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
+            common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables)
+        self.MBVTunesDone = True
+        return microblaze_riscv_inc
+
+    def MBRiscVAsuTuneFeatures(self):
+        if self.MBVTunesDone:
+            return
+        microblaze_riscv_inc = self.MBRiscVTuneFeatures()
+        if microblaze_riscv_inc:
+            MBV_variables = 'AVAILTUNES += "microblaze-v"\n'
+            MBV_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-v = "${TUNE_PKGARCH}"\n'
+            common_utils.AddStrToFile(microblaze_riscv_inc,
                                   '\nrequire conf/machine/include/riscv/tune-riscv.inc\n',
                                   mode='a+')
+            common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables, mode='a+')
 
     def PmuMicroblaze(self):
         ''' pmu-microblaze is ALWAYS Baremetal, no domain'''
@@ -701,12 +715,13 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
     def AsuMicroblaze(self):
         logger.info('Generating microblaze baremetal configuration for %s ASU' % self.args.soc_family)
-        self.MBRiscVTuneFeatures()
+        self.MBRiscVAsuTuneFeatures()
         # TARGET_CFLAGS need to be update
         extra_conf_str = ''
         self.GenLibxilFeatures('', extra_conf_str)
 
     def MBRiscVSetup(self):
+        self.MBRiscVTuneFeatures()
         if self.os_hint.startswith('linux'):
             if not self.GenLinuxDts:
                 self.MBRiscVLinux()
@@ -855,7 +870,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
     def __init__(self, args, multi_conf_map, system_conffile=''):
         multiconfigs.GenerateMultiConfigFiles.__init__(self, args, multi_conf_map, system_conffile=system_conffile)
 
-        self.MBTunesDone = self.GenLinuxDts = False
+        self.MBTunesDone = self.MBVTunesDone = self.GenLinuxDts = False
         self.gen_pl_overlay = None
 
         if system_conffile:
