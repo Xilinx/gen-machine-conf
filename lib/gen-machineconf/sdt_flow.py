@@ -666,9 +666,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
                                   mode='a+')
         self.MBTunesDone = True
 
-    def MBRiscVTuneFeatures(self):
-        if self.MBVTunesDone:
-            return
+    def GetRiscVTuneFeatures(self):
         logger.info('Generating microblaze riscv processor tunes')
         RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'],
                                  self.args.output, os.getcwd(), self.args.hw_file)
@@ -684,25 +682,32 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             march_match = re.search(r'-march=(\S+)', cflags_str)
             if march_match:
                 m_arch = march_match.group(1)
+        return m_arch
+
+    def MBRiscVTuneFeatures(self):
+        if self.MBVTunesDone:
+            return
+        m_arch = self.GetRiscVTuneFeatures()
         if m_arch:
             MBV_variables = '# compatible = "xlnx,microblaze_riscv";\n'
-            MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+            MBV_variables += f'TUNE_FEATURES:tune-microblaze-riscv = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
             microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
             common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables)
         self.MBVTunesDone = True
-        return microblaze_riscv_inc
 
     def MBRiscVAsuTuneFeatures(self):
-        if self.MBVTunesDone:
-            return
-        microblaze_riscv_inc = self.MBRiscVTuneFeatures()
-        if microblaze_riscv_inc:
-            MBV_variables = 'AVAILTUNES += "microblaze-v"\n'
-            MBV_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-v = "${TUNE_PKGARCH}"\n'
-            common_utils.AddStrToFile(microblaze_riscv_inc,
-                                  '\nrequire conf/machine/include/riscv/tune-riscv.inc\n',
-                                  mode='a+')
-            common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables, mode='a+')
+        m_arch = self.GetRiscVTuneFeatures()
+        if m_arch:
+            MBV_variables = '# compatible = "xlnx,microblaze_riscv";\n'
+            MBV_variables += f'TUNE_FEATURES:tune-microblaze-riscv = "{m_arch}"\n'
+            MBV_variables += 'AVAILTUNES += "microblaze-riscv"\n'
+            MBV_variables += f'TUNEVALID[{m_arch}] = "Enable-march={m_arch}"\n'
+            MBV_variables += 'TUNE_ARCH:tune-microblaze-riscv = "riscv32"\n'
+            MBV_variables += 'TUNE_PKGARCH:tune-microblaze-riscv = "riscv32nf"\n'
+            MBV_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-riscv = "${TUNE_PKGARCH}"\n'
+            MBV_variables += '\nrequire conf/machine/include/riscv/tune-riscv.inc\n'
+            microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
+            common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables)
 
     def PmuMicroblaze(self):
         ''' pmu-microblaze is ALWAYS Baremetal, no domain'''
