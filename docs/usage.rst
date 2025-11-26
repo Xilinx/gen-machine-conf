@@ -2,6 +2,8 @@
 
 .. SPDX-License-Identifier: MIT
 
+.. _usage:
+
 Gen Machine Conf Usage Introduction
 -----------------------------------
 

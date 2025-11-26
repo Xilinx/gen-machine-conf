@@ -2,6 +2,8 @@
 
 .. SPDX-License-Identifier: MIT
 
+.. _examples:
+
 gen-machine-conf Examples
 -------------------------
 
@@ -85,3 +87,144 @@ by downloading and installing pre-built buildtools installer from https://edf.am
 
   (OR)
   $ gen-machine-conf --hw-description /<path_to_sdtdir>/ --native-sysroot /<installation_dir>/x86-sysroot/sysroots/x86_64-petalinux-linux/
+
+
+Customizing Domain DTS with Custom DTSI Files
+----------------------------------------------
+
+gen-machine-conf supports including custom DTSI (Device Tree Source Include) files into
+the generated domain device tree files. This allows you to add custom hardware nodes,
+modify existing nodes, or override device tree properties without manually editing the
+generated DTS files.
+
+When generating multiconfig targets (such as Linux, Baremetal, FreeRTOS, or Zephyr),
+gen-machine-conf can automatically include custom DTSI files into the domain-specific
+device tree. This is controlled through Kconfig options that can be set via:
+
+- Template YAML file
+- Command-line ``--add-config`` option
+- Interactive menuconfig
+
+Kconfig Options for Custom DTSI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following Kconfig options control custom DTSI inclusion:
+
+**For Linux Domains:**
+
+.. code-block:: kconfig
+
+  CONFIG_YOCTO_BBMC_LINUX_DTSI="/path/to/custom-linux.dtsi"
+
+**For Cortex-R5 Baremetal:**
+
+.. code-block:: kconfig
+
+  CONFIG_YOCTO_BBMC_CORTEXR5_0_BAREMETAL_DTSI="/path/to/custom-baremetal.dtsi"
+
+Available Multiconfig Targets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Custom DTSI can be included for any enabled multiconfig target:
+
+- ``LINUX`` - ARM Cortex-A9/A53/A72/A78/MicroBlaze-V-RISC-V Linux
+- ``CORTEXR5_<n>_BAREMETAL`` - ARM Cortex-R5 Baremetal
+- ``CORTEXR5_<n>_FREERTOS`` - ARM Cortex-R5 FreeRTOS
+- ``CORTEXR52_<n>_BAREMETAL`` - ARM Cortex-R52 Baremetal
+- ``CORTEXR52_<n>_ZEPHYR`` - ARM Cortex-R52 Zephyr
+- ``MICROBLAZEV_<n>_ZEPHYR`` - MicroBlaze-V Zephyr
+
+Example 1: Using Template YAML
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create a template YAML file to specify custom DTSI files:
+
+.. code-block:: yaml
+
+  # template.yaml
+  ---
+  kconfig:
+    # Include custom DTSI for Cortex-A53 Linux domain
+    CONFIG_YOCTO_BBMC_LINUX_DTSI: "/path/to/custom-nodes.dtsi"
+
+    # Include custom DTSI for Cortex-R5 FreeRTOS domain
+    CONFIG_YOCTO_BBMC_CORTEXR5_0_FREERTOS_DTSI: "/path/to/custom-peripherals.dtsi"
+
+Run gen-machine-conf with the template:
+
+.. code-block:: console
+
+  $ gen-machine-conf --template template.yaml --hw-description /path/to/sdt/
+
+Example 2: Using Command-Line Options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can specify custom DTSI files directly on the command line:
+
+.. code-block:: console
+
+  $ gen-machine-conf \
+      --hw-description /path/to/sdt/ \
+      --machine-name zynqmp-custom \
+      --add-config CONFIG_YOCTO_BBMC_LINUX_DTSI=/path/to/custom.dtsi
+
+For multiple targets:
+
+.. code-block:: console
+
+  $ gen-machine-conf \
+      --hw-description /path/to/sdt/ \
+      --machine-name versal-custom \
+      --add-config CONFIG_YOCTO_BBMC_LINUX_DTSI=/path/to/linux-custom.dtsi \
+      --add-config CONFIG_YOCTO_BBMC_CORTEXR5_0_BAREMETAL_DTSI=/path/to/baremetal-custom.dtsi
+
+Example 3: Using Interactive Menuconfig
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Launch menuconfig to interactively select custom DTSI files:
+
+.. code-block:: console
+
+  $ gen-machine-conf \
+      --hw-description /path/to/sdt/ \
+      --machine-name zynqmp-custom \
+      --menuconfig
+
+Navigate in menuconfig:
+
+1. Select ``Multiconfig Targets  --->``
+2. Select your target and enable (eg: cortexa72-0-freertos)
+3. Set ``DTSI path for cortexa72-0-freertos`` to your DTSI file location (You can provide multiple dtsi files with space separation)
+4. Save and exit
+
+
+Verification
+~~~~~~~~~~~~
+
+After running gen-machine-conf, verify the custom DTSI inclusion:
+
+.. code-block:: console
+
+  # Check the generated DTS file
+  $ cat build/conf/dts/zynqmp-custom/cortexa53-0-linux.dts
+
+  # Verify multiconfig settings
+  $ cat build/conf/multiconfig/zynqmp-custom-cortexa53-0-linux.conf
+
+  You should be able to see the custom DTSI file changes reflected in the generated DTS.
+
+
+Tips and Best Practices
+~~~~~~~~~~~~~~~~~~~~~~~~
+1. **Use Absolute Paths**: Always use absolute paths for DTSI files to avoid path resolution issues
+2. **Node Overrides**: Use ``&<node-label>`` syntax to override existing nodes rather than redefining them
+3. **Multiple DTSI Files**: You can specify multiple DTSI files by separating them with spaces in the Kconfig option
+
+Troubleshooting
+~~~~~~~~~~~~~~~
+
+**Issue: Custom DTSI not included in generated DTS**
+
+- Verify the Kconfig option name matches the target exactly
+- Check that the file path is absolute and the file exists
+- Review gen-machineconf.log for any warnings or errors

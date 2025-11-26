@@ -72,15 +72,26 @@ def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
 def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
                           domain_yamls, system_conffile):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    domain_yamls = ' -i '.join(domain_yamls)
+    domain_yamls_str = ' -i '.join(domain_yamls)
     domain_args = "--auto -x '*.yaml'"
-    domain_access_en = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_DOMAIN_ACCESS',
-                                                    system_conffile)
-    domain_access_args = f'-t {domain_name} -a domain_access' if domain_access_en else ''
-    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced {domain_access_args} \
-            {domain_args} -i {domain_yamls} {hw_file} {dts_file}'
-    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
-    return stdout
+    # Append all the yaml files to SDT
+    yaml_dts_file = dts_file.replace('.dts', '-yaml.dts')
+    logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {domain_yamls}')
+    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
+            {domain_args} -i {domain_yamls_str} {hw_file} {yaml_dts_file}'
+    common_utils.RunCmd(cmd, dts_path, shell=True)
+
+    # Run domain_access if config domain_access is enabled
+    domain_access_enabled = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_DOMAIN_ACCESS',
+                                                         system_conffile)
+    if domain_access_enabled:
+        logger.debug(f'Generating DTS {dts_file} with {yaml_dts_file} using domain_access')
+        cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced -t {domain_name} \
+                -a domain_access {yaml_dts_file} {dts_file}'
+        common_utils.RunCmd(cmd, dts_path, shell=True)
+        yaml_dts_file = dts_file
+
+    return yaml_dts_file
 
 def RunLopperUsingDomainFile(domain_files, outdir, dts_path, hw_file,
                              dts_file='', lopper_args='', subcommand_args=''):
@@ -157,7 +168,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         Returns:
             str: The path to the generated or selected DTS file.
         """
-        yaml_dts_file = self.args.hw_file
+        dts_file = self.args.hw_file
         domain_name = ''
         for _file in self.args.domain_file.split():
             # The second value from GetDomainName is intentionally ignored
@@ -168,15 +179,14 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         if domain_name:
             # Sanitize domain_name to avoid invalid filename characters
             sanitized_domain_name = re.sub(r'[^A-Za-z0-9_\-]', '_', domain_name.lower())
-            yaml_dts_file = os.path.join(self.args.output, '%s.dts' % sanitized_domain_name)
-            logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {self.args.domain_file}')
-            RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
-                                  yaml_dts_file, '/domains/%s' % domain_name,
+            sanitized_dts_file = os.path.join(self.args.output, '%s.dts' % sanitized_domain_name)
+            dts_file = RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
+                                  sanitized_dts_file, '/domains/%s' % domain_name,
                                   self.args.domain_file.split(), self.system_conffile)
         else:
             logger.debug(f'No domain for cpu {self.cpuname} in any domain files')
 
-        return yaml_dts_file
+        return dts_file
 
     def GenDomainDTS(self, dts_file, lopdts):
         # Build device tree
@@ -625,11 +635,6 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         logger.info('Generating microblaze riscv %s configuration [ %s ]' % (self.os_hint, self.domain))
         # Generate Domain specific dts file
         domain_dts_file = self.GenDomainDTS(DomainDTS, 'lop-microblaze-riscv.dts')
-        # TODO: lopper is not generating cflags.yaml into output directory to use this with zephyr_dt
-        # copy manually until the issue is fixed
-        common_utils.CopyFile(os.path.join(self.args.dts_path, 'cflags.yaml'),
-                              os.path.join(self.args.output, 'cflags.yaml'))
-        common_utils.RemoveFile(os.path.join(self.args.dts_path, 'cflags.yaml'))
         # Generate zephyr dt
         RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'], self.args.output, self.args.dts_path,
                                  DomainDTS, BoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
@@ -661,24 +666,48 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
                                   mode='a+')
         self.MBTunesDone = True
 
-    # Asu part
-    def MBRiscVTuneFeatures(self):
+    def GetRiscVTuneFeatures(self):
         logger.info('Generating microblaze riscv processor tunes')
-        #stdout = RunLopperUsingDomainFile(['lop-microblaze-yocto.dts'],
-        #                                  self.args.output, os.getcwd(), self.args.hw_file)
-        MB_riscv_variables = '# compatible = "xlnx,asu-microblaze_riscv";\n'
-        MB_riscv_variables += 'TUNEVALID[rv32imac_zicsr_zifencei] = "Enable-march=rv32imac_zicsr_zifencei"\n'
-        MB_riscv_variables += 'TUNE_CCARGS:append = "${@bb.utils.contains(\'TUNE_FEATURES\', \'rv32imac_zicsr_zifencei\', \' -march=rv32imac_zicsr_zifencei\', \' \', d)}"\n'
-        MB_riscv_variables += 'AVAILTUNES += "microblaze-riscv-asu"\n'
-        MB_riscv_variables += 'TUNE_FEATURES:tune-microblaze-riscv-asu = "riscv32nf rv32imac_zicsr_zifencei"\n'
-        MB_riscv_variables += 'TUNE_ARCH:tune-microblaze-riscv-asu = "riscv32"\n'
-        MB_riscv_variables += 'TUNE_PKGARCH:tune-microblaze-riscv-asu = "riscv32nf"\n'
-        MB_riscv_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-riscv-asu = "${TUNE_PKGARCH}"\n'
-        microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
-        common_utils.AddStrToFile(microblaze_riscv_inc, MB_riscv_variables)
-        common_utils.AddStrToFile(microblaze_riscv_inc,
-                                  '\nrequire conf/machine/include/riscv/tune-riscv.inc\n',
-                                  mode='a+')
+        RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'],
+                                 self.args.output, os.getcwd(), self.args.hw_file)
+        cflags_file = os.path.join(self.args.output, 'cflags.yaml')
+        if not os.path.isfile(cflags_file):
+            raise Exception('cflags file does not exist: %s, required to generate the mb-v tune features' % cflags_file)
+        cflags_data = common_utils.ReadYaml(cflags_file) or {}
+        m_arch = ''
+        microblaze_riscv_inc = ''
+        if 'cflags' in cflags_data:
+            cflags_str = cflags_data['cflags']
+            # Extract -march value
+            march_match = re.search(r'-march=(\S+)', cflags_str)
+            if march_match:
+                m_arch = march_match.group(1)
+        return m_arch
+
+    def MBRiscVTuneFeatures(self):
+        if self.MBVTunesDone:
+            return
+        m_arch = self.GetRiscVTuneFeatures()
+        if m_arch:
+            MBV_variables = '# compatible = "xlnx,microblaze_riscv";\n'
+            MBV_variables += f'TUNE_FEATURES:tune-microblaze-riscv = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+            microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
+            common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables)
+        self.MBVTunesDone = True
+
+    def MBRiscVAsuTuneFeatures(self):
+        m_arch = self.GetRiscVTuneFeatures()
+        if m_arch:
+            MBV_variables = '# compatible = "xlnx,microblaze_riscv";\n'
+            MBV_variables += f'TUNE_FEATURES:tune-microblaze-riscv = "{m_arch}"\n'
+            MBV_variables += 'AVAILTUNES += "microblaze-riscv"\n'
+            MBV_variables += f'TUNEVALID[{m_arch}] = "Enable-march={m_arch}"\n'
+            MBV_variables += 'TUNE_ARCH:tune-microblaze-riscv = "riscv32"\n'
+            MBV_variables += 'TUNE_PKGARCH:tune-microblaze-riscv = "riscv32nf"\n'
+            MBV_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-riscv = "${TUNE_PKGARCH}"\n'
+            MBV_variables += '\nrequire conf/machine/include/riscv/tune-riscv.inc\n'
+            microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
+            common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables)
 
     def PmuMicroblaze(self):
         ''' pmu-microblaze is ALWAYS Baremetal, no domain'''
@@ -701,12 +730,13 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
     def AsuMicroblaze(self):
         logger.info('Generating microblaze baremetal configuration for %s ASU' % self.args.soc_family)
-        self.MBRiscVTuneFeatures()
+        self.MBRiscVAsuTuneFeatures()
         # TARGET_CFLAGS need to be update
         extra_conf_str = ''
         self.GenLibxilFeatures('', extra_conf_str)
 
     def MBRiscVSetup(self):
+        self.MBRiscVTuneFeatures()
         if self.os_hint.startswith('linux'):
             if not self.GenLinuxDts:
                 self.MBRiscVLinux()
@@ -855,7 +885,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
     def __init__(self, args, multi_conf_map, system_conffile=''):
         multiconfigs.GenerateMultiConfigFiles.__init__(self, args, multi_conf_map, system_conffile=system_conffile)
 
-        self.MBTunesDone = self.GenLinuxDts = False
+        self.MBTunesDone = self.MBVTunesDone = self.GenLinuxDts = False
         self.gen_pl_overlay = None
 
         if system_conffile:

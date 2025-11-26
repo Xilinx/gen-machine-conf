@@ -585,6 +585,10 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
 def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
                     MultiConfDict, machine_override_string):
 
+    if arch == 'microblaze':
+        machine_override_string += '\n# MicroBlaze Risc-V Tune features Settings\n'
+        machine_override_string += f'require {os.path.join("conf", "machine", "include", args.machine, "microblaze-riscv.inc")}\n'
+
     config_dtfile = MultiConfDict.get('LinuxDT', '')
     config_dtfile_dir = os.path.relpath(args.dts_path, start=args.config_dir)
 
