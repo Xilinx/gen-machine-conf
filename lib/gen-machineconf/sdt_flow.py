@@ -156,8 +156,51 @@ def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 
+def IsOpenampEnabled(cpuname, cpu, os_hint, domain_files):
+    """
+    Check if OpenAMP is enabled for a given CPU and domain configuration.
+    This function iterates through domain files to determine if OpenAMP
+    is enabled by checking for the 'openamp,domain-to-domain-v1' compatible
+    string in the domain-to-domain configuration.
+
+    Returns:
+        str: The domain name if OpenAMP is enabled with compatible version,
+             empty string otherwise.
+    """
+    domain_name = ''
+    for _file in domain_files.split():
+        domain_name, schema = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
+        if domain_name:
+            domain_info = schema.get(domain_name, {})
+            domain_to_domain = domain_info.get('domain-to-domain', {})
+            compatible = domain_to_domain.get('compatible')
+            if compatible in ('openamp,domain-to-domain-v1'):
+                return domain_name
+    return ''
 
 class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
+    def GenOpenampDts(self, ps_dts_file, subcommand_args=''):
+        """
+        Generate OpenAMP device tree source file for the specified CPU.
+        This method checks if OpenAMP is enabled for the current CPU and generates
+        an OpenAMP-specific device tree source (DTS) file if applicable.
+
+        Returns:
+            str: The path to the generated OpenAMP DTS file or the original DTS file
+                 if OpenAMP is not enabled.
+        """
+        openamp_domain = IsOpenampEnabled(self.cpuname, self.cpu,
+                                        self.os_hint, self.args.domain_file)
+        if not openamp_domain:
+            return ps_dts_file
+        logger.debug(f'Generating OpenAMP DTS for core {self.cpuname} {self.core}')
+        # Generate Domain specific dts file
+        openamp_dts_file = os.path.join(self.args.output, f'{self.cpuname}-openamp.dts')
+        RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+                                ps_dts_file, openamp_dts_file, '',
+                                f'openamp {self.cpuname} {subcommand_args}')
+        return openamp_dts_file
+
     def GenDTSWithYaml(self):
         """
         Generates a Device Tree Source (DTS) file based on the provided YAML hardware and domain files.
@@ -196,20 +239,19 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         #TODO: xilpm fails with domain dts for zynqmp platform, revert this once its fixed in lopper
         if self.args.soc_family == 'zynqmp' and self.os_hint == 'fsbl':
             subcommand_args = ''
-        if self.args.domain_file:
-            # if Domain file is present and RPU is target, attempt to invoke
-            # openamp via gen_domain_dts plugin
-            if lopdts in [ 'lop-r5-imux.dts', 'lop-r52-imux.dts' ]:
-                if self.args.soc_family == 'versal-2ve-2vm' and self.os_hint == 'zephyr':
-                    subcommand_args = ''
-                else:
-                    subcommand_args += ' --openamp_no_header '
 
         # Generate the DTs file using user specified domain yaml file
         DTSFile = self.GenDTSWithYaml()
 
+        # Generate OpenAMP DTS if applicable
+        openamp_args = ''
+        if self.os_hint.startswith('zephyr'):
+            openamp_args = 'zephyr_dt'
+        DTSFile = self.GenOpenampDts(DTSFile, openamp_args)
+
         RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
-                                 DTSFile, dts_file, lopper_args, subcommand_args)
+                                DTSFile, dts_file, lopper_args, subcommand_args)
+
         # Return domain specific full dts file if domain file specified
         return DTSFile
 
@@ -477,6 +519,9 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             logger.debug('No pl-overlay is enabled for cortex-a53 Linux dts file: %s'
                          % ps_dts_file)
 
+        # Generate OpenAMP DTS if applicable
+        ps_dts_file = self.GenOpenampDts(ps_dts_file, 'linux_dt')
+
         # We need linux dts for with and without pl-overlay else without
         # cortexa53-zynqmp-linux.dts it fails to build.
         lopper_args = '-f --enhanced '
@@ -536,6 +581,9 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             logger.debug('No pl-overlay is enabled for cortex-a72 Linux dts file: %s'
                          % ps_dts_file)
 
+        # Generate OpenAMP DTS if applicable
+        ps_dts_file = self.GenOpenampDts(ps_dts_file, 'linux_dt')
+
         # We need linux dts for with and without pl-overlay else without
         # cortexa72-versal-linux.dts it fails to build.
         lopper_args = '-f --enhanced '
@@ -594,6 +642,9 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a78 Linux dts file: %s'
                          % ps_dts_file)
+
+        # Generate OpenAMP DTS if applicable
+        ps_dts_file = self.GenOpenampDts(ps_dts_file, 'linux_dt')
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa78-versal-linux.dts it fails to build.
