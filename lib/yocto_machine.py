@@ -308,7 +308,7 @@ def YoctoMCFimwareConfigs(args, arch, dtg_machine, system_conffile, req_conf_fil
     if 'AsuTune' in MultiConfDict:
         machine_override_string += 'TUNEFILE[%s] = "%s"\n' % (
             MultiConfDict['AsuTune'],
-            os.path.join('conf', 'machine', 'include', args.machine, 'microblaze-riscv.inc'))
+            os.path.join('conf', 'machine', 'include', args.machine, 'microblaze-v.inc'))
 
     # Linux baremeal file pointers and dependencies
     if 'FsblMcDepends' in MultiConfDict:
@@ -586,8 +586,8 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
                     MultiConfDict, machine_override_string):
 
     if arch == 'microblaze':
-        machine_override_string += '\n# MicroBlaze Risc-V Tune features Settings\n'
-        machine_override_string += f'require {os.path.join("conf", "machine", "include", args.machine, "microblaze-riscv.inc")}\n'
+        machine_override_string += '\n# MicroBlaze V Tune features Settings\n'
+        machine_override_string += f'require {os.path.join("conf", "machine", "include", args.machine, "microblaze-v.inc")}\n'
 
     config_dtfile = MultiConfDict.get('LinuxDT', '')
     config_dtfile_dir = os.path.relpath(args.dts_path, start=args.config_dir)

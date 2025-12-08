@@ -142,7 +142,7 @@ class GenerateMultiConfigFiles():
                      'pmc-microblaze' : 'microblaze-pmc',
                      'psm-microblaze' : 'microblaze-psm',
                      'xlnx,microblaze-riscv-1.0' : 'riscv32',
-                     'xlnx,asu-microblaze_riscv' : 'microblaze-riscv' }
+                     'xlnx,asu-microblaze_riscv' : 'microblaze-v-asu' }
 
         if not self.MultiConfUser or not self.MultiConfMap:
             logger.debug("No multilibs enabled.")
