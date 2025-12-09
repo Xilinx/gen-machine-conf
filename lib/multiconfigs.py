@@ -9,6 +9,7 @@
 
 
 import os
+import re
 import common_utils
 import project_config
 import logging
@@ -60,7 +61,7 @@ class ParseMultiConfigFiles():
         pass
 
     def MicroblazeVSetup(self):
-        cpu = self.cpu.replace('xlnx,','').replace('.', '-')
+        cpu = re.sub(r'^(xlnx|amd),', '', self.cpu).replace('.', '-')
         if self.args.soc_family == 'microblaze':
             mc_name = ''
             os_hint = 'linux'
@@ -81,7 +82,7 @@ class ParseMultiConfigFiles():
                 self.ArmCortexSetup()
             elif self.cpu == 'xlnx,microblaze':
                 self.MicroblazeSetup()
-            elif self.cpu.startswith('xlnx,microblaze-riscv'):
+            elif self.cpu.startswith(('xlnx,microblaze-riscv', 'amd,mbv')):
                 self.MicroblazeVSetup()
             elif self.cpu == 'pmu-microblaze':
                 mc_name = 'microblaze-pmu'

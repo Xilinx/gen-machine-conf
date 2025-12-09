@@ -914,7 +914,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
                     self.PmcMicroblaze()
                 elif self.cpu == 'psm-microblaze':
                     self.PsmMicroblaze()
-                elif self.cpu.startswith('xlnx,microblaze-riscv'):
+                elif self.cpu.startswith(('xlnx,microblaze-riscv', 'amd,mbv')):
                     self.MBRiscVSetup()
                 elif self.cpu == 'xlnx,asu-microblaze_riscv':
                     self.AsuMicroblaze()
