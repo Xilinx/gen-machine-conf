@@ -73,7 +73,7 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
                           domain_yamls, system_conffile):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     domain_yamls_str = ' -i '.join(domain_yamls)
-    domain_args = "--auto -x '*.yaml'"
+    domain_args = "-x '*.yaml'"
     # Append all the yaml files to SDT
     yaml_dts_file = dts_file.replace('.dts', '-yaml.dts')
     logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {domain_yamls}')
@@ -86,8 +86,8 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
                                                          system_conffile)
     if domain_access_enabled:
         logger.debug(f'Generating DTS {dts_file} with {yaml_dts_file} using domain_access')
-        cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced -t {domain_name} \
-                -a domain_access {yaml_dts_file} {dts_file}'
+        cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
+                {yaml_dts_file} {dts_file} -- domain_access -t {domain_name}'
         common_utils.RunCmd(cmd, dts_path, shell=True)
         yaml_dts_file = dts_file
 
@@ -167,14 +167,13 @@ def IsOpenampEnabled(cpuname, cpu, os_hint, domain_files):
         str: The domain name if OpenAMP is enabled with compatible version,
              empty string otherwise.
     """
-    domain_name = ''
     for _file in domain_files.split():
         domain_name, schema = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
         if domain_name:
             domain_info = schema.get(domain_name, {})
-            domain_to_domain = domain_info.get('domain-to-domain', {})
+            domain_to_domain = domain_info.get('domain-to-domain') or {}
             compatible = domain_to_domain.get('compatible')
-            if compatible in ('openamp,domain-to-domain-v1'):
+            if compatible and compatible in ('openamp,domain-to-domain-v1'):
                 return domain_name
     return ''
 
