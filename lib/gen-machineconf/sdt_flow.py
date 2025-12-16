@@ -436,7 +436,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full, dfx(static) pl overlays.
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.args.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -447,15 +447,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa9-zynq %s'
-                                      % (self.gen_pl_overlay),
+                                      % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a9 file: %s and stored in intermediate ps dts file: %s'
-                        % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtsi as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a9 Linux dts file: %s'
@@ -493,7 +493,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         DTSFile = self.GenDTSWithYaml()
 
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.args.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -504,15 +504,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa53-zynqmp %s'
-                                      % (self.gen_pl_overlay),
+                                      % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a53 file: %s and stored in intermediate ps dts file: %s'
-                        % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtsi as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a53 Linux dts file: %s'
@@ -555,7 +555,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         DTSFile = self.GenDTSWithYaml()
 
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.args.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -566,15 +566,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa72-versal %s'
-                                      % (self.gen_pl_overlay),
+                                      % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a72 file: %s and stored in intermediate ps dts file: %s'
-                        % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtsi as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a72 Linux dts file: %s'
@@ -617,7 +617,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         DTSFile = self.GenDTSWithYaml()
 
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.args.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -628,15 +628,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa78_0 %s'
-                                      % (self.gen_pl_overlay),
+                                      % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a78 file: %s and stored in intermediate ps dts file: %s'
-                        % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtsi as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a78 Linux dts file: %s'
@@ -931,11 +931,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         multiconfigs.GenerateMultiConfigFiles.__init__(self, args, multi_conf_map, system_conffile=system_conffile)
 
         self.MBTunesDone = self.MBVTunesDone = self.GenLinuxDts = False
-        self.gen_pl_overlay = None
 
         if system_conffile:
             # Get the PL_DT_OVERLAY type from config
-            self.gen_pl_overlay = common_utils.GetConfigValue(
+            self.args.gen_pl_overlay = common_utils.GetConfigValue(
                                         'CONFIG_SUBSYSTEM_PL_DT_OVERLAY_', system_conffile,
                                         'choice', '=y').lower().replace('_', '-')
 
