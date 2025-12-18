@@ -73,7 +73,7 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
                           domain_yamls, system_conffile):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     domain_yamls_str = ' -i '.join(domain_yamls)
-    domain_args = "--auto -x '*.yaml'"
+    domain_args = "-x '*.yaml'"
     # Append all the yaml files to SDT
     yaml_dts_file = dts_file.replace('.dts', '-yaml.dts')
     logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {domain_yamls}')
@@ -86,8 +86,8 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
                                                          system_conffile)
     if domain_access_enabled:
         logger.debug(f'Generating DTS {dts_file} with {yaml_dts_file} using domain_access')
-        cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced -t {domain_name} \
-                -a domain_access {yaml_dts_file} {dts_file}'
+        cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
+                {yaml_dts_file} {dts_file} -- domain_access -t {domain_name}'
         common_utils.RunCmd(cmd, dts_path, shell=True)
         yaml_dts_file = dts_file
 
@@ -156,8 +156,50 @@ def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 
+def IsOpenampEnabled(cpuname, cpu, os_hint, domain_files):
+    """
+    Check if OpenAMP is enabled for a given CPU and domain configuration.
+    This function iterates through domain files to determine if OpenAMP
+    is enabled by checking for the 'openamp,domain-to-domain-v1' compatible
+    string in the domain-to-domain configuration.
+
+    Returns:
+        str: The domain name if OpenAMP is enabled with compatible version,
+             empty string otherwise.
+    """
+    for _file in domain_files.split():
+        domain_name, schema = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
+        if domain_name:
+            domain_info = schema.get(domain_name, {})
+            domain_to_domain = domain_info.get('domain-to-domain') or {}
+            compatible = domain_to_domain.get('compatible')
+            if compatible and compatible in ('openamp,domain-to-domain-v1'):
+                return domain_name
+    return ''
 
 class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
+    def GenOpenampDts(self, ps_dts_file, subcommand_args=''):
+        """
+        Generate OpenAMP device tree source file for the specified CPU.
+        This method checks if OpenAMP is enabled for the current CPU and generates
+        an OpenAMP-specific device tree source (DTS) file if applicable.
+
+        Returns:
+            str: The path to the generated OpenAMP DTS file or the original DTS file
+                 if OpenAMP is not enabled.
+        """
+        openamp_domain = IsOpenampEnabled(self.cpuname, self.cpu,
+                                        self.os_hint, self.args.domain_file)
+        if not openamp_domain:
+            return ps_dts_file
+        logger.debug(f'Generating OpenAMP DTS for core {self.cpuname} {self.core}')
+        # Generate Domain specific dts file
+        openamp_dts_file = os.path.join(self.args.output, f'{self.cpuname}-openamp.dts')
+        RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+                                ps_dts_file, openamp_dts_file, '',
+                                f'openamp {self.cpuname} {subcommand_args}')
+        return openamp_dts_file
+
     def GenDTSWithYaml(self):
         """
         Generates a Device Tree Source (DTS) file based on the provided YAML hardware and domain files.
@@ -196,20 +238,19 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         #TODO: xilpm fails with domain dts for zynqmp platform, revert this once its fixed in lopper
         if self.args.soc_family == 'zynqmp' and self.os_hint == 'fsbl':
             subcommand_args = ''
-        if self.args.domain_file:
-            # if Domain file is present and RPU is target, attempt to invoke
-            # openamp via gen_domain_dts plugin
-            if lopdts in [ 'lop-r5-imux.dts', 'lop-r52-imux.dts' ]:
-                if self.args.soc_family == 'versal-2ve-2vm' and self.os_hint == 'zephyr':
-                    subcommand_args = ''
-                else:
-                    subcommand_args += ' --openamp_no_header '
 
         # Generate the DTs file using user specified domain yaml file
         DTSFile = self.GenDTSWithYaml()
 
+        # Generate OpenAMP DTS if applicable
+        openamp_args = ''
+        if self.os_hint.startswith('zephyr'):
+            openamp_args = 'zephyr_dt'
+        DTSFile = self.GenOpenampDts(DTSFile, openamp_args)
+
         RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
-                                 DTSFile, dts_file, lopper_args, subcommand_args)
+                                DTSFile, dts_file, lopper_args, subcommand_args)
+
         # Return domain specific full dts file if domain file specified
         return DTSFile
 
@@ -395,7 +436,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Remove pl dt nodes from linux dts by running xlnx_overlay_pl_dt script
         # in lopper. This script provides full, dfx(static) pl overlays.
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.args.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -406,15 +447,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa9-zynq %s'
-                                      % (self.gen_pl_overlay),
+                                      % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a9 file: %s and stored in intermediate ps dts file: %s'
-                        % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtsi as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a9 Linux dts file: %s'
@@ -452,7 +493,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         DTSFile = self.GenDTSWithYaml()
 
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.args.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -463,19 +504,22 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa53-zynqmp %s'
-                                      % (self.gen_pl_overlay),
+                                      % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a53 file: %s and stored in intermediate ps dts file: %s'
-                        % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtsi as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a53 Linux dts file: %s'
                          % ps_dts_file)
+
+        # Generate OpenAMP DTS if applicable
+        ps_dts_file = self.GenOpenampDts(ps_dts_file, 'linux_dt')
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa53-zynqmp-linux.dts it fails to build.
@@ -511,7 +555,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         DTSFile = self.GenDTSWithYaml()
 
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.args.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -522,19 +566,22 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa72-versal %s'
-                                      % (self.gen_pl_overlay),
+                                      % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a72 file: %s and stored in intermediate ps dts file: %s'
-                        % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtsi as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a72 Linux dts file: %s'
                          % ps_dts_file)
+
+        # Generate OpenAMP DTS if applicable
+        ps_dts_file = self.GenOpenampDts(ps_dts_file, 'linux_dt')
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa72-versal-linux.dts it fails to build.
@@ -570,7 +617,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         DTSFile = self.GenDTSWithYaml()
 
         ps_dts_file = ''
-        if self.gen_pl_overlay:
+        if self.args.gen_pl_overlay:
             # Do not overwrite original SDT file during overlay processing, Instead
             # write out to a intermediate file in output directory and use this
             # file for lopper pl overlay operation.
@@ -581,19 +628,22 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa78_0 %s'
-                                      % (self.gen_pl_overlay),
+                                      % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a78 file: %s and stored in intermediate ps dts file: %s'
-                        % (self.gen_pl_overlay, self.args.hw_file, ps_dts_file))
+                        % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
             # generated in lopper output directory. Hence copy pl.dtsi from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtsi as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.gen_pl_overlay)
+            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a78 Linux dts file: %s'
                          % ps_dts_file)
+
+        # Generate OpenAMP DTS if applicable
+        ps_dts_file = self.GenOpenampDts(ps_dts_file, 'linux_dt')
 
         # We need linux dts for with and without pl-overlay else without
         # cortexa78-versal-linux.dts it fails to build.
@@ -667,7 +717,6 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         self.MBTunesDone = True
 
     def GetRiscVTuneFeatures(self):
-        logger.info('Generating microblaze riscv processor tunes')
         RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'],
                                  self.args.output, os.getcwd(), self.args.hw_file)
         cflags_file = os.path.join(self.args.output, 'cflags.yaml')
@@ -687,27 +736,23 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
     def MBRiscVTuneFeatures(self):
         if self.MBVTunesDone:
             return
+        logger.info('Generating microblaze riscv processor tunes')
         m_arch = self.GetRiscVTuneFeatures()
+        microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-v.inc')
         if m_arch:
-            MBV_variables = '# compatible = "xlnx,microblaze_riscv";\n'
-            MBV_variables += f'TUNE_FEATURES:tune-microblaze-riscv = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
-            microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
+            if self.args.soc_family == 'microblaze':
+                MBV_variables = '\n# compatible = "xlnx,microblaze_v";\n'
+                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+            else:
+                MBV_variables = '\nrequire conf/machine/include/xilinx-microblaze-v.inc\n'
+                MBV_variables += '\n# compatible = "xlnx,microblaze_v";\n'
+                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+                MBV_variables += '\n# compatible = "xlnx,microblaze_v_asu";\n'
+                MBV_variables += 'AVAILTUNES += "microblaze-v-asu"\n'
+                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v-asu = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+                MBV_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-v-asu = "${TUNE_RISCV_PKGARCH}"\n'
             common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables)
         self.MBVTunesDone = True
-
-    def MBRiscVAsuTuneFeatures(self):
-        m_arch = self.GetRiscVTuneFeatures()
-        if m_arch:
-            MBV_variables = '# compatible = "xlnx,microblaze_riscv";\n'
-            MBV_variables += f'TUNE_FEATURES:tune-microblaze-riscv = "{m_arch}"\n'
-            MBV_variables += 'AVAILTUNES += "microblaze-riscv"\n'
-            MBV_variables += f'TUNEVALID[{m_arch}] = "Enable-march={m_arch}"\n'
-            MBV_variables += 'TUNE_ARCH:tune-microblaze-riscv = "riscv32"\n'
-            MBV_variables += 'TUNE_PKGARCH:tune-microblaze-riscv = "riscv32nf"\n'
-            MBV_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-riscv = "${TUNE_PKGARCH}"\n'
-            MBV_variables += '\nrequire conf/machine/include/riscv/tune-riscv.inc\n'
-            microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-riscv.inc')
-            common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables)
 
     def PmuMicroblaze(self):
         ''' pmu-microblaze is ALWAYS Baremetal, no domain'''
@@ -730,7 +775,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
     def AsuMicroblaze(self):
         logger.info('Generating microblaze baremetal configuration for %s ASU' % self.args.soc_family)
-        self.MBRiscVAsuTuneFeatures()
+        self.MBRiscVTuneFeatures()
         # TARGET_CFLAGS need to be update
         extra_conf_str = ''
         self.GenLibxilFeatures('', extra_conf_str)
@@ -868,7 +913,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
                     self.PmcMicroblaze()
                 elif self.cpu == 'psm-microblaze':
                     self.PsmMicroblaze()
-                elif self.cpu.startswith('xlnx,microblaze-riscv'):
+                elif self.cpu.startswith(('xlnx,microblaze-riscv', 'amd,mbv')):
                     self.MBRiscVSetup()
                 elif self.cpu == 'xlnx,asu-microblaze_riscv':
                     self.AsuMicroblaze()
@@ -886,11 +931,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         multiconfigs.GenerateMultiConfigFiles.__init__(self, args, multi_conf_map, system_conffile=system_conffile)
 
         self.MBTunesDone = self.MBVTunesDone = self.GenLinuxDts = False
-        self.gen_pl_overlay = None
 
         if system_conffile:
             # Get the PL_DT_OVERLAY type from config
-            self.gen_pl_overlay = common_utils.GetConfigValue(
+            self.args.gen_pl_overlay = common_utils.GetConfigValue(
                                         'CONFIG_SUBSYSTEM_PL_DT_OVERLAY_', system_conffile,
                                         'choice', '=y').lower().replace('_', '-')
 
