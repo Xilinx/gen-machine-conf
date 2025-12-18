@@ -332,7 +332,7 @@ def YoctoMCFimwareConfigs(args, arch, dtg_machine, system_conffile, req_conf_fil
     if 'PmuMcDepends' in MultiConfDict:
         PmuDepends, PmuMcDepends, PmuDeployDir, PmuImageName, _ = GetBootCompSource(
                 args, 'PMUFW', 'PmuMcDepends', 'PmuFWDeployDir', MultiConfDict, system_conffile)
-        machine_override_string += '\n# PMU Firware\n'
+        machine_override_string += '\n# PMU Firmware\n'
         machine_override_string += 'PMU_DEPENDS = "%s"\n' % PmuDepends
         machine_override_string += 'PMU_MCDEPENDS = "%s"\n' % PmuMcDepends
         machine_override_string += 'PMU_FIRMWARE_DEPLOY_DIR = "%s"\n' % PmuDeployDir.rstrip('/')
@@ -356,7 +356,7 @@ def YoctoMCFimwareConfigs(args, arch, dtg_machine, system_conffile, req_conf_fil
     if 'PsmMcDepends' in MultiConfDict:
         PsmDepends, PsmMcDepends, PsmDeployDir, PsmImageName, RemovePsm = GetBootCompSource(
                 args, 'PSMFW', 'PsmMcDepends', 'PsmFWDeployDir', MultiConfDict, system_conffile)
-        machine_override_string += '\n# PSM Firware\n'
+        machine_override_string += '\n# PSM Firmware\n'
         machine_override_string += 'PSM_DEPENDS = "%s"\n' % PsmDepends
         machine_override_string += 'PSM_MCDEPENDS = "%s"\n' % PsmMcDepends
         machine_override_string += 'PSM_FIRMWARE_DEPLOY_DIR = "%s"\n' % PsmDeployDir.rstrip('/')
@@ -369,7 +369,7 @@ def YoctoMCFimwareConfigs(args, arch, dtg_machine, system_conffile, req_conf_fil
     if 'AsuMcDepends' in MultiConfDict:
         AsuDepends, AsuMcDepends, AsuDeployDir, AsuImageName, RemoveAsu = GetBootCompSource(
                 args, 'ASU', 'AsuMcDepends', 'AsuFWDeployDir', MultiConfDict, system_conffile)
-        machine_override_string += '\n# ASU Firware\n'
+        machine_override_string += '\n# ASU Firmware\n'
         machine_override_string += 'ASU_DEPENDS = "%s"\n' % AsuDepends
         machine_override_string += 'ASU_MCDEPENDS = "%s"\n' % AsuMcDepends
         machine_override_string += 'ASU_DEPLOY_DIR = "%s"\n' % AsuDeployDir.rstrip('/')
