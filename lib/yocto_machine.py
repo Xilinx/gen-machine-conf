@@ -235,6 +235,17 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
             machine_override_string += '\n# Yocto OP-TEE variables\n'
             machine_override_string += 'OPTEE_CONSOLE ?= "%s"\n' % optee_serial_ip_name
 
+    machine_override_string += '\n# Yocto u-boot-xlnx variables\n'
+    uboot_config = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_UBOOT_CONFIG_TARGET',
+                                               system_conffile)
+    if uboot_config and uboot_config.lower() != 'auto':
+        machine_override_string += f'UBOOT_MACHINE ?= "{uboot_config}"\n'
+
+    uboot_spl_type = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_UBOOT_SPL_BINARY_TYPE',
+                                                 system_conffile)
+    if uboot_spl_type:
+        machine_override_string += f'SPL_BINARY ?= "{uboot_spl_type}"\n'
+
     ddr_baseaddr = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_', system_conffile,
                                                'asterisk', '_BASEADDR=')
     if not ddr_baseaddr:
@@ -437,12 +448,6 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
             machine_override_string += 'YAML_DT_BOARD_FLAGS ?= "{BOARD %s}"\n'\
                 % dtg_machine
 
-    machine_override_string += '\n# Yocto u-boot-xlnx variables\n'
-    uboot_config = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_UBOOT_CONFIG_TARGET',
-                                               system_conffile)
-    if uboot_config and uboot_config.lower() != 'auto':
-        machine_override_string += 'UBOOT_MACHINE ?= "%s"\n' % uboot_config
-
     if soc_family == 'versal':
         machine_override_string += '\n# Yocto PLM variables\n'
         plm_serial_ip_name = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_PLM_IP_NAME',
@@ -612,6 +617,18 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
 
     # Add YAML post yocto configs
     machine_override_string = UpdateYamlConfigs('post', machine_override_string)
+
+    if args.soc_family == 'microblaze':
+        machine_override_string += '\n# Yocto Riscv OPENSBI variables\n'
+        ddr_baseaddr = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_', system_conffile,
+                                                   'asterisk', '_BASEADDR=')
+        if not ddr_baseaddr:
+            ddr_baseaddr = '0x0'
+        riscv_sbi_offset = '0x100000'
+        riscv_sbi_text_start = hex(int(ddr_baseaddr, 16) + int(riscv_sbi_offset, 16))
+        riscv_sbi_text_start = f'0x{riscv_sbi_text_start[2:].upper()}'
+        machine_override_string += f'RISCV_SBI_FW_TEXT_START = "{riscv_sbi_text_start}"\n'
+
 
     machine_override_string += '\n# This is an \'SDT\' based BSP\n'
     machine_override_string += 'XILINX_WITH_ESW = "sdt"\n'

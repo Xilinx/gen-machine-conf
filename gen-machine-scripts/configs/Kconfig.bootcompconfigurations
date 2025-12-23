@@ -115,6 +115,13 @@ config SUBSYSTEM_UBOOT_CONFIG_TARGET
 	  run u-boot XXX config target: make XXX_config to configure u-boot
 	  first.
 
+config SUBSYSTEM_UBOOT_SPL_BINARY_TYPE
+	string "SPL binary type"
+	default "spl/u-boot-spl.bin"
+	depends on SUBSYSTEM_SDT_FLOW && SYSTEM_MICROBLAZE
+	help
+	  The file type for the Secondary Program Loader (SPL).
+
 menu "u-boot script configuration"
 config SUBSYSTEM_UBOOT_APPEND_BASEADDR
 	bool "Append base address to image offsets"

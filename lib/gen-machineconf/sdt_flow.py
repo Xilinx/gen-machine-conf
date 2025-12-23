@@ -731,6 +731,13 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             march_match = re.search(r'-march=(\S+)', cflags_str)
             if march_match:
                 m_arch = march_match.group(1)
+
+        # Check if m_arch has 64-bit with 'f' but without 'd' extension
+        if m_arch and '64' in m_arch and 'f' in m_arch and 'd' not in m_arch:
+            logger.warning(f'MicroBlaze-V Tunes ({m_arch}) specifies single-precision '
+                         f'floating-point (f) without double-precision (d) extension. '
+                         f'This configuration is not supported by Glibc and may cause build failures.')
+
         return m_arch
 
     def MBRiscVTuneFeatures(self):
