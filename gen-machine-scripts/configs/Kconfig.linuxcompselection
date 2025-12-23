@@ -15,7 +15,7 @@ config SUBSYSTEM_COMPONENT_IMG_SEL
         help
           If you select this option, PetaLinux will auto generate the pre
           bootloader through xsct.The ELF file for the same is in <PROJECT>/images/linux.
-          If you DONOT select this option, petalinux will not generate, config or
+          If you DO NOT select this option, petalinux will not generate, config or
           build your bootloader.
 
 config SUBSYSTEM_COMPONENT_BOOTLOADER_AUTO_FSBL

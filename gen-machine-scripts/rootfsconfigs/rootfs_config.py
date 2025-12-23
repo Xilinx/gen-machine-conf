@@ -78,8 +78,8 @@ def read_packages(xilinx_arch):
                     line_str = line_str.replace('imagefeature-', '')
                     packages.setdefault('image_features', []).append(line_str)
                 elif re.match("system-" + xilinx_arch, line_str) or re.match("subsystem-sdt-flow", line_str):
-                    # do nothing, skipp the package name with "system-<xilinx_arch>". Using to find system type
-                    # do nothing, skipp the package name with "subsystem-sdt-flow". Using to find system type
+                    # do nothing, skip the package name with "system-<xilinx_arch>". Using to find system type
+                    # do nothing, skip the package name with "subsystem-sdt-flow". Using to find system type
                     continue
                 else:
                     packages.setdefault('image_packages', []).append(line_str)
@@ -258,10 +258,10 @@ def generate_kconfig_menu(packg):
 #  kconf_file.write(line)
 
 
-def generate_config(packgs, file_path):
+def generate_config(packages, file_path):
     minimal_file = open(file_path + '/minimal_packages', 'w')
     minimal_file.truncate()
-    for p in packgs:
+    for p in packages:
         line = "CONFIG_" + p + "=y\n"
         minimal_file.write(line)
     minimal_file.close()
@@ -360,9 +360,9 @@ def filter_packages(black_list_file):
 
 def extract_packages(Lines_packages):
     global packages_dict
-    global sub_block_packgs
+    global sub_block_packages
     packages_dict = {}
-    sub_block_packgs = []
+    sub_block_packages = []
     my_regx = "CONFIG_"
     my_regx1 = re.escape("(")
     for line in Lines_packages:

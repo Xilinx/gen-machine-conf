@@ -1913,7 +1913,7 @@ menu "autoconf "
 config autoconf  
 	 bool "autoconf"
 	 help
-	 A GNU tool that procude shell scripts to automatically configure software
+	 A GNU tool that produce shell scripts to automatically configure software
 	
 config autoconf-dev  
 	 bool "autoconf-dev"
@@ -3419,7 +3419,7 @@ menu "libogg "
 config libogg  
 	 bool "libogg"
 	 help
-	 Ogg bitstream and framing libary
+	 Ogg bitstream and framing library
 	
 config libogg-dev  
 	 bool "libogg-dev"
@@ -3798,7 +3798,7 @@ menu "libxft "
 config libxft  
 	 bool "libxft"
 	 help
-	 XFt: X FreeType libary
+	 XFt: X FreeType library
 	
 config libxft-dev  
 	 bool "libxft-dev"
@@ -8796,9 +8796,9 @@ config ADD_EXTRA_USERS
            user1:                            --> Add empty passwd for the user1
            user1:passwd1;user2:passwd2;      --> Add user1 and user2 with the passwd1 and passwd2
            user1:;user2:passwd2              --> Add empty passwd for user1 and passwd2 for user2
-	   user1:passwd1:passwd-expire       --> The passwd1 for user1 will expire on the frist login and
+	   user1:passwd1:passwd-expire       --> The passwd1 for user1 will expire on the first login and
 						 user should enter the new passwd.
-	   user1::passwd-expire;             --> This sets the empty passwd for user1.On the frist login
+	   user1::passwd-expire;             --> This sets the empty passwd for user1.On the first login
 						 user should enter the new passwd.
 
 config CREATE_NEW_GROUPS

@@ -11,7 +11,7 @@ gen-machine-conf has two sub commands parse-xsa and parse-sdt you must
 use one or the other. Most options work for either sub command but some
 are only available/required in one sub command or the other.
 
-gen-machine-conf is capible of auto-detecting the subcommand based on
+gen-machine-conf is capable of auto-detecting the subcommand based on
 the file/URI specified with --hw-description.
 If a .xsa file is specified, it uses the subcommand parse-xsa, and
 if system-top.dts is specified, it uses the subcommand parse-sdt.
@@ -71,7 +71,7 @@ gen-machine-conf usage
 
   subcommands:
     <subcommand>
-      parse-sdt           Parse System devicet-tree file and generate Yocto/PetaLinux configurations.
+      parse-sdt           Parse System device-tree file and generate Yocto/PetaLinux configurations.
       parse-xsa           Parse xsa file and generate Yocto/PetaLinux configurations.
 
   Use gen-machine-conf <subcommand> --help to get help on a specific command

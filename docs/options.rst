@@ -18,12 +18,12 @@ The --hw-description option specifies the hardware description input for the too
 It is a required argument and determines the hardware platform for which the
 machine configuration will be generated.
 
-The tool will handles the process of validating, copying or unpacking the hardware
+The tool handles the process of validating, copying or unpacking the hardware
 description file or directory. It ensures the provided path is absolute and exists,
 and adapts its behavior depending on whether the workflow is for
 PetaLinux (which does not use BitBake) or Yocto (which may use BitBake to fetch and unpack URIs).
 
-The tool also ensuring that only supported file types are processed.
+The tool also ensures that only supported file types are processed.
 It distinguishes between .xsa files and System Device-tree directories,
 and can auto-select the appropriate flow if both are present. It also prevents ambiguous situations,
 such as multiple .xsa or system-top.dts files in the same directory.
@@ -131,7 +131,7 @@ If not provided on the command line:
 ~~~~~~~~~~~~~~~~~~~~~
 
 Specifies the SoC family (microblaze, zynq, zynqmp, versal).
-If not provided on the command line gen-machine-conf will extracted from the System-Device-Tree (SDT) file
+If not provided on the command line gen-machine-conf will be extracted from the System-Device-Tree (SDT) file
 based on the Processor name.
 
 **Usage Example**
@@ -144,7 +144,7 @@ based on the Processor name.
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Specify SoC variant (e.g., cg, dr, eg, ev, ai-prime, premium).
-If not provided on the command line gen-machine-conf will extracted from the System-Device-Tree (SDT) file
+If not provided on the command line gen-machine-conf will be extracted from the System-Device-Tree (SDT) file
 based on the Device-id.
 
 **Usage Example**
@@ -325,7 +325,7 @@ When you use parse-sdt, the tool:
 -g {full,dfx}, --gen-pl-overlay {full,dfx}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This option would be used to invocation of the Lopper tool for generating programmable logic (PL)
+This option is used to invoke the Lopper tool for generating programmable logic (PL)
 overlays in device tree source (DTS) files as part of the machine configuration process.
 Generate overlay files or configuration fragments that can be used to program or manage the
 FPGA portion during boot or runtime.

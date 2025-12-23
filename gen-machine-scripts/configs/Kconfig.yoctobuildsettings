@@ -59,7 +59,7 @@ config DEVTOOL_WORKSPACE_LOCATION
 	default "${PROOT}/components/yocto/workspace"
 	help
 	  Specify the devtool workspace directory, This will setup a workspace layer
-	  in an alternative specified absolute or releative path using layerpath option.
+	  in an alternative specified absolute or relative path using layerpath option.
 	  Relative path can be used with reference to ${PROOT}
 	  Note: ${PROOT} is a PetaLinux variable, Using bitbake variable such as
 		${TOPDIR} will not be functional.

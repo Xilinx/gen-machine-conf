@@ -324,7 +324,7 @@ def main():
     # We can skip this by setting SKIP_BBPATH_SEARCH variable from env
     bbpath = ''
     if common_utils.Bitbake.disabled:
-        logger.debug('Bitbake is disbled, skip getting BBPATH')
+        logger.debug('Bitbake is disabled, skip getting BBPATH')
     elif os.environ.get('SKIP_BBPATH_SEARCH'):
         logger.debug('SKIP_BBPATH_SEARCH is set, Skip getting '
                         'BBPATH to load gen-machineconf modules')
@@ -351,7 +351,7 @@ def main():
 
     # Default option for subparsers is not supported yet in python
     # If user not specified any subparser use the default parser based on the hw_description provided.
-    # Get the registed parsers list from subparsers and check with the unparsed_args.
+    # Get the registered parsers list from subparsers and check with the unparsed_args.
     _hassubcommand = False
     _subparser = None
     for subcmd in subparsers.choices:

@@ -24,7 +24,7 @@ config SUBSYSTEM_DEVICE_TREE_INCLUDE_DIR
 	default "${STAGING_KERNEL_DIR}/include"
 	depends on SUBSYSTEM_DEVICE_TREE_MANUAL_INCLUDE
 	help
-	  This is the include directory used by DTC during device tree compliation.
+	  This is the include directory used by DTC during device tree compilation.
 	  By default it points to "${STAGING_KERNEL_DIR}/include" which is
 	  "${TMPDIR}/work-shared/${MACHINE}/kernel-source/include"
 

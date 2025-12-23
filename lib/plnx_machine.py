@@ -93,7 +93,7 @@ def GenerateKernelCfg(args):
     with open(sysconf_koptions, 'r') as sysconf_koptions_f:
         sysconf_koptions_data = yaml.safe_load(sysconf_koptions_f)
     sysconf_koptions_f.close()
-    invalide_props = []
+    invalid_props = []
     # Filter sysconf_koptions.yaml, remove the ip list which are not enabled in design
     for device in sysconf_koptions_data['selected_device'].keys():
         is_invalid = ''
@@ -105,14 +105,14 @@ def GenerateKernelCfg(args):
 
                 if value != 'n':
                     if cfg_value != value:
-                        if not device in invalide_props:
-                            invalide_props.append(device)
+                        if device not in invalid_props:
+                            invalid_props.append(device)
                 else:
                     if cfg_value == 'n':
-                        if not device in invalide_props:
-                            invalide_props.append(device)
-    # remove the ip's in invalide_props from sysconf_koptions_data
-    for prop in invalide_props:
+                        if device not in invalid_props:
+                            invalid_props.append(device)
+    # remove the ip's in invalid_props from sysconf_koptions_data
+    for prop in invalid_props:
         sysconf_koptions_data['selected_device'].pop(prop)
     kernel_opts = ''
     # Add linux_kernel_properties from sysconf_koptions.yaml
@@ -290,7 +290,7 @@ def GeneratePlnxConfig(args, machine_conf_file):
                 uninative_path + '/*/x86_64-nativesdk-libc*')
             if uninative_file:
                 uninative_dir = os.path.dirname(uninative_file[0])
-                # Add trainling slash if not present
+                # Add trailing slash if not present
                 if not uninative_dir.endswith(os.path.sep):
                     uninative_dir += os.path.sep
                 override_string += 'UNINATIVE_URL = "file://%s"\n' % uninative_dir
