@@ -235,6 +235,20 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
             machine_override_string += '\n# Yocto OP-TEE variables\n'
             machine_override_string += 'OPTEE_CONSOLE ?= "%s"\n' % optee_serial_ip_name
 
+        optee_mem_settings = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_OPTEE_MEMORY_SETTINGS',
+                                                      system_conffile)
+
+        optee_tzdram_start = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_OPTEE_TZDRAM_START',
+                                                     system_conffile)
+
+        optee_tzdram_size = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_OPTEE_TZDRAM_SIZE',
+                                                      system_conffile)
+
+        if optee_mem_settings:
+           machine_override_string += 'OPTEE_TZDRAM_START ?= "%s"\n' % optee_tzdram_start
+           machine_override_string += 'OPTEE_TZDRAM_SIZE ?= "%s"\n' % optee_tzdram_size
+
+
     machine_override_string += '\n# Yocto u-boot-xlnx variables\n'
     uboot_config = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_UBOOT_CONFIG_TARGET',
                                                system_conffile)
