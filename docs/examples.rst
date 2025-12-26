@@ -44,7 +44,7 @@ System device tree(SDT) Based Examples
 .. note::
 
   - MicroBlaze is not supported in system device tree generator at this time.
-  - Zinq-7000 does not support DFX static pl overlay
+  - Zynq-7000 does not support DFX static pl overlay
 
 .. code-block:: console
 

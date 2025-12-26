@@ -60,7 +60,7 @@ def GetTuneFeatures(soc_family, system_conffile):
             if key == param_value or (key.startswith('!') and key[1:] != param_value):
                 tune_features += [Tunefeatures[feature][key]]
                 add_key = True
-        # Add default one from dict if key doesnot match
+        # Add default one from dict if key does not match
         if not add_key and 'default' in Tunefeatures[feature].keys():
             tune_features += [Tunefeatures[feature]['default']]
 
@@ -121,7 +121,7 @@ def GetBootCompSource(args, comp, mcdepends, deploydir, MultiConfDict, system_co
             logger.warning('CONFIG_SUBSYSTEM_COMPONENT_%s_ELF_NAME is not specified,'
                             'Defaulting to plm.elf' % comp)
         elif not os.path.isfile(tmp_path):
-            logger.warning('Specified %s elf doesnot found : %s, '
+            logger.warning('Specified %s elf not found : %s, '
                     'Make sure you specified proper .elf file' % (comp, tmp_path))
     elif CompFrom == 'local_path':
         CompLocalPath = common_utils.GetConfigValue(
@@ -135,7 +135,7 @@ def GetBootCompSource(args, comp, mcdepends, deploydir, MultiConfDict, system_co
             logger.warning('CONFIG_SUBSYSTEM_COMPONENT_%s_ELF_PATH is not specified. '
                         'Please specify the proper .elf file to avoid build failures' % comp)
         elif not os.path.isfile(tmp_path):
-            logger.warning('Specified %s elf doesnot found : %s, '
+            logger.warning('Specified %s elf not found : %s, '
                     'Make sure you specified proper .elf file' % (comp, tmp_path))
     else:
         CompMcDepends = MultiConfDict.get(mcdepends)
@@ -234,6 +234,20 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
         if optee_serial_ip_name and not optee_serial_manual:
             machine_override_string += '\n# Yocto OP-TEE variables\n'
             machine_override_string += 'OPTEE_CONSOLE ?= "%s"\n' % optee_serial_ip_name
+
+        optee_mem_settings = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_OPTEE_MEMORY_SETTINGS',
+                                                      system_conffile)
+
+        optee_tzdram_start = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_OPTEE_TZDRAM_START',
+                                                     system_conffile)
+
+        optee_tzdram_size = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_OPTEE_TZDRAM_SIZE',
+                                                      system_conffile)
+
+        if optee_mem_settings:
+           machine_override_string += 'OPTEE_TZDRAM_START ?= "%s"\n' % optee_tzdram_start
+           machine_override_string += 'OPTEE_TZDRAM_SIZE ?= "%s"\n' % optee_tzdram_size
+
 
     machine_override_string += '\n# Yocto u-boot-xlnx variables\n'
     uboot_config = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_UBOOT_CONFIG_TARGET',
@@ -708,7 +722,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
                         use the -p/--pl option to point to the directory containing a .bit file' % args.pl)
             elif len(bit) == 1:
                 # Some Zynq and ZynqMP design can only PS without PL, in such
-                # cases do not inlcude BITSTREAM_PATH.
+                # cases do not include BITSTREAM_PATH.
                 args.pl = bit[0]
         if args.pl:
             # This is similar to SYSTEM_DTFILE_PATH, the path is constructed

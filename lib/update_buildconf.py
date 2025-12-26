@@ -108,7 +108,7 @@ def GenLocalConf(conf_file, machine_conf_file, system_conffile, petalinux):
     if multiconfig_min:
         sdt_conf_str += '\n# Avoid errors in some baremetal configs as these layers may be present\n'
         sdt_conf_str += '# but are not used.  Note the following lines are optional and can be\n'
-        sdt_conf_str += '# safetly disabled.\n'
+        sdt_conf_str += '# safely disabled.\n'
         sdt_conf_str += 'SKIP_META_VIRT_SANITY_CHECK = "1"\n'
         sdt_conf_str += 'SKIP_META_SECURITY_SANITY_CHECK = "1"\n'
         sdt_conf_str += 'SKIP_META_TPM_SANITY_CHECK = "1"\n'

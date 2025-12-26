@@ -7,7 +7,7 @@ namespace eval ::hsi::utils {
 }
 
 #
-# It will retrun the connected interface to and IP interface
+# It will return the connected interface to and IP interface
 #
 
 proc ::hsi::utils::get_connected_intf { periph_name intf_name} {
@@ -89,7 +89,7 @@ proc ::hsi::utils::get_clk_pin_freq { cell_obj clk_port} {
         if { [string compare -nocase $port_type  "CLK"] == 0 } {
 
             set clockValue [common::get_property CLK_FREQ $clk_port_obj]
-            # Temp solution handle to exponential representaion
+            # Temp solution handle to exponential representation
             set isExponentFormate "e"
             if {[string first $isExponentFormate $clockValue] != -1} {
               set retVal [format { %.0f} $clockValue]
@@ -108,7 +108,7 @@ proc ::hsi::utils::get_clk_pin_freq { cell_obj clk_port} {
 
 #
 # It will check the pin object is external or not. If pin_object is
-# associated to a cell then it is internal otherise it is external
+# associated to a cell then it is internal otherwise it is external
 #
 proc ::hsi::utils::is_external_pin { pin_obj } {
     set pin_class [common::get_property CLASS $pin_obj]
@@ -406,11 +406,11 @@ proc ::hsi::utils::get_real_source_pin_traverse_out { pin } {
       if { [ llength $lower_net] != 0  && [ llength $upper_net] != 0 } {
 
           set real_source_pin [::hsi::get_pins -of_objects $upper_net -filter "DIRECTION==O" ]
-          # removing the pin from where the traversal started or from where the funtion is called
+          # removing the pin from where the traversal started or from where the function is called
           set real_source_pin [::hsi::utils::remove_pin_from_list $real_source_pin $pin]
 
           set real_source_port [::hsi::get_ports -of_objects $upper_net -filter "DIRECTION==I" ]
-          # removing the pin from where the traversal started or from where the funtion is called
+          # removing the pin from where the traversal started or from where the function is called
           set real_source_port [::hsi::utils::remove_pin_from_list $real_source_port $pin]
 
           if { [ llength $real_source_pin] != 0 } {
@@ -446,11 +446,11 @@ proc ::hsi::utils::get_real_source_pin_traverse_in { pin } {
 
             set real_source_pin [::hsi::get_pins -of_objects $lower_net -filter "DIRECTION==O" ]
 
-            # removing the pin from where the traversal started or from where the funtion is called
+            # removing the pin from where the traversal started or from where the function is called
             set real_source_pin [::hsi::utils::remove_pin_from_list $real_source_pin $pin]
 
             set real_source_port [::hsi::get_ports -of_objects $lower_net -filter "DIRECTION==I" ]
-            # removing the pin from where the traversal started or from where the funtion is called
+            # removing the pin from where the traversal started or from where the function is called
             set real_source_port [::hsi::utils::remove_pin_from_list $real_source_port $pin]
 
             if { [ llength $real_source_pin] != 0 } {
@@ -602,7 +602,7 @@ proc ::hsi::utils::get_real_sink_pins_traverse_in { test_pin } {
         if { [ llength $lower_net] != 0  && [ llength $upper_net] != 0 } {
 
             set real_sink_pins [::hsi::get_pins -of_objects $lower_net -filter "DIRECTION==I" ]
-            # removing the pin form where the traversal started or from where the funtion is called
+            # removing the pin form where the traversal started or from where the function is called
             set real_sink_pins [::hsi::utils::remove_pin_from_list $real_sink_pins $test_pin]
 
             if { [ llength $real_sink_pins] != 0 } {
@@ -612,7 +612,7 @@ proc ::hsi::utils::get_real_sink_pins_traverse_in { test_pin } {
             }
 
             set real_sink_ports [::hsi::get_ports -of_objects $lower_net -filter "DIRECTION==O" ]
-            # removing the pin form where the traversal started or from where the funtion is called
+            # removing the pin form where the traversal started or from where the function is called
             set real_sink_ports [::hsi::utils::remove_pin_from_list $real_sink_ports $test_pin]
 
             if { [llength $real_sink_ports] != 0 } {
@@ -662,7 +662,7 @@ proc ::hsi::utils::get_real_sink_pins_traverse_out { periph_pin } {
                if { [ llength $lower_net] != 0  && [ llength $upper_net] != 0 } {
 
                    set real_sink_pins [::hsi::get_pins -of_objects $upper_net -filter "DIRECTION==I" ]
-                   # removing the pin from where the traversal started or from where the funtion is called
+                   # removing the pin from where the traversal started or from where the function is called
                    set real_sink_pins [::hsi::utils::remove_pin_from_list $real_sink_pins $test_pin]
                    if { [ llength $real_sink_pins] != 0 } {
                        foreach source_pin $real_sink_pins {
@@ -671,7 +671,7 @@ proc ::hsi::utils::get_real_sink_pins_traverse_out { periph_pin } {
                    }
 
                    set real_sink_ports [::hsi::get_ports -of_objects $upper_net -filter "DIRECTION==O" ]
-                   # removing the pin from where the traversal started or from where the funtion is called
+                   # removing the pin from where the traversal started or from where the function is called
                    set real_sink_ports [::hsi::utils::remove_pin_from_list $real_sink_ports $test_pin]
                    if { [llength $real_sink_ports] != 0 } {
                        foreach source_port $real_sink_ports {
@@ -995,7 +995,7 @@ proc ::hsi::utils::generate_psinit { } {
 
 # This API returns the interrupt ID of a IP Pin
 # Usecase: to get the ID of a top level interrupt port, provide empty string for ip_name
-# Usecase: If port width port than 1 bit, then it will return multiple interrupts ID with ":" seperated
+# Usecase: If port width port than 1 bit, then it will return multiple interrupts ID with ":" separated
 proc ::hsi::utils::get_interrupt_id { ip_name port_name } {
     set ret -1
     set periph ""

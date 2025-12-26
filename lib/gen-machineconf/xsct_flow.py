@@ -166,7 +166,7 @@ def GenXsctSystemHwFile(genmachine_scripts,
 def GetFlashInfo(genmachine_scripts, output, system_conffile, hw_file):
     ipinfo_file = os.path.join(genmachine_scripts, 'data', 'ipinfo.yaml')
     flashinfo_file = os.path.join(output, 'flash_parts.txt')
-    # No need to run if system conf file(config) is doesnot change
+    # No need to run if system conf file(config) does not change
     if common_utils.ValidateHashFile(output, 'SYSTEM_CONF', system_conffile, update=False) and \
             os.path.exists(flashinfo_file):
         return 0
@@ -220,7 +220,7 @@ SocCpuDict = {
 
 def ParseXsa(args):
     if args.hw_flow == 'sdt':
-        raise Exception('Invalide HW source Specified for XSCT Flow.')
+        raise Exception('Invalid HW source Specified for XSCT Flow.')
 
     if not 'PETALINUX' in os.environ.keys() and \
        not common_utils.Bitbake.disabled and common_utils.Bitbake.getVar('XILINX_WITH_ESW') != 'xsct':

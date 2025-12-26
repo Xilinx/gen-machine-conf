@@ -981,7 +981,7 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
 
 def ParseSDT(args):
     if args.hw_flow == 'xsct':
-        raise Exception('Invalide HW source Specified for System-Device-Tree.')
+        raise Exception('Invalid HW source Specified for System-Device-Tree.')
 
     '''Check if vitis environment set and show the warning'''
     if 'XILINX_VITIS' in os.environ.keys():
@@ -1142,7 +1142,7 @@ def ParseSDT(args):
 
 def register_commands(subparsers):
     parser_sdt = subparsers.add_parser('parse-sdt',
-                                       help='Parse System devicet-tree file and generate Yocto/PetaLinux configurations.',
+                                       help='Parse System device-tree file and generate Yocto/PetaLinux configurations.',
                                        usage='%(prog)s [--hw-description'
                                        ' <PATH_TO_SDTDIR>] [other options]'
                                        )

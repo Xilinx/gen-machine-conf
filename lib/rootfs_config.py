@@ -71,7 +71,7 @@ def GenRootfsConfig(args, system_conffile):
     if not os.path.isfile(rfsKconfig_part):
         common_utils.CopyFile(template_Kconfig, rfsKconfig_part)
     common_utils.CopyFile(user_cfg, rootfs_cfgdir)
-    # No need to run if user_rootfsconfig doesnot changes
+    # No need to run if user_rootfsconfig does not change
     if not common_utils.ValidateHashFile(args.output, 'USER_RFS_CFG', user_cfg) or \
             not os.path.exists(rfsKconfig_user):
         logger.info('Generating kconfig for rootfs')

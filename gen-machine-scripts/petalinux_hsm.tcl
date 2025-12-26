@@ -98,7 +98,7 @@ proc get_partitions {sysconfig flash_kname} {
 	for {set i 0} {$i < ${partlength}} {incr i} {
 		set tmppsize [lsearch -inline -regexp ${lines} "^CONFIG_SUBSYSTEM_FLASH_${flash_kname}_PART${i}_SIZE="]
 		if {[llength ${tmppsize}] == 0} {
-			error "Failed to get the parition size of partition $i."
+			error "Failed to get the partition size of partition $i."
 		}
 		set tmppsize [regsub -all {.*=} "${tmppsize}" {}]
 		set next_offset [format "0x%x" [expr [lindex ${poffsets} ${i}] + ${tmppsize}]]

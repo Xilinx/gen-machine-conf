@@ -62,7 +62,7 @@ def ReadTemplateYaml(yamlfile):
     if not yamlfile:
         return
     if not os.path.isfile(yamlfile):
-        raise Exception('Specified yaml file doesnot exists: %s' % yamlfile)
+        raise Exception('Specified yaml file does not exist: %s' % yamlfile)
     global TemplateYamlData
     TemplateYamlData = ReadYaml(yamlfile) or {}
     TemplateYamlData = CleanupEscapes(TemplateYamlData)
@@ -650,7 +650,7 @@ def startBitbake(disabled=False):
                 raise e
 
 class FetchError(Exception):
-    """Fetch exception transfered from bitbake"""
+    """Fetch exception transferred from bitbake"""
     def __init__(self, message, url = None):
         if url:
             msg = "Fetcher failure for URL: '%s'. %s" % (url, message)
@@ -684,7 +684,7 @@ class bitbake():
         self.shutdown()
 
     # Typlical flow:
-    #  initilize
+    #  initialize
     #  prepare
     #  parse_recipes (optional)
     #  getVar/setVar
@@ -891,7 +891,7 @@ class bitbake():
             localpath = fetcher.ud[url].localpath
             if url.startswith("file:///"):
                 # If the file can't be unpacked or refers to a directory
-                # then it will be in the same directory stucture as the
+                # then it will be in the same directory structure as the
                 # original file:// URL.  hw_dir = ${WORKDIR}
                 base_sdir = os.path.dirname(uri[8:])
                 maybe_s_dir = os.path.join(base_sdir, s_dir)

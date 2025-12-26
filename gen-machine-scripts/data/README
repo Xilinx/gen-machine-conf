@@ -53,6 +53,6 @@
 #      matches the desired value
 # - define([0-9]|)_zero: define a variable with 0
 # - define([0-9]|)_<desired value>: define variable with desired value
-# - define([0-9]|) : define varaibles base on the <variable to define list>
+# - define([0-9]|) : define variables base on the <variable to define list>
 
 # primary_<rules>: this only applies when the var_count variable is set to 0

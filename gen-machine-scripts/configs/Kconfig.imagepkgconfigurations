@@ -20,7 +20,7 @@ config SUBSYSTEM_ROOTFS_INITRAMFS
 config SUBSYSTEM_ROOTFS_INITRD
 	bool "INITRD"
 	help
-	  Choose this opion to configure your PetaLinux build to use
+	  Choose this option to configure your PetaLinux build to use
 	  kernel INITRD mechinsm for the root filesystem.
 
 config SUBSYSTEM_ROOTFS_UBIFS
