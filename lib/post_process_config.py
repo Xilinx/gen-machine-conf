@@ -75,14 +75,15 @@ def UpdateMemConfigs(args, system_conffile):
     '''
     memory = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_', system_conffile,
                                          'choice', '_SELECT=y')
+    memory_baseaddr = None
+    max_mem_size = None
     if memory != 'MANUAL':
         memory_baseaddr = common_utils.GetConfigValue(
             'CONFIG_SUBSYSTEM_MEMORY_%s_BASEADDR' % memory, system_conffile)
         memory_size = common_utils.GetConfigValue(
             'CONFIG_SUBSYSTEM_MEMORY_%s_SIZE' % memory, system_conffile)
-        max_mem_size = int(memory_baseaddr, base=16) + \
-            int(memory_size, base=16)
-    if memory == 'MANUAL' or int(memory_baseaddr, base=16) == 0:
+        max_mem_size = int(memory_baseaddr, base=16) + int(memory_size, base=16)
+    if memory == 'MANUAL' or not memory_baseaddr or int(memory_baseaddr, base=16) == 0:
         # removing u-boot config.cfg file if already exists from previous bank selection
         # as this is not required for manual or base mem zero case as default values works.
         if os.path.exists(os.path.join(args.output, 'u-boot-xlnx', 'config.cfg')):
@@ -211,11 +212,9 @@ def PostProcessSysConf(args, system_conffile, ipinfo_file, plnx_syshw_file):
     global ipinfo_data
     with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
         plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
-    plnx_syshw_file_f.close()
 
     with open(ipinfo_file, 'r') as ipinfo_file_f:
         ipinfo_data = yaml.safe_load(ipinfo_file_f)
-    ipinfo_file_f.close()
 
     bootargs_auto = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_BOOTARGS_AUTO', system_conffile)

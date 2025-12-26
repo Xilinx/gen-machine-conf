@@ -22,8 +22,14 @@ logger = logging.getLogger('Gen-Machineconf')
 global inherit_ext
 inherit_ext = ''
 
+system_conffile = None
+def RequireSystemConfFile():
+    if not system_conffile:
+        raise RuntimeError('system_conffile is not initialised; call GeneratePlnxConfig before adding sources.')
+
 
 def AddRemoteSources(component, Kcomponent):
+    RequireSystemConfFile()
     is_remote = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_COMPONENT_%s_NAME_REMOTE'
                                             % Kcomponent, system_conffile)
     conf_prop = {
@@ -62,6 +68,7 @@ def AddRemoteSources(component, Kcomponent):
 
 
 def AddExternalSources(component, Kcomponent):
+    RequireSystemConfFile()
     is_external = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_COMPONENT_%s_NAME_EXT__LOCAL__SRC'
                                               % Kcomponent, system_conffile)
     ext_source = ''
@@ -85,6 +92,7 @@ def AddExternalSources(component, Kcomponent):
 
 
 def GenerateKernelCfg(args):
+    RequireSystemConfFile()
     logger.info('Generating kernel configuration files')
     genmachine_scripts = project_config.GenMachineScriptsPath()
     sysconf_koptions = os.path.join(

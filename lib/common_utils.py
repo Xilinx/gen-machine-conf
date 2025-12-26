@@ -264,7 +264,7 @@ def RunCmd(command, out_dir, extraenv=None,
             env[k] = extraenv[k]
     if checkcall:
         subprocess.check_call(
-            command, env=extraenv, cwd=out_dir, shell=shell)
+            command, env=env, cwd=out_dir, shell=shell)
         return
     else:
         try:
@@ -399,7 +399,6 @@ def UpdateConfigValue(macro, value, filename):
     if os.path.exists(filename):
         with open(filename, 'r') as file_data:
             lines = file_data.readlines()
-        file_data.close()
 
     with open(filename, 'w') as file_data:
         for line in lines:
@@ -410,7 +409,6 @@ def UpdateConfigValue(macro, value, filename):
             file_data.write('# %s is not set\n' % macro)
         else:
             file_data.write('%s=%s\n' % (macro, value))
-    file_data.close()
 
 
 def RemoveConfigs(macro, filename):
@@ -419,13 +417,11 @@ def RemoveConfigs(macro, filename):
     if os.path.exists(filename):
         with open(filename, 'r') as file_data:
             lines = file_data.readlines()
-        file_data.close()
     with open(filename, 'w') as file_data:
         for line in lines:
             if line.startswith(macro):
                 continue
             file_data.write(line)
-    file_data.close()
 
 
 def GetConfigValue(macro, filename, Type='bool', end_macro='=y'):
@@ -433,7 +429,6 @@ def GetConfigValue(macro, filename, Type='bool', end_macro='=y'):
     if os.path.exists(filename):
         with open(filename, 'r') as file_data:
             lines = file_data.readlines()
-        file_data.close()
     value = ''
     if Type == 'bool':
         for line in lines:
@@ -531,13 +526,26 @@ def ReplaceStrFromFile(fpath, search_str, replace_str):
     replace with replace_str if found in file.
     '''
     try:
-        with open(fpath) as f:
+        with open(fpath, encoding='utf-8') as f:
             s = f.read()
-            s = s.replace(search_str, replace_str)
     except UnicodeDecodeError:
-        pass
-    with open(fpath, 'w') as f:
-        f.write(s)
+        # Fallback to latin-1 encoding which can handle any byte sequence
+        try:
+            with open(fpath, encoding='latin-1') as f:
+                s = f.read()
+        except Exception as e:
+            logger.warning(f"Failed to read file {fpath}: {e}")
+            return
+
+    s = s.replace(search_str, replace_str)
+
+    try:
+        with open(fpath, 'w', encoding='utf-8') as f:
+            f.write(s)
+    except UnicodeEncodeError:
+        # Write with the same encoding we successfully read with
+        with open(fpath, 'w', encoding='latin-1') as f:
+            f.write(s)
 
 
 def AddStrToFile(filename, string, mode='w'):

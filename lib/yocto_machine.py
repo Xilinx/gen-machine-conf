@@ -399,7 +399,7 @@ def YoctoMCFimwareConfigs(args, arch, dtg_machine, system_conffile, req_conf_fil
         machine_override_string += 'ASU_MCDEPENDS = "%s"\n' % AsuMcDepends
         machine_override_string += 'ASU_DEPLOY_DIR = "%s"\n' % AsuDeployDir.rstrip('/')
         if AsuImageName:
-            machine_override_string += 'machine_override_string += "%s"\n' % AsuImageName
+            machine_override_string += 'ASU_FIRMWARE_IMAGE_NAME = "%s"\n' % AsuImageName
         if RemoveAsu:
             machine_override_string += '\n# Remove the ASU from Boot.bin\n'
             machine_override_string += 'BIF_PARTITION_ATTR:remove = "asufw"\n'
@@ -780,7 +780,6 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     global plnx_syshw_data
     with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
         plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
-    plnx_syshw_file_f.close()
 
     # Get the device_id from plnx_syshw_data
     device_id = '999'
@@ -881,5 +880,5 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
 
     with open(machine_conf_path, 'w') as machine_override_conf_f:
         machine_override_conf_f.write(machine_override_string)
-    machine_override_conf_f.close()
+
     return machine_conf_file
