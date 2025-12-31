@@ -222,10 +222,15 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
         atf_bl33_offset = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_%s_U__BOOT_TEXTBASE_OFFSET' % memory,
                                                      system_conffile)
         if atf_extra_settings:
-            machine_override_string += 'EXTRA_OEMAKE:append:pn-arm-trusted-firmware'\
+            machine_override_string += 'EXTRA_OEMAKE:append:pn-trusted-firmware-a'\
                                        ' = " %s"\n' % atf_extra_settings
         if atf_bl33_offset:
             machine_override_string += 'TFA_BL33_LOAD ?= "%s"\n' % atf_bl33_offset
+
+        atf_debug = common_utils.GetConfigValue(
+                'CONFIG_SUBSYSTEM_TF-A_DEBUG', system_conffile)
+        if atf_debug:
+            machine_override_string += 'DEBUG_ATF = "1"\n'
 
         optee_serial_ip_name = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_OP-TEE_IP_NAME',
                                                         system_conffile)

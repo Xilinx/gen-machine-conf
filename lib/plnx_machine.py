@@ -461,10 +461,6 @@ def GeneratePlnxConfig(args, machine_conf_file):
             'trusted-firmware-a', 'TRUSTED__FIRMWARE__ARM')
         override_string += AddExternalSources(
             'trusted-firmware-a', 'TRUSTED__FIRMWARE__ARM')
-        atf_debug = common_utils.GetConfigValue(
-            'CONFIG_SUBSYSTEM_TF-A_DEBUG', system_conffile)
-        if atf_debug:
-            override_string += 'DEBUG_ATF = "1"\n'
 
     if soc_family in ['zynqmp', 'zynq']:
         fsbl_bspcompiler_flags = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_FSBL_BSPCOMPILER_FLAGS',
