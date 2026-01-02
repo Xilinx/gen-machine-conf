@@ -51,13 +51,14 @@ def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
             raise Exception(f'Failed to get dtsi: {dtsi_file}')
 
         DomainCustomDtsi = f'{mcname}_{os.path.basename(dtsi_file)}'
+        domain_dtsi_path = os.path.join(outdir, DomainCustomDtsi)
         with open(dtsi_file, 'r') as f:
             for line in f:
                 if '/plugin/;' in line:
                     raise Exception(f'{dtsi_file} is an overlay file and cannot be appended to the final dts file.')
                     break
-        common_utils.CopyFile(dtsi_file, os.path.join(outdir, DomainCustomDtsi))
-        common_utils.AddStrToFile(dts_file, f'#include "{dtsi_file}"\n', mode='a+')
+        common_utils.CopyFile(dtsi_file, domain_dtsi_path)
+        common_utils.AddStrToFile(dts_file, f'#include "{domain_dtsi_path}"\n', mode='a+')
     if dtsi_files:
         logger.debug(f'Generating {dts_file} including {dtsi_files}')
         RunLopperUsingDomainFile([], outdir, outdir, dts_file, dts_file)
@@ -285,11 +286,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         extra_conf_str = ''
         if self.os_hint == 'fsbl':
             logger.info('Generating cortex-a9 baremetal configuration for FSBL')
+            missing_files = []
             for psu_init_f in ['ps7_init.c', 'ps7_init.h']:
                 if not os.path.exists(os.path.join(
                         self.args.psu_init_path, psu_init_f)):
-                    logger.error('Unable to find %s in %s' % (
-                        psu_init_f, self.args.psu_init_path))
+                    missing_files.append(psu_init_f)
+            if missing_files:
+                # Only error no exception as it is a build dependency
+                logger.error('Unable to find %s in %s' %
+                            (', '.join(missing_files), self.args.psu_init_path))
         else:
             logger.info(
                 'Generating cortex-a9 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -300,11 +305,15 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         extra_conf_str = ''
         if self.os_hint == 'fsbl':
             logger.info('Generating cortex-a53 baremetal configuration for FSBL')
+            missing_files = []
             for psu_init_f in ['psu_init.c', 'psu_init.h']:
                 if not os.path.exists(os.path.join(
                         self.args.psu_init_path, psu_init_f)):
-                    logger.error('Unable to find %s in %s' % (
-                        psu_init_f, self.args.psu_init_path))
+                    missing_files.append(psu_init_f)
+            if missing_files:
+                # Only error no exception as it is a build dependency
+                logger.error('Unable to find %s in %s' % (
+                        ', '.join(missing_files), self.args.psu_init_path))
         else:
             logger.info(
                 'Generating cortex-a53 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -314,26 +323,26 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
     def CortexA72Baremetal(self):
         logger.info(
             'Generating cortex-a72 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
-
-        distro_name = 'xilinx-standalone-nolto'
         self.GenLibxilFeatures('lop-a72-imux.dts')
 
     def CortexA78Baremetal(self):
         logger.info(
             'Generating cortex-a78 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))
-
-        distro_name = 'xilinx-standalone-nolto'
         self.GenLibxilFeatures('lop-a78-imux.dts')
 
     def CortexR5Baremetal(self):
         extra_conf_str = ''
         if self.os_hint == 'fsbl':
             logger.info('Generating cortex-r5 baremetal configuration for FSBL')
+            missing_files = []
             for psu_init_f in ['psu_init.c', 'psu_init.h']:
                 if not os.path.exists(os.path.join(
                         self.args.psu_init_path, psu_init_f)):
-                    logger.error('Unable to find %s in %s' % (
-                        psu_init_f, self.args.psu_init_path))
+                    missing_files.append(psu_init_f)
+            if missing_files:
+                # Only error no exception as it is a build dependency
+                logger.error('Unable to find %s in %s' % (
+                        ', '.join(missing_files), self.args.psu_init_path))
         else:
             logger.info(
                 'Generating cortex-r5 baremetal configuration for core %s [ %s ]' % (self.core, self.domain))

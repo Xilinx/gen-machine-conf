@@ -83,13 +83,11 @@ config SUBSYSTEM_TF-A_EXTRA_COMPILER_FLAGS
 	  (NEW!) : ZYNQMP_WDT_RESTART=1 for Special handling to cleanly restart the APU during AWDT recovery
 	  Other E.g. MAKEARCH+=RESET_TO_BL31=1 SPD=tspd; ATF_BUILD_TARGET=bl31 bl32
 
-if SUBSYSTEM_DISTRO_PETALINUX
 config SUBSYSTEM_TF-A_DEBUG
 	bool "TF-A debug"
 	default n
 	help
 	 Select this option for selecting TF-A debug mode
-endif
 
 endmenu
 endif

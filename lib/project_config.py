@@ -150,10 +150,11 @@ def MultiConfigYaml(yaml_file, multiconfig_dict):
             if domain_name:
                 os_hint_yaml.append(os_hint)
                 multiconf_yaml.append(mc_config)
-        # Check if linux is present once all yamls parsed
-        if 'linux' not in os_hint_yaml:
-            global LinuxDisabledInYaml
-            LinuxDisabledInYaml = True
+
+    # Check if linux is present once all yamls parsed
+    global LinuxDisabledInYaml
+    if 'linux' not in os_hint_yaml:
+        LinuxDisabledInYaml = True
 
     return multiconf_yaml
 

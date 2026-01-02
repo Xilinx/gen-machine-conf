@@ -62,6 +62,7 @@ def GenConf_memory(IpsToAdd, slavesdict, proc_ipname, arch):
     ''' Generate Memory Info as Kconfig'''
     confstr = ''
     memoryconfstr = ''
+    memoryconfdefaultstr = ''
     confstr += '\nmenu "Memory Settings"\n'
     confstr += 'choice\n'
     confstr += '\tprompt "Primary Memory"\n'
@@ -136,10 +137,11 @@ def GenConf_memory(IpsToAdd, slavesdict, proc_ipname, arch):
         memoryconfstr += '\tu-boot load address = bank base address + offset. And same value will\n'
         memoryconfstr += '\tpass to TF-A also. Minimum suggested is 1MB.\n'
 
-        memoryconfstr += '\nconfig %s_IP_NAME\n' % KconfPrefix
-        memoryconfstr += '\tstring\n'
-        memoryconfstr += '\tdefault %s\n' % slave
-        memoryconfstr += '\tdepends on %s_SELECT\n' % memKconf
+        memoryconfdefaultstr += f'\tdefault {slave} if {memKconf}_SELECT\n'
+
+    memoryconfstr += '\nconfig %s_IP_NAME\n' % KconfPrefix
+    memoryconfstr += '\tstring\n'
+    memoryconfstr += memoryconfdefaultstr
 
     confstr += '\nconfig %s_MANUAL_SELECT\n' % KconfPrefix
     confstr += '\tbool "manual"\n'

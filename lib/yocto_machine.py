@@ -222,10 +222,15 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
         atf_bl33_offset = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_%s_U__BOOT_TEXTBASE_OFFSET' % memory,
                                                      system_conffile)
         if atf_extra_settings:
-            machine_override_string += 'EXTRA_OEMAKE:append:pn-arm-trusted-firmware'\
+            machine_override_string += 'EXTRA_OEMAKE:append:pn-trusted-firmware-a'\
                                        ' = " %s"\n' % atf_extra_settings
         if atf_bl33_offset:
             machine_override_string += 'TFA_BL33_LOAD ?= "%s"\n' % atf_bl33_offset
+
+        atf_debug = common_utils.GetConfigValue(
+                'CONFIG_SUBSYSTEM_TF-A_DEBUG', system_conffile)
+        if atf_debug:
+            machine_override_string += 'DEBUG_ATF = "1"\n'
 
         optee_serial_ip_name = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_OP-TEE_IP_NAME',
                                                         system_conffile)
@@ -399,12 +404,53 @@ def YoctoMCFimwareConfigs(args, arch, dtg_machine, system_conffile, req_conf_fil
         machine_override_string += 'ASU_MCDEPENDS = "%s"\n' % AsuMcDepends
         machine_override_string += 'ASU_DEPLOY_DIR = "%s"\n' % AsuDeployDir.rstrip('/')
         if AsuImageName:
-            machine_override_string += 'machine_override_string += "%s"\n' % AsuImageName
+            machine_override_string += 'ASU_FIRMWARE_IMAGE_NAME = "%s"\n' % AsuImageName
         if RemoveAsu:
             machine_override_string += '\n# Remove the ASU from Boot.bin\n'
             machine_override_string += 'BIF_PARTITION_ATTR:remove = "asufw"\n'
 
     return machine_override_string
+
+def SerialConsoleSettings(system_conffile, sdt=False):
+    serialname = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_', system_conffile,
+                                             'choice', '_SELECT=y')
+    serial_console = ''
+    baudrate = ''
+    if serialname and serialname != 'MANUAL':
+        serialipname = GetIPProperty(serialname, system_conffile)
+        baudrate = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_'
+                                               % serialname, system_conffile, 'choice', '=y')
+        if serialipname == 'axi_uartlite' or serialipname == 'mdm':
+            serial_console = '%s;ttyUL0' % baudrate
+        elif serialipname == 'axi_uart16550':
+            serial_console = '%s;ttyS0' % baudrate
+        elif 'sbsauart' in serialipname:
+            serial_console = '%s;ttyAMA0' % baudrate
+        else:
+            serial_console = '%s;ttyPS0' % baudrate
+
+        # parse the selected serial IP if no_alias/sdt flow selected to get the serial no.
+        # serial no. will be suffix to the serial ip name Ex:psu_uart_1 -> serial no. is 1.
+        no_alias = common_utils.GetConfigValue(
+            'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', system_conffile)
+        serial_no = ''
+        if no_alias == 'y' or sdt:
+            if "_" in serialname:
+                try:
+                    serial_no = serialname.lower().split(serialipname + '_')[1]
+                except IndexError:
+                    tmp = re.findall('[0-9]+', serialname)
+                    if tmp:
+                        serial_no = tmp[0]
+            else:
+                tmp = re.findall('[0-9]+', serialname)
+                if tmp:
+                    serial_no = tmp[0]
+            if serial_no:
+                serial_no = tmp[0] if tmp else ''
+                serial_console = serial_console[:-1]
+                serial_console = serial_console + serial_no
+    return serial_console, baudrate
 
 
 def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
@@ -528,40 +574,9 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
                                                         system_conffile)
         machine_override_string += 'XSCTH_PROC:pn-fs-boot ?= "%s"\n' % processor_ip_name
 
-    serialname = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_', system_conffile,
-                                             'choice', '_SELECT=y')
-    if serialname != 'MANUAL':
-        serialipname = GetIPProperty(serialname, system_conffile)
-        baudrate = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_'
-                                               % serialname, system_conffile, 'choice', '=y')
-        if serialipname == 'axi_uartlite' or serialipname == 'mdm':
-            serial_console = '%s;ttyUL0' % baudrate
-        elif serialipname == 'axi_uart16550':
-            serial_console = '%s;ttyS0' % baudrate
-        elif serialipname == 'psv_sbsauart' or serialipname == 'psx_sbsauart':
-            serial_console = '%s;ttyAMA0' % baudrate
-        else:
-            serial_console = '%s;ttyPS0' % baudrate
-
+    serial_console, baudrate = SerialConsoleSettings(system_conffile)
+    if serial_console and baudrate:
         machine_override_string += '\n# Serial Console Settings\n'
-        # parse the selected serial IP if no_alias selected to get the serial no.
-        # serial no. will be suffix to the serial ip name Ex:psu_uart_1 -> serial no. is 1.
-        no_alias = common_utils.GetConfigValue(
-            'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', system_conffile)
-        serial_no = ''
-        if no_alias == 'y':
-            if "_" in serialname:
-                try:
-                    serial_no = serialname.lower().split(serialipname + '_')[1]
-                except IndexError:
-                    serial_no = re.findall('[0-9]+', serialname)[0]
-                serial_console = serial_console[:-1]
-                serial_console = serial_console + serial_no
-            else:
-                tmp = re.findall('[0-9]+', serialname)
-                serial_no = tmp[0]
-                serial_console = serial_console[:-1]
-                serial_console = serial_console + serial_no
         machine_override_string += 'SERIAL_CONSOLES ?= "%s"\n' % serial_console
         machine_override_string += 'YAML_SERIAL_CONSOLE_BAUDRATE ?= "%s"\n' \
                                    % baudrate
@@ -616,6 +631,11 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     if config_dtfile:
         machine_override_string += 'CONFIG_DTFILE ?= "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(config_dtfile)
     machine_override_string += 'CONFIG_DTFILE[vardepsexclude] += "CONFIG_DTFILE_DIR"\n'
+
+    serial_console, baudrate = SerialConsoleSettings(system_conffile, sdt=True)
+    if serial_console:
+        machine_override_string += '\n# Serial Console Settings\n'
+        machine_override_string += 'SERIAL_CONSOLES ?= "%s"\n' % serial_console
 
     machine_override_string += YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict)
 
@@ -765,7 +785,6 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     global plnx_syshw_data
     with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
         plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
-    plnx_syshw_file_f.close()
 
     # Get the device_id from plnx_syshw_data
     device_id = '999'
@@ -866,5 +885,5 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
 
     with open(machine_conf_path, 'w') as machine_override_conf_f:
         machine_override_conf_f.write(machine_override_string)
-    machine_override_conf_f.close()
+
     return machine_conf_file
