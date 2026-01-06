@@ -161,7 +161,7 @@ def add_user_params(packages, bb_file):
 
 
 def update_cfg(cfg_file, xilinx_arch):
-    cfg_file = open(cfg_file, 'w')
+    cfg_file = open(cfg_file, 'a')
     packages = read_packages(xilinx_arch)
 
     cfg_file.write('\n#Rootfs configs\n')
