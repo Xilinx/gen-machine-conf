@@ -56,7 +56,6 @@ def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
             for line in f:
                 if '/plugin/;' in line:
                     raise Exception(f'{dtsi_file} is an overlay file and cannot be appended to the final dts file.')
-                    break
         common_utils.CopyFile(dtsi_file, domain_dtsi_path)
         common_utils.AddStrToFile(dts_file, f'#include "{domain_dtsi_path}"\n', mode='a+')
     if dtsi_files:
