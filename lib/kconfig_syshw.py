@@ -307,7 +307,7 @@ def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
         serialconfstr += '\tbool "Randomise MAC address"\n'
         serialconfstr += '\tdefault y if SUBSYSTEM_ARCH_MICROBLAZE\n'
         serialconfstr += '\tdefault n\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT\n' % (
+        serialconfstr += '\tdepends on %s_%s_SELECT && SUBSYSTEM_DISTRO_PETALINUX\n' % (
             eth_Kconf, slave.upper())
         serialconfstr += '\thelp\n'
         serialconfstr += '\trandomise MAC address for the primary ethernet.\n'
@@ -316,7 +316,7 @@ def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
             eth_Kconf, slave.upper())
         serialconfstr += '\tstring "Template for randomised MAC address"\n'
         serialconfstr += '\tdefault "00:0a:35:00:??:??"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && %s_%s_MAC_AUTO\n' % (
+        serialconfstr += '\tdepends on %s_%s_SELECT && %s_%s_MAC_AUTO && SUBSYSTEM_DISTRO_PETALINUX\n' % (
             eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
         serialconfstr += '\thelp\n'
         serialconfstr += '\tPattern for generating random MAC addresses - question mark\n'
@@ -324,7 +324,7 @@ def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
 
         serialconfstr += '\nconfig %s_%s_MAC\n' % (eth_Kconf, slave.upper())
         serialconfstr += '\tstring "Ethernet MAC address"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_MAC_AUTO\n' % (
+        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_MAC_AUTO && SUBSYSTEM_DISTRO_PETALINUX\n' % (
             eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
         serialconfstr += '\thelp\n'
         serialconfstr += '\tDefault mac address will set from eeprom fru data\n'
@@ -334,7 +334,7 @@ def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
             eth_Kconf, slave.upper())
         serialconfstr += '\tbool "Obtain IP address automatically"\n'
         serialconfstr += '\tdefault y\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT\n' % (
+        serialconfstr += '\tdepends on %s_%s_SELECT && SUBSYSTEM_DISTRO_PETALINUX\n' % (
             eth_Kconf, slave.upper())
         serialconfstr += '\thelp\n'
         serialconfstr += '\tSet this option if you would like your SUBSYSTEM to use DHCP for\n'
@@ -344,7 +344,7 @@ def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
             eth_Kconf, slave.upper())
         serialconfstr += '\tstring "Static IP address"\n'
         serialconfstr += '\tdefault "192.168.0.10"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP\n' % (
+        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP && SUBSYSTEM_DISTRO_PETALINUX\n' % (
             eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
         serialconfstr += '\thelp\n'
         serialconfstr += '\tThe IP address of your main network interface when static network\n'
@@ -354,7 +354,7 @@ def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
             eth_Kconf, slave.upper())
         serialconfstr += '\tstring "Static IP netmask"\n'
         serialconfstr += '\tdefault "255.255.255.0"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP\n' % (
+        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP && SUBSYSTEM_DISTRO_PETALINUX\n' % (
             eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
         serialconfstr += '\thelp\n'
         serialconfstr += '\tDefault netmask when static network address assignment is used.\n'
@@ -365,7 +365,7 @@ def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
             eth_Kconf, slave.upper())
         serialconfstr += '\tstring "Static IP gateway"\n'
         serialconfstr += '\tdefault "192.168.0.1"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP\n' % (
+        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP && SUBSYSTEM_DISTRO_PETALINUX\n' % (
             eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
         serialconfstr += '\thelp\n'
         serialconfstr += '\tDefault gateway when static network address assignment is used.\n'
