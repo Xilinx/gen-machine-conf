@@ -122,6 +122,9 @@ def AddXsctUtilsPath(xsct_tool):
         elif xilinx_xsct_tool:
             os.environ["PATH"] += os.pathsep + xilinx_xsct_tool + '/bin'
 
+    # Disable blocking dependency check in xsct
+    os.environ["XSCT_DEP_CHECK_BLOCKING"] = "FALSE"
+
     # XSCT can only be extracted if we've enabled XSCT
     xsct_exe = common_utils.check_tool('xsct', 'xsct-native', 'xsct command not found, use --xsct-tool option to specify path')
     logger.debug('Using xsct from : %s' % xsct_exe)
