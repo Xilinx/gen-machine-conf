@@ -92,6 +92,25 @@ it and apply them to arguments that are not explicitly set on the command line.
                 op: '='
                 val: "-serial null -serial null -serial null -serial mon:stdio"
 
+**Supported input methods**
+
+- Args: Supported via command line and YAML.
+  Command-line flags passed directly to ``gen-machine-conf``. The same flags
+  can be pre-defined in YAML under ``args:`` to avoid repetition. Values
+  provided on the command line are applied on top of the YAML defaults.
+
+- Kconfig: Supported via command line and YAML.
+  Low-level configuration macros (for Yocto, U-Boot, TF-A, etc.) that can be
+  supplied using ``--add-config`` on the command line or under ``kconfig:``
+  in YAML. Command-line Kconfig entries are merged after YAML entries, so
+  they can override or extend them.
+
+- Machine (pre/post): Supported via YAML only.
+  Yocto machine configuration overrides read exclusively from YAML. Use
+  ``pre`` to inject variables before the generic machine include,
+  and ``post`` to append or override settings afterward using
+  explicit operations such as ``op: '='`` with ``val:``.
+
 **Usage Example**
 
 .. code-block:: console
