@@ -239,10 +239,11 @@ def ApplyConfValue(string, system_conffile):
         conf = string.replace('#', '').split()[0]
         value = 'disable'
     else:
-        conf = string.split('=')[0]
-        value = 'y'
-        if len(string.split('=')) == 2:
-            value = string.split('=')[1]
+        if '=' in string:
+            conf, value = string.split('=', 1)  # split only once
+        else:
+            conf = string.strip()
+            value = 'y'
     if conf and value:
         common_utils.UpdateConfigValue(conf, value, system_conffile)
 
