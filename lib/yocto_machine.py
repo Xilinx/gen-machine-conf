@@ -13,7 +13,7 @@ import re
 import common_utils
 import project_config
 import glob
-from post_process_config import CheckIP, GetIPProperty
+from post_process_config import CheckIP, GetIPProperty, CheckDeviceCount
 import logging
 
 
@@ -435,7 +435,11 @@ def SerialConsoleSettings(system_conffile, sdt=False):
             'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', system_conffile)
         serial_no = ''
         if no_alias == 'y' or sdt:
-            if "_" in serialname:
+            serial_ips = CheckDeviceCount('serial', system_conffile)
+            if len(serial_ips) < 2:
+                # Set serial no as 0 if only one serial ip is enabled
+                serial_no = '0'
+            elif "_" in serialname:
                 try:
                     serial_no = serialname.lower().split(serialipname + '_')[1]
                 except IndexError:
@@ -447,7 +451,6 @@ def SerialConsoleSettings(system_conffile, sdt=False):
                 if tmp:
                     serial_no = tmp[0]
             if serial_no:
-                serial_no = tmp[0] if tmp else ''
                 serial_console = serial_console[:-1]
                 serial_console = serial_console + serial_no
     return serial_console, baudrate
