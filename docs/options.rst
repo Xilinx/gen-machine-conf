@@ -241,13 +241,62 @@ This allows you to specify additional configuration overrides for the generated 
 configuration. These overrides are typically used to enable or customize specific features,
 settings, or behaviors in the machine configuration file.
 The value provided to --machine-overrides is a string containing one or more override tokens,
-separated by spaces.
+separated by colons.
+
+This option lets you add extra override tokens to the generated machine configuration.
+These overrides control how BitBake applies machine-specific settings, feature flags, and
+.bbappend files during the build.
+
+Syntax
+^^^^^^
+
+.. code-block:: text
+
+    --machine-overrides <override1:override2:...>
+
+The value is a colon-separated list of tokens appended to BitBake's MACHINEOVERRIDES
+variable in the generated <machine>.conf.
+
+Purpose
+^^^^^^^
+
+gen-machine-conf automatically adds the machine name as an override. Use this option
+when you want BitBake to additionally treat your machine as:
+
+- An existing reference machine (inherit its BSP logic)
+- A board revision or variant
+- A feature-specific configuration
+
+How overrides work in BitBake
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- BitBake evaluates overrides from left to right
+- Later overrides take precedence over earlier ones
+- Overrides added via this option appear after the machine name, allowing them to refine or
+  supersede generic settings
+- Only overrides that match entries in your layers have any effect; unused tokens are
+  silently ignored
 
 **Usage Example**
 
 .. code-block:: console
 
-    $ gen-machine-conf --hw-description ./system-top.dts --machine-overrides "feature1 feature2"
+    $ gen-machine-conf --hw-description ./system-top.dts --machine-overrides "feature1:feature2"
+    $ gen-machine-conf --machine-name myboard --machine-overrides "versal-vck190:revB"
+
+Generates in conf/machine/myboard-*.conf:
+
+.. code-block:: text
+
+    MACHINEOVERRIDES .= ":versal-vck190:revB"
+
+Effective resolution order (assuming base overrides exist):
+
+.. code-block:: text
+
+    <base-overrides>:myboard:versal-vck190:revB
+
+This allows myboard to inherit settings from versal-vck190 and further specialize with revB overrides.
 
 --native-sysroot <path>
 ~~~~~~~~~~~~~~~~~~~~~~~
