@@ -853,7 +853,19 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     overrides = common_utils.GetConfigValue(
         'CONFIG_YOCTO_ADD_OVERRIDES', system_conffile)
 
+    inherit_overrides = ''
+    # Add other machine names from yaml if any to MACHINEOVERRIDES
+    if yaml_utils.MachineNamesList:
+        if machine_conf_file in yaml_utils.MachineNamesList:
+            yaml_utils.MachineNamesList.remove(machine_conf_file)
+        if yaml_utils.MachineNamesList:
+            inherit_overrides = ' '.join(yaml_utils.MachineNamesList)
+            if overrides:
+                overrides = overrides + ':'
+            overrides = overrides + inherit_overrides
+
     if overrides:
+        overrides = overrides.replace(' ', ':')
         machine_override_string += 'MACHINEOVERRIDES .= ":%s"\n' % overrides
 
     machine_override_string += '\n#### Preamble\n'
@@ -878,6 +890,10 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
         machine_override_string = YoctoSdtConfigs(args, arch, dtg_machine,
                                                   system_conffile, req_conf_file,
                                                   MultiConfDict, machine_override_string)
+    # Add PACKAGE_EXTRA_ARCHS for inherit machine overrides
+    if inherit_overrides:
+        package_archs = inherit_overrides.replace('-', '_')
+        machine_override_string += f'PACKAGE_EXTRA_ARCHS:append = " {package_archs}"\n'
 
     machine_override_string += '\n#### No additional settings should be after '\
         'the Postamble\n'
