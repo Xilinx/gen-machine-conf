@@ -300,7 +300,7 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
     machine_override_string += 'UBOOT_ENTRYPOINT  ?= "%s"\n' % loadaddr
     machine_override_string += 'UBOOT_LOADADDRESS ?= "%s"\n' % loadaddr
 
-    if arch != 'aarch64':
+    if arch != 'aarch64' and not (args.soc_family == 'microblaze' and args.hw_flow == 'sdt'):
         machine_override_string += 'KERNEL_EXTRA_ARGS += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n'
 
 
@@ -702,7 +702,18 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
         machine_override_string += 'include conf/machine/include/%s/${BB_CURRENT_MC}-features.conf\n' % args.machine
         machine_override_string += 'LIBXIL_CONFIG = "conf/machine/include/%s/${BB_CURRENT_MC}-libxil.conf"\n' % args.machine
 
-    if args.soc_family in ('versal', 'versal-2ve-2vm'):
+    # Determine FPGA image type based on SoC family and device
+    if args.soc_family == 'microblaze':
+        # Mb-V Ultrascale+ uses PDI, 7 Series uses BIT
+        fpga_image_type = 'pdi' if args.device_id.startswith('xcsu') else 'bit'
+    elif args.soc_family in ['zynq', 'zynqmp']:
+        fpga_image_type = 'bit'
+    elif args.soc_family in ['versal', 'versal-2ve-2vm']:
+        fpga_image_type = 'pdi'
+    else:
+        fpga_image_type = ''
+
+    if fpga_image_type == 'pdi':
         if os.path.isdir(args.pl):
             pdis = glob.glob(os.path.join(args.pl, '*.pdi'))
             if not pdis:
@@ -729,13 +740,13 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
             # Generally this means that the path will be EMPTY or a 'short' value for a directory
             pdi_path_dir = ("${RECIPE_SYSROOT}${datadir}/sdt/${MACHINE}/%s" % '').rstrip('/')
 
-            machine_override_string += '\n# Versal PDI\n'
+            machine_override_string += '\n# PDI variables\n'
             machine_override_string += 'PDI_PATH_DEPENDS = "sdt-artifacts"\n'
             machine_override_string += 'PDI_PATH_DIR = "%s"\n' % pdi_path_dir
             machine_override_string += 'PDI_PATH = "${PDI_PATH_DIR}/%s"\n' % \
                                        os.path.basename(args.pl)
 
-    if args.soc_family in ['zynqmp', 'zynq', 'microblaze'] and not args.gen_pl_overlay:
+    if fpga_image_type == 'bit' and not args.gen_pl_overlay:
         if os.path.isdir(args.pl):
             bit = glob.glob(os.path.join(args.pl, '*.bit'))
             if not bit:
@@ -791,9 +802,9 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
         plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
 
     # Get the device_id from plnx_syshw_data
-    device_id = '999'
+    args.device_id = '999'
     if 'device_id' in plnx_syshw_data.keys():
-        device_id = plnx_syshw_data['device_id']
+        args.device_id = plnx_syshw_data['device_id']
 
     # Include user given machine if INCLUDE_MACHINE_NAME set
     req_conf_file = common_utils.GetConfigValue('CONFIG_YOCTO_INCLUDE_MACHINE_NAME',
@@ -821,7 +832,7 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     # or machine_name and include_machine_name is same then
     # Append device_id/999 to yocto_machine_name
     if machine_conf_file in YoctoGenericMachines or machine_conf_file == req_conf_file:
-        machine_conf_file += '-' + device_id
+        machine_conf_file += '-' + args.device_id
 
     machine_conf_dir = os.path.join(args.config_dir, 'machine')
     common_utils.CreateDir(machine_conf_dir)
