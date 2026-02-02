@@ -11,6 +11,7 @@
 import os
 import re
 import common_utils
+import yaml_utils
 import project_config
 import glob
 from post_process_config import CheckIP, GetIPProperty, CheckDeviceCount
@@ -782,7 +783,7 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
                                        system_conffile, 'choice', '=y').lower()
 
     global YamlMachineConfs
-    YamlMachineConfs = common_utils.TemplateYamlData.get('machine', {}) or {}
+    YamlMachineConfs = yaml_utils.TemplateYamlData.get('machine', {}) or {}
     soc_family = args.soc_family
     import yaml
     global plnx_syshw_data

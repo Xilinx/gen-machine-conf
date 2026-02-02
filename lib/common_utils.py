@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Copyright (C) 2021-2022, Xilinx, Inc.  All rights reserved.
-# Copyright (C) 2022-2023, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2022-2026, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
@@ -10,17 +10,15 @@
 
 import argparse
 import os
-import sys
 import logging
-import importlib
 import importlib.machinery
 import importlib.util
 import glob
 import subprocess
 import shutil
 import re
-import yaml
 import time
+import yaml_utils
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -53,120 +51,6 @@ def load_plugins(plugins, pluginpath):
             plugins.append(plugin)
 
 
-TemplateYamlData = {}
-
-def ReadTemplateYaml(yamlfile):
-    '''
-    Reads the specified YAML file and stores the contents into the global TemplateYamlData.
-    '''
-    if not yamlfile:
-        return
-    if not os.path.isfile(yamlfile):
-        raise Exception('Specified yaml file does not exist: %s' % yamlfile)
-    global TemplateYamlData
-    TemplateYamlData = ReadYaml(yamlfile) or {}
-    TemplateYamlData = CleanupEscapes(TemplateYamlData)
-
-
-def AddYamlDefaultValues(arg=None, default=None):
-    '''
-    Searches for a matching argument in the YAML 'args' list and sets the default value accordingly.
-
-    Args:
-        arg (str or list, optional): The argument(s) to search for in the YAML 'args' list.
-        default (any, optional): The default value to return if no match is found.
-
-    Returns:
-        str or bool: Returns a string of collected values if found, True if only the argument is present,
-                     or the provided default value if no match is found.
-    '''
-    global TemplateYamlData
-    TemplateYamlDataArgs = TemplateYamlData.get('args', [])
-    for yamlarg in TemplateYamlDataArgs or []:
-        if isinstance(yamlarg, str):
-            yamlarg = yamlarg.split()
-        index, value = ContainsAny(arg, yamlarg)
-        if value is not None:
-            next_index = index + 1
-            collected = []
-            while next_index < len(yamlarg):
-                next_value = yamlarg[next_index]
-                if not next_value or next_value.startswith('-'):
-                    break
-                collected.append(next_value)
-                next_index += 1
-            if collected:
-                return ' '.join(collected)
-            else:
-                return True
-    return default
-
-
-def GenCPUNames(cluster: str, cpu:str, cpumask_hex: str):
-    """
-    Generates a list of CPU names based on the cluster name, CPU string, and CPU mask.
-    Args:
-        cluster (str): The name of the CPU cluster, expected to match the pattern 'cpus_<type>[_<number>]'.
-        cpu (str): A string representing CPU identifiers, typically comma-separated and may include ranges.
-        cpumask_hex (str or int): A hexadecimal string or integer representing the CPU mask.
-    Returns:
-        list[str]: A list of CPU names in the format '<cpu_prefix><cpu_type>_<core_index>' for each core enabled in the mask.
-        If the cluster name does not match the expected pattern, returns an empty string.
-    """
-    match = re.match(r'cpus_(\w+?)(?:_\d+)?$', cluster)
-    if not match:
-        return ''
-    cpu_split = cpu.split(',')
-    if len(cpu_split) > 1:
-        cpu_prefix = cpu_split[1].split('-')[0]
-    else:
-        cpu_prefix = cpu_split[0].split('-')[0]
-    cpu_type = match.group(1)
-    if isinstance(cpumask_hex, int):
-        cpumask = cpumask_hex
-    else:
-        cpumask = int(str(cpumask_hex), 16)
-    bit_positions = [i for i in range(cpumask.bit_length()) if cpumask & (1 << i)]
-    # Generate cpunames like cortex<type>_<core_index>
-    cpunames = [f"{cpu_prefix}{cpu_type}_{i}" for i in bit_positions]
-
-    return cpunames
-
-
-def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
-    """
-    Retrieves the domain name for a given processor name, CPU, and OS hint from a YAML configuration file.
-    Args:
-        proc_name (str): The name of the processor to search for.
-        cpu (str): The CPU identifier used for generating CPU names.
-        os_hint (str): The operating system type to match.
-        yaml_file (str): Path to the YAML file containing domain configurations.
-    Returns:
-        str or None: The domain name if found, otherwise None.
-    """
-    try:
-        yaml_content = ReadYaml(yaml_file)
-        if not yaml_content or 'domains' not in yaml_content:
-            return None, None
-        schema = yaml_content['domains']
-        for subsystem in schema:
-            os_type = schema[subsystem].get('os,type', '')
-            for cpu_dict in schema[subsystem].get('cpus', []):
-                cluster = cpu_dict.get('cluster', '')
-                cpumask = cpu_dict.get('cpumask', '')
-                cpunames = GenCPUNames(cluster, cpu, cpumask)
-                if proc_name.endswith(tuple(cpunames)):
-                    if not os_type:
-                        logger.warning(f'OS type not defined for domain {subsystem} (proc_name: {proc_name}), skipping entry.')
-                        return None, None
-                    elif os_type.lower() == os_hint:
-                        logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} with os type {os_type}')
-                        return subsystem, schema
-    except Exception as e:
-        raise Exception(f"Error in GetDomainName: {e}")
-    return None, None
-
-
 class AppendArgWithSpace(argparse.Action):
     """
     Custom argparse Action that appends arguments with a space separator.
@@ -180,18 +64,6 @@ class AppendArgWithSpace(argparse.Action):
             setattr(namespace, self.dest, current + " " + values)
         else:
             setattr(namespace, self.dest, values)
-
-
-def ContainsAny(search_items, target_list):
-    '''
-    Returns the index and value of the first item in target_list that exists in search_items.
-    '''
-    if isinstance(search_items, str):
-        search_items = search_items.split()
-    for i, item in enumerate(target_list):
-        if item in search_items:
-            return i, item
-    return None, None
 
 
 def CreateDir(dirpath):
@@ -552,32 +424,6 @@ def AddStrToFile(filename, string, mode='w'):
     '''Add string or line into the given file '''
     with open(filename, mode) as file_f:
         file_f.write(string)
-
-
-def ReadYaml(yamlfile):
-    with open(yamlfile, 'r') as yaml_fd:
-        try:
-            return yaml.safe_load(yaml_fd)
-        except yaml.YAMLError as exc:
-            raise Exception(exc)
-
-
-def CleanupEscapes(obj):
-    """
-    Recursively removes backslash escape sequences followed by any
-    whitespace, tab, or newline characters from strings within the given object.
-    """
-    if isinstance(obj, str):
-        # Remove backslash followed by any whitespace or tabs or newline
-        return re.sub(r'\\\s*', ' ', obj)
-    elif isinstance(obj, list):
-        return [CleanupEscapes(x) for x in obj]
-    elif isinstance(obj, tuple):
-        return tuple(CleanupEscapes(x) for x in obj)
-    elif isinstance(obj, dict):
-        return {k: CleanupEscapes(v) for k, v in obj.items()}
-    else:
-        return obj
 
 
 def GetFilesFromDir(dirpath, file_ext=''):
