@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Copyright (C) 2021-2022, Xilinx, Inc.  All rights reserved.
-# Copyright (C) 2022-2025, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2022-2026, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
@@ -211,7 +211,45 @@ def ValidateHWFile(hw_description, subparser=None):
     return hw_ext, hw_file, hw_dir
 
 
+def InitializeBitbake(parserhelp):
+    '''Initialize bitbake server and prepare it for use'''
+    # PetaLinux configuration tool skips bitbake usage
+    if 'PETALINUX' in os.environ.keys() or '--petalinux' in sys.argv:
+        common_utils.startBitbake(disabled=True)
+    else:
+        # Try to start bitbake
+        try:
+            common_utils.startBitbake()
+        except Exception as e:
+            if not parserhelp:
+                if '--native-sysroot' in sys.argv:
+                    logger.debug(str(e))
+                    logger.warning("Unable to start the bitbake server, bitbake may be required to build any missing tools and configurations.")
+                else:
+                    logger.error(str(e))
+                    raise Exception("Unable to start the bitbake server, bitbake is required for various tools and configurations.  " \
+                                    "Be sure to have bitbake in your environment's PATH and PYTHONPATH.  See oe-init-build-env.")
+        if not common_utils.Bitbake.disabled:
+            try:
+                # prepare can fail if there is an invalid configuration
+                common_utils.Bitbake.prepare(True)
+            except Exception as e:
+                common_utils.Bitbake.shutdown()
+                common_utils.Bitbake.disabled = True
+                logger.error("The error above must be corrected before running gen-machine-conf.\n")
+                if not parserhelp:
+                    raise e
+
+
 def main():
+    # Check if help selected to skip hw_description check
+    parserhelp = False
+    if {'-h', '--help'} & set(sys.argv):
+        parserhelp = True
+
+    # Initialize bitbake server
+    InitializeBitbake(parserhelp)
+
     parser = argparse.ArgumentParser(
         description='PetaLinux/Yocto Machine Configuration File generation tool',
         formatter_class=argparse.RawTextHelpFormatter, add_help=False,
@@ -289,38 +327,6 @@ def main():
     subparsers = parser.add_subparsers(title='subcommands', metavar='<subcommand>',
                                        dest='subcommand')
 
-    # Check if help selected to skip hw_description check
-    parserhelp = False
-    if {'-h', '--help'} & set(unparsed_args):
-        parserhelp = True
-
-    # PetaLinux configuration tool skips bitbake usage
-    if 'PETALINUX' in os.environ.keys() or global_args.petalinux:
-        common_utils.startBitbake(disabled=True)
-    else:
-        # Try to start bitbake
-        try:
-            common_utils.startBitbake()
-        except Exception as e:
-            if not parserhelp:
-                if global_args.native_sysroot:
-                    logger.debug(str(e))
-                    logger.warning("Unable to start the bitbake server, bitbake may be required to build any missing tools and configurations.")
-                else:
-                    logger.error(str(e))
-                    raise Exception("Unable to start the bitbake server, bitbake is required for various tools and configurations.  " \
-                                    "Be sure to have bitbake in your environment's PATH and PYTHONPATH.  See oe-init-build-env.")
-        if not common_utils.Bitbake.disabled:
-            try:
-                # prepare can fail if there is an invalid configuration
-                common_utils.Bitbake.prepare(True)
-            except Exception as e:
-                common_utils.Bitbake.shutdown()
-                common_utils.Bitbake.disabled = True
-                logger.error("The error above must be corrected before running gen-machine-conf.\n")
-                if not parserhelp:
-                    raise e
-
     # Try to get BBPATH to load modules
     # We can skip this by setting SKIP_BBPATH_SEARCH variable from env
     bbpath = ''
@@ -348,7 +354,6 @@ def main():
     if not global_args.hw_description and not parserhelp:
         parser.error('The following arguments are required: %s' %
                      '--hw-description')
-
 
     # Default option for subparsers is not supported yet in python
     # If user not specified any subparser use the default parser based on the hw_description provided.
