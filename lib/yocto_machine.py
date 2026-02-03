@@ -99,7 +99,8 @@ def GetMachineFeatures(args, system_conffile, MultiConfDict):
     if is_fpga_manager == 'y':
         machine_features += ' fpga-overlay'
 
-    return machine_features
+    return ' '.join(machine_features.split())
+
 
 def GetBootCompSource(args, comp, mcdepends, deploydir, MultiConfDict, system_conffile):
     CompFrom = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_COMPONENT_%s_FROM_' % comp,
@@ -297,7 +298,7 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
     else:
         loadaddr = kernel_loadaddr
 
-    machine_override_string += 'UBOOT_ENTRYPOINT  ?= "%s"\n' % loadaddr
+    machine_override_string += 'UBOOT_ENTRYPOINT ?= "%s"\n' % loadaddr
     machine_override_string += 'UBOOT_LOADADDRESS ?= "%s"\n' % loadaddr
 
     if arch != 'aarch64' and not (args.soc_family == 'microblaze' and args.hw_flow == 'sdt'):
@@ -307,8 +308,7 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
     machine_features = GetMachineFeatures(args, system_conffile, MultiConfDict)
     if machine_features:
         machine_override_string += '\n# Yocto MACHINE_FEATURES Variable\n'
-        machine_override_string += 'MACHINE_FEATURES += "%s"\n' % (
-            machine_features.strip())
+        machine_override_string += 'MACHINE_FEATURES += "%s"\n' % (machine_features)
 
     if args.soc_variant == 'ev' and args.soc_family == 'zynqmp':
         machine_override_string += '\n# Yocto IMAGE_FEATURES Variable\n'
