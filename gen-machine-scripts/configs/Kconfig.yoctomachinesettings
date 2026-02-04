@@ -60,6 +60,16 @@ config YOCTO_ADD_OVERRIDES
 
 if SUBSYSTEM_SDT_FLOW
 
+config YOCTO_MACHINE_FEATURE_EFI
+        bool "Enable EFI Machine Feature"
+        default y if SUBSYSTEM_ARCH_AARCH64
+        depends on !SUBSYSTEM_DISTRO_PETALINUX
+        help
+          Enable this option to use the EFI Boot Manager, which manages and selects bootable
+          operating systems and EFI applications stored in firmware. It determines the boot order,
+          supports multiple operating systems, and loads the selected bootloader from the EFI
+          System Partition, providing flexible and reliable UEFI-based system startup.
+
 @@multiconfigmenustr@@
 
 config YOCTO_MC_DOMAIN_FILEPATH

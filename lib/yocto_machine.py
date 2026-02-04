@@ -99,6 +99,11 @@ def GetMachineFeatures(args, system_conffile, MultiConfDict):
     if is_fpga_manager == 'y':
         machine_features += ' fpga-overlay'
 
+    is_efi = common_utils.GetConfigValue(
+        'CONFIG_YOCTO_MACHINE_FEATURE_EFI', system_conffile)
+    if is_efi == 'y':
+        machine_features += ' efi'
+
     return ' '.join(machine_features.split())
 
 
