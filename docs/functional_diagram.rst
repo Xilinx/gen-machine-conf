@@ -37,7 +37,7 @@ their interactions, and the data transformations that occur at each stage.
    ├───────────────────────────────────────────────────────────────────────────┤
    │  [gen-machine-conf (main)]                                                │
    │  ├─ Parse Arguments (argparse)                                            │
-   │  ├─ Read Template YAML (common_utils.ReadTemplateYaml)                    │
+   │  ├─ Read Template YAML (yaml_utils.ReadTemplateYaml)                      │
    │  ├─ Initialize Bitbake (if available)                                     │
    │  ├─ Validate HW Description (ValidateHWFile)                              │
    │  │   ├─ Check .xsa or system-top.dts                                      │

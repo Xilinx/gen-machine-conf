@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2023, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2023-2026, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
@@ -10,6 +10,7 @@
 import logging
 import os
 import common_utils
+import yaml_utils
 import sys
 import shutil
 import re
@@ -374,19 +375,19 @@ def register_commands(subparsers):
                                        ' <PATH_TO_XSA>/<xsa_name>.xsa] [other options]'
                                        )
     parser_xsa.add_argument('--xsct-tool', metavar='[XSCT_TOOL_PATH]',
-                            default=common_utils.AddYamlDefaultValues('--xsct-tool'),
+                            default=yaml_utils.AddYamlDefaultValues('--xsct-tool'),
                             help='Vivado or Vitis XSCT path to use xsct commands (Optional if you are already have AMD tools in your path)')
 
     parser_xsa.add_argument('-l', '--localconf', metavar='<config_file>',
-                            default=common_utils.AddYamlDefaultValues(['-l', '--localconf']),
+                            default=yaml_utils.AddYamlDefaultValues(['-l', '--localconf']),
                             help='Write local.conf changes to this file', type=os.path.realpath)
 
     parser_xsa.add_argument('--multiconfigfull', action='store_true',
-                            default=common_utils.AddYamlDefaultValues('--multiconfigfull'),
+                            default=yaml_utils.AddYamlDefaultValues('--multiconfigfull'),
                             help='Generate/Enable Full set of multiconfig .conf and .dts files. Default is minimal')
 
     parser_xsa.add_argument('--multiconfigenable', action='store_true',
-                            default=common_utils.AddYamlDefaultValues('--multiconfigenable'),
+                            default=yaml_utils.AddYamlDefaultValues('--multiconfigenable'),
                             help='Enable multiconfig support. default is disabled.')
 
     parser_xsa.set_defaults(func=ParseXsa)

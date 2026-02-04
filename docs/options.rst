@@ -111,7 +111,146 @@ it and apply them to arguments that are not explicitly set on the command line.
   and ``post`` to append or override settings afterward using
   explicit operations such as ``op: '='`` with ``val:``.
 
+**Advanced YAML Example with Inherit and Merge Operations**
+
+The template YAML supports advanced features including inheritance from other YAML files
+and selective merging using append/prepend operations:
+
+.. code-block:: yaml
+
+    # base-board.yaml - Base configuration for a board family
+    args:
+        - --hw-description https://edf.amd.com/base-board.tar.gz
+        - --soc-family versal
+        - --machine-name base-versal-board
+        - --domain-file base_domain.yaml
+    kconfig:
+        CONFIG_SUBSYSTEM_SERIAL_OP-TEE_IP_NAME: '1'
+        CONFIG_SUBSYSTEM_OPTEE: y
+        CONFIG_YOCTO_BBMC_LINUX_DTSI: 'base-system-conf.dtsi'
+    machine:
+        pre:
+            UBOOT_ENTRYPOINT:
+                op: '?='
+                val: '0x20200000'
+
+.. code-block:: yaml
+
+    # custom-board.yaml - Inherits from base and extends with custom settings
+    inherit: base-board.yaml
+
+    # Override machine name
+    args:
+        - --machine-name custom-versal-board
+
+    # Prepend domain files before inherited args
+    args_prepend:
+        - --domain-file vek385.yaml
+
+    # Append additional domain files after inherited args
+    args_append:
+        - --domain-file openamp.yaml
+
+    # Add kconfig on top of inherited settings
+    kconfig:
+        CONFIG_SUBSYSTEM_TF-A_MEMORY_SETTINGS: y
+        CONFIG_SUBSYSTEM_TF-A_MEM_BASE: '0x1600000'
+        CONFIG_SUBSYSTEM_TF-A_MEM_SIZE: '0x200000'
+
+    # Prepend kconfig settings (higher priority - evaluated first)
+    kconfig_prepend:
+        CONFIG_YOCTO_BBMC_LINUX_DTSI: 'custom-early-system-conf.dtsi'
+
+    # Append kconfig settings (evaluated after inherited values)
+    kconfig_append:
+        CONFIG_YOCTO_BBMC_LINUX_DTSI: 'board-system-conf.dtsi'
+
+    # Override and extend machine configurations
+    machine:
+        pre:
+            UBOOT_LOADADDRESS:
+                op: '?='
+                val: '0x20200000'
+        post:
+            QEMU_HW_DTB_PS:
+                op: '='
+                val: "${QEMU_HW_DTB_PATH}/board-versal2-psxc-vek385.dtb"
+            QEMU_HW_BOOT_MODE:
+                op: '='
+                val: "8"
+
+    # Prepend machine setting values
+    machine_prepend:
+        pre:
+            KERNEL_IMAGETYPE:
+                val: 'Image'
+
+    # Append machine settings
+    machine_append:
+        post:
+            QEMU_HW_SERIAL:
+                val: "-serial null -serial null -serial null -serial mon:stdio"
+
+**Merge Behavior**:
+
+- **inherit**: Loads the specified YAML file(s) as a base. Multiple files can be space-separated.
+  Supports environment variables and BitBake variables in paths. The inherit file is loaded first,
+  then the current YAML file's values are merged on top.
+
+- **args/kconfig/machine**: Direct keys in the current YAML override inherited values for the same key.
+
+- **args_prepend/kconfig_prepend/machine_prepend**: Values are merged **before** inherited values
+  (prepend → inherited → append order).
+
+- **args_append/kconfig_append/machine_append**: Values are merged **after** inherited values
+  (prepend → inherited → append order).
+
+- **Merge order for same key**: When the same configuration key appears in multiple sections,
+  the final value is space-concatenated in this order:
+
+  1. Values from ``<key>_prepend`` (if present)
+  2. Values from inherited YAML file's ``<key>`` section
+  3. Values from current YAML file's ``<key>`` section
+  4. Values from ``<key>_append`` (if present)
+
+  In the example above, ``CONFIG_YOCTO_BBMC_LINUX_DTSI`` appears in:
+
+  - ``kconfig_prepend`` with ``custom-early-system-conf.dtsi``
+  - Inherited base-board.yaml ``kconfig`` with ``base-system-conf.dtsi``
+  - ``kconfig_append`` with ``board-system-conf.dtsi``
+
+  The final merged value will be:
+  ``custom-early-system-conf.dtsi base-system-conf.dtsi board-system-conf.dtsi``
+
+.. important::
+
+    **Prepend/Append is designed for configs or variables that accept space-separated string values.**
+
+    Suitable use cases:
+
+    - ``CONFIG_YOCTO_BBMC_LINUX_DTSI`` - accepts multiple space-separated DTSI file paths
+    - ``--domain-file`` - accepts multiple space-separated YAML file paths
+    - Machine variables that support multiple values
+
+    .. warning::
+
+        **Do not use prepend/append for boolean configs or single-value settings.**
+
+        Boolean configs (e.g., ``CONFIG_SUBSYSTEM_OPTEE=y``) or single-value numeric settings
+        (e.g., ``CONFIG_SUBSYSTEM_TF-A_MEM_BASE='0x1600000'``) will be space-concatenated,
+        resulting in invalid values like ``"y y"`` or ``"0x1600000 0x1800000"``.
+
+        For such configs, use the direct ``kconfig:`` key in the current YAML file, which will
+        override the inherited value completely.
+
 **Usage Example**
+
+.. code-block:: console
+
+    $ gen-machine-conf --template custom-board.yaml --output ./custom_output
+
+    This will first load base-board.yaml, then merge custom-board.yaml settings on top,
+    with prepend/append operations applied in the appropriate order.
 
 .. code-block:: console
 
@@ -123,6 +262,12 @@ it and apply them to arguments that are not explicitly set on the command line.
 .. note::
 
     Specifying --domain-file from command-line will append to the values specified in the template YAML file.
+
+.. note::
+
+    When using inherit with multiple YAML files, machine names from all files are automatically
+    collected and added to MACHINEOVERRIDES, allowing your configuration to inherit settings
+    from multiple base machines.
 
 .. tip::
 

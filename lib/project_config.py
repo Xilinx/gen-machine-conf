@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Copyright (C) 2021-2022, Xilinx, Inc.  All rights reserved.
-# Copyright (C) 2022-2023, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2022-2026, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
@@ -13,6 +13,7 @@ import os
 import re
 import yaml
 import common_utils
+import yaml_utils
 import logging
 import glob
 import multiconfigs
@@ -146,7 +147,7 @@ def MultiConfigYaml(yaml_file, multiconfig_dict):
             cpuname = _mc_config_dict.get('cpuname', '')
             cpu = _mc_config_dict.get('cpu', '')
             os_hint = _mc_config_dict.get('os_hint', '')
-            domain_name, _ = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
+            domain_name, _ = yaml_utils.GetDomainName(cpuname, cpu, os_hint, _file)
             if domain_name:
                 os_hint_yaml.append(os_hint)
                 multiconf_yaml.append(mc_config)
@@ -276,7 +277,7 @@ def PreProcessSysConf(args, system_conffile, hw_info):
                                        system_conffile)
 
     # Read the YAML kconfig variables and update the project configs
-    Yamlconfigs = common_utils.TemplateYamlData.get('kconfig', {})
+    Yamlconfigs = yaml_utils.TemplateYamlData.get('kconfig', {})
     for conf, value in (Yamlconfigs or {}).items():
         if not conf or value is None:
             continue

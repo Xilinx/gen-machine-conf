@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2023, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2023-2026, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
@@ -11,6 +11,7 @@ import sys
 import re
 import logging
 import common_utils
+import yaml_utils
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -503,8 +504,8 @@ def GenKconfigSysHW(hwyamlinfile, ipinfofile, outfile):
     ''' Read Input Yaml(plnx sys HW data) and convert into
     Kconfig for described device types'''
     global hwyamldata, ipinfodata
-    hwyamldata = common_utils.ReadYaml(hwyamlinfile)
-    ipinfodata = common_utils.ReadYaml(ipinfofile)
+    hwyamldata = yaml_utils.ReadYaml(hwyamlinfile)
+    ipinfodata = yaml_utils.ReadYaml(ipinfofile)
     procdata = hwyamldata.get('processor')
     KconfStr = 'menu "Subsystem Hardware Settings"\n'
     KconfStr += GenConf_processor(procdata)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2023, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2023-2026, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
@@ -10,6 +10,7 @@
 import logging
 import os
 import common_utils
+import yaml_utils
 import sys
 import shutil
 import re
@@ -168,7 +169,7 @@ def IsOpenampEnabled(cpuname, cpu, os_hint, domain_files):
              empty string otherwise.
     """
     for _file in domain_files.split():
-        domain_name, schema = common_utils.GetDomainName(cpuname, cpu, os_hint, _file)
+        domain_name, schema = yaml_utils.GetDomainName(cpuname, cpu, os_hint, _file)
         if domain_name:
             domain_info = schema.get(domain_name, {})
             domain_to_domain = domain_info.get('domain-to-domain') or {}
@@ -214,7 +215,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         domain_name = ''
         for _file in self.args.domain_file.split():
             # The second value from GetDomainName is intentionally ignored
-            domain_name, _ = common_utils.GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
+            domain_name, _ = yaml_utils.GetDomainName(self.cpuname, self.cpu, self.os_hint, _file)
             if domain_name:
                 break
 
@@ -730,7 +731,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         cflags_file = os.path.join(self.args.output, 'cflags.yaml')
         if not os.path.isfile(cflags_file):
             raise Exception('cflags file does not exist: %s, required to generate the mb-v tune features' % cflags_file)
-        cflags_data = common_utils.ReadYaml(cflags_file) or {}
+        cflags_data = yaml_utils.ReadYaml(cflags_file) or {}
         m_arch = ''
         microblaze_riscv_inc = ''
         if 'cflags' in cflags_data:
@@ -1155,28 +1156,28 @@ def register_commands(subparsers):
                                        ' <PATH_TO_SDTDIR>] [other options]'
                                        )
     parser_sdt.add_argument('-g', '--gen-pl-overlay', choices=['full', 'dfx'],
-                            default=common_utils.AddYamlDefaultValues(['-g', '--gen-pl-overlay']),
+                            default=yaml_utils.AddYamlDefaultValues(['-g', '--gen-pl-overlay']),
                             help='Generate pl overlay for full, dfx configuration using xlnx_overlay_pl_dt lopper script')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
-                            default=common_utils.AddYamlDefaultValues(['-d', '--domain-file']),
+                            default=yaml_utils.AddYamlDefaultValues(['-d', '--domain-file']),
                             action=common_utils.AppendArgWithSpace,
                             help='Path to domain file (.yaml) to use for generating the device tree.')
     parser_sdt.add_argument('-i', '--psu-init-path', metavar='<psu_init_path>',
-                            default=common_utils.AddYamlDefaultValues(['-i', '--psu-init-path']),
+                            default=yaml_utils.AddYamlDefaultValues(['-i', '--psu-init-path']),
                             help='Path to psu_init or ps7_init files, defaults to system device tree output directory',
                             type=os.path.realpath)
     parser_sdt.add_argument('-p', '--pl', metavar='<pl_path>',
-                            default=common_utils.AddYamlDefaultValues(['-p', '--pl']),
+                            default=yaml_utils.AddYamlDefaultValues(['-p', '--pl']),
                             help='Path to pdi or bitstream file', type=os.path.realpath)
     parser_sdt.add_argument('-l', '--localconf', metavar='<config_file>',
-                            default=common_utils.AddYamlDefaultValues(['-l', '--localconf']),
+                            default=yaml_utils.AddYamlDefaultValues(['-l', '--localconf']),
                             help='Write local.conf changes to this file', type=os.path.realpath)
     parser_sdt.add_argument('--multiconfigfull', action='store_true',
-                            default=common_utils.AddYamlDefaultValues('--multiconfigfull', False),
+                            default=yaml_utils.AddYamlDefaultValues('--multiconfigfull', False),
                             help='Generate/Enable Full set of multiconfig .conf and .dts files. Default is minimal.'
                                 ' Search for CONFIG_YOCTO_BBMC prefix in --menuconfig to get the available multiconfig targets.')
     parser_sdt.add_argument('--dts-path', metavar='<dts_path>',
-                            default=common_utils.AddYamlDefaultValues('--dts-path'),
+                            default=yaml_utils.AddYamlDefaultValues('--dts-path'),
                             help='Absolute path or subdirectory of conf/dts to place DTS files in (usually auto detected from DTS)')
 
     parser_sdt.set_defaults(func=ParseSDT)
