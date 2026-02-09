@@ -40,7 +40,7 @@ def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
     """
     if not mcname:
         mcname = 'linux'
-    dtsi_conf = f'CONFIG_YOCTO_BBMC_{mcname.upper()}_DTSI'
+    dtsi_conf = f'CONFIG_YOCTO_BBMC_{mcname.upper().replace("-", "_")}_DTSI'
     dtsi_files = common_utils.GetConfigValue(dtsi_conf, system_conffile)
 
     for dtsi_file in dtsi_files.split():
