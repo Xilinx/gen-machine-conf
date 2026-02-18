@@ -392,6 +392,11 @@ This option lets you add extra override tokens to the generated machine configur
 These overrides control how BitBake applies machine-specific settings, feature flags, and
 .bbappend files during the build.
 
+For More details see:
+
+- `OVERRIDES variable <https://docs.yoctoproject.org/ref-manual/variables.html#term-OVERRIDES>`_
+- `Conditional Syntax (Overrides) <https://docs.yoctoproject.org/bitbake/2.8/bitbake-user-manual/bitbake-user-manual-metadata.html#conditional-syntax-overrides>`_
+
 Syntax
 ^^^^^^
 
