@@ -392,6 +392,11 @@ This option lets you add extra override tokens to the generated machine configur
 These overrides control how BitBake applies machine-specific settings, feature flags, and
 .bbappend files during the build.
 
+For More details see:
+
+- `OVERRIDES variable <https://docs.yoctoproject.org/ref-manual/variables.html#term-OVERRIDES>`_
+- `Conditional Syntax (Overrides) <https://docs.yoctoproject.org/bitbake/2.8/bitbake-user-manual/bitbake-user-manual-metadata.html#conditional-syntax-overrides>`_
+
 Syntax
 ^^^^^^
 
@@ -543,11 +548,65 @@ overlays in device tree source (DTS) files as part of the machine configuration 
 Generate overlay files or configuration fragments that can be used to program or manage the
 FPGA portion during boot or runtime.
 
+The two components represent different PL configuration approaches:
+
+full Component
+^^^^^^^^^^^^^^
+
+**Purpose**: Generates a complete PL overlay that includes all programmable logic IP blocks.
+
+**Use Case**:
+
+- When you want all PL (FPGA fabric) IP blocks to be loaded as an overlay once Linux boot is completed
+- Suitable for static FPGA designs where all PL resources are programmed together
+- The entire PL configuration is treated as a single unit
+
+**What it does**:
+
+- Removes all PL device tree nodes from the main PS (Processing System) device tree
+- Creates a separate pl.dtsi file containing all PL IP blocks
+- This overlay can be applied to program the FPGA and register all PL peripherals with the kernel
+- Stored in pl-overlay-full/pl.dtsi directory
+
 **Usage Example**
 
 .. code-block:: console
 
+    # Generate full PL overlay
     $ gen-machine-conf --hw-description ./sdt_output/ -g full
+
+dfx Component
+^^^^^^^^^^^^^
+
+**Purpose**: Generates a DFX (Dynamic Function eXchange) static overlay for partial reconfiguration designs.
+
+**Use Case**:
+
+- For designs using DFX/partial reconfiguration where parts of the FPGA can be reprogrammed at runtime
+- Creates the static region overlay - the parts of the PL that remain constant
+- Dynamic regions can be loaded separately at runtime without affecting the static logic
+
+**What it does**:
+
+- Extracts only the static (non-reconfigurable) PL IP blocks into the overlay
+- Creates pl.dtsi with the static PL configuration
+- Stored in pl-overlay-dfx/pl.dtsi directory and remaining pl dtsi files present under sdt_output_dir:
+
+  - Static PL: <sdt_output_dir>/pl.dtsi
+  - RP partials: <sdt_output_dir>/rp0rm0/rp0rm0_partial.dtsi, <sdt_output_dir>/rp1rm0/rp1rm0_partial.dtsi, etc.
+
+- Copy these into the corresponding Yocto firmware recipe files/ folders, which then install the runtime overlays under:
+
+  - Static base: /lib/firmware/xilinx/vek385static/
+  - RPs: /lib/firmware/xilinx/vek385static/rp0rm0/rp0rm0_slot0/ and .../rp1rm0/rp1rm0_slot0/ (with the generated pl-overlay-dfx/pl.dtsi overlays)
+
+- Allows dynamic partial bitstreams to be loaded later for the reconfigurable regions
+
+**Usage Example**
+
+.. code-block:: console
+
+    # Generate DFX static overlay
     $ gen-machine-conf --hw-description ./sdt_output/ -g dfx
 
 -d <domain_file>, --domain-file <domain_file>
