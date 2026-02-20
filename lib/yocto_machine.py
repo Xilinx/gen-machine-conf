@@ -287,6 +287,13 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
         machine_override_string += 'SKIP_APPEND_BASEADDR ?= "1"\n'
 
     machine_override_string += '\n# Yocto KERNEL Variables\n'
+
+    #Apply user-selected kernel defconfig from gen-machineconf menuconfig.
+    kernel_config = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_LINUX_CONFIG_TARGET',
+                                                system_conffile)
+    if kernel_config and kernel_config.lower() != 'auto':
+        machine_override_string += 'KBUILD_DEFCONFIG = "%s"\n' % kernel_config
+
     # Additional kernel make command-line arguments
     if args.soc_family == 'microblaze':
         kernel_loadaddr = ddr_baseaddr
