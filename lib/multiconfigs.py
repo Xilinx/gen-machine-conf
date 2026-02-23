@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2023, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2023-2026, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # Author:
 #       Raju Kumar Pothuraju <rajukumar.pothuraju@amd.com>
@@ -62,7 +62,7 @@ class ParseMultiConfigFiles():
 
     def MicroblazeVSetup(self):
         cpu = re.sub(r'^(xlnx|amd),', '', self.cpu).replace('.', '-')
-        if self.args.soc_family == 'microblaze':
+        if self.args.soc_family == 'microblaze-v':
             mc_name = ''
             os_hint = 'linux'
             self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint};

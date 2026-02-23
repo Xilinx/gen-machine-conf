@@ -140,7 +140,7 @@ config SUBSYSTEM_UBOOT_CONFIG_TARGET
 config SUBSYSTEM_UBOOT_SPL_BINARY_TYPE
 	string "SPL binary type"
 	default "spl/u-boot-spl.bin"
-	depends on SUBSYSTEM_SDT_FLOW && SYSTEM_MICROBLAZE
+	depends on SUBSYSTEM_SDT_FLOW && SYSTEM_MICROBLAZE-V
 	help
 	  The file type for the Secondary Program Loader (SPL).
 

@@ -756,7 +756,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         m_arch = self.GetRiscVTuneFeatures()
         microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-v.inc')
         if m_arch:
-            if self.args.soc_family == 'microblaze':
+            if self.args.soc_family == 'microblaze-v':
                 MBV_variables = '\n# compatible = "xlnx,microblaze_v";\n'
                 MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
             else:

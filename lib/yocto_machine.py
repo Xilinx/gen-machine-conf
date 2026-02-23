@@ -297,6 +297,9 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
     # Additional kernel make command-line arguments
     if args.soc_family == 'microblaze':
         kernel_loadaddr = ddr_baseaddr
+    elif args.soc_family == 'microblaze-v':
+        uboot_entry_offset = '0x1200000'
+        kernel_loadaddr = hex(int(ddr_baseaddr, 16) + int(uboot_entry_offset, 16))
     else:
         kernel_baseaddr = ddr_baseaddr
         kernel_offset = '0x200000'
@@ -313,7 +316,7 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
     machine_override_string += 'UBOOT_ENTRYPOINT ?= "%s"\n' % loadaddr
     machine_override_string += 'UBOOT_LOADADDRESS ?= "%s"\n' % loadaddr
 
-    if arch != 'aarch64' and not (args.soc_family == 'microblaze' and args.hw_flow == 'sdt'):
+    if arch != 'aarch64' and args.soc_family != 'microblaze-v':
         machine_override_string += 'KERNEL_EXTRA_ARGS += "UIMAGE_LOADADDR=${UBOOT_ENTRYPOINT}"\n'
 
 
@@ -635,7 +638,7 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
 def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
                     MultiConfDict, machine_override_string):
 
-    if arch == 'microblaze':
+    if args.soc_family == 'microblaze-v':
         machine_override_string += '\n# MicroBlaze V Tune features Settings\n'
         machine_override_string += f'require {os.path.join("conf", "machine", "include", args.machine, "microblaze-v.inc")}\n'
 
@@ -668,17 +671,13 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     # Add YAML post yocto configs
     machine_override_string = UpdateYamlConfigs('post', machine_override_string)
 
-    if args.soc_family == 'microblaze':
+    if args.soc_family == 'microblaze-v':
         machine_override_string += '\n# Yocto Riscv OPENSBI variables\n'
         ddr_baseaddr = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_', system_conffile,
                                                    'asterisk', '_BASEADDR=')
         if not ddr_baseaddr:
             ddr_baseaddr = '0x0'
-        riscv_sbi_offset = '0x100000'
-        riscv_sbi_text_start = hex(int(ddr_baseaddr, 16) + int(riscv_sbi_offset, 16))
-        riscv_sbi_text_start = f'0x{riscv_sbi_text_start[2:].upper()}'
-        machine_override_string += f'RISCV_SBI_FW_TEXT_START = "{riscv_sbi_text_start}"\n'
-
+        machine_override_string += f'RISCV_SBI_FW_TEXT_START = "{ddr_baseaddr}"\n'
 
     machine_override_string += '\n# This is an \'SDT\' based BSP\n'
     machine_override_string += 'XILINX_WITH_ESW = "sdt"\n'
@@ -709,13 +708,13 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     machine_override_string += 'SYSTEM_DTFILE = "${SYSTEM_DTFILE_DIR}/%s"\n' % \
                                os.path.basename(args.hw_file)
 
-    if arch != 'microblaze':
+    if args.soc_family != 'microblaze-v':
         machine_override_string += '\n# Load the dynamic machine features\n'
         machine_override_string += 'include conf/machine/include/%s/${BB_CURRENT_MC}-features.conf\n' % args.machine
         machine_override_string += 'LIBXIL_CONFIG = "conf/machine/include/%s/${BB_CURRENT_MC}-libxil.conf"\n' % args.machine
 
     # Determine FPGA image type based on SoC family and device
-    if args.soc_family == 'microblaze':
+    if args.soc_family == 'microblaze-v':
         # Mb-V Ultrascale+ uses PDI, 7 Series uses BIT
         fpga_image_type = 'pdi' if args.device_id.startswith('xcsu') else 'bit'
     elif args.soc_family in ['zynq', 'zynqmp']:
@@ -801,7 +800,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     return machine_override_string
 
 
-YoctoGenericMachines = ('microblaze-generic', 'zynq-generic',
+YoctoGenericMachines = ('microblaze-generic', 'microblaze-v-generic', 'zynq-generic',
                         'zynqmp-generic','versal-generic', 'versal-net-generic', 'versal-2ve-2vm-generic')
 
 def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict=''):
@@ -832,9 +831,6 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     # include soc_family machine file if user not specified.
     if not req_conf_file:
         req_conf_file = '%s-generic' % (soc_family)
-        # include microblaze-v-generic if microblaze and sdt flow
-        if soc_family == 'microblaze' and args.hw_flow == 'sdt':
-            req_conf_file = '%s-v-generic' % (soc_family)
         # include versal net if soc_Variant is net
         if soc_family == 'versal' and args.soc_variant == 'net':
             req_conf_file = '%s-net-generic' % (soc_family)
