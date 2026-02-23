@@ -360,11 +360,6 @@ def GeneratePlnxConfig(args, machine_conf_file):
     override_string += AddRemoteSources('linux-xlnx', 'LINUX__KERNEL')
     override_string += AddExternalSources('linux-xlnx', 'LINUX__KERNEL')
     override_string += 'RRECOMMENDS:${KERNEL_PACKAGE_NAME}-base = ""\n'
-    kernel_config = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_LINUX_CONFIG_TARGET',
-                                                system_conffile)
-    if kernel_config and kernel_config.lower() != 'auto':
-        override_string += 'KBUILD_DEFCONFIG:%s = "%s"\n' % (
-            soc_family, kernel_config)
     kernel_autoconfig = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_AUTOCONFIG_KERNEL',
                                                     system_conffile)
 

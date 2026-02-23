@@ -287,6 +287,13 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
         machine_override_string += 'SKIP_APPEND_BASEADDR ?= "1"\n'
 
     machine_override_string += '\n# Yocto KERNEL Variables\n'
+
+    #Apply user-selected kernel defconfig from gen-machineconf menuconfig.
+    kernel_config = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_LINUX_CONFIG_TARGET',
+                                                system_conffile)
+    if kernel_config and kernel_config.lower() != 'auto':
+        machine_override_string += 'KBUILD_DEFCONFIG = "%s"\n' % kernel_config
+
     # Additional kernel make command-line arguments
     if args.soc_family == 'microblaze':
         kernel_loadaddr = ddr_baseaddr
@@ -778,6 +785,13 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
             machine_override_string += 'BITSTREAM_PATH_DIR = "%s"\n' % bitstream_path_dir
             machine_override_string += 'BITSTREAM_PATH = "${BITSTREAM_PATH_DIR}/%s"\n' % \
                                        os.path.basename(args.pl)
+    bootmode_value = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_BOOTMODE_',
+                                                    system_conffile, 'choice', '=y')
+    # For JTAG bootmode, we want to set the default to empty.
+    if bootmode_value == '0':
+        bootmode_value = ''
+    machine_override_string += '\n# Primary Bootmode value\n'
+    machine_override_string += 'DEFAULT_HW_BOOT_MODE = "%s"\n' % bootmode_value
 
     machine_override_string += '\n# Update bootbin to use proper device tree\n'
     machine_override_string += 'BIF_PARTITION_IMAGE[device-tree] = "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'

@@ -12,6 +12,7 @@ import re
 import logging
 import common_utils
 import yaml_utils
+import project_config
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -493,6 +494,75 @@ def GenConf_sd(IpsToAdd, slavesdict, proc_ipname, arch):
     return confstr
 
 
+BootModes_dict = {
+    'zynq': {
+        'bootmodes': {
+            'JTAG': '0', 'QSPI': 1, 'NOR': 2, 'NAND': 4, 'SD': 5
+        },
+        'def_bootmode': '5'
+    },
+    'zynqmp': {
+        'bootmodes': {
+            'JTAG': '0', 'QSPI (24b)': 1, 'QSPI (32b)': 2,
+            'SD0 (2.0)': 3, 'NAND': 4, 'SD1 (2.0)': 5,
+            'eMMC (1.8V)': 6, 'SD1 LS (3.0)': 14
+        },
+        'def_bootmode': '3'
+    },
+    'versal': {
+        'bootmodes': {
+            'JTAG': '0','QSPI24': 1, 'QSPI32': 2, 'SD0 (v3.0)': 3,
+            'SD1 (v2.0)': 5, 'eMMC1 (v4.51)': 6,
+            'OSPI': 8, 'SD1 (v3.0)': 14
+        },
+        'def_bootmode': '8'
+    },
+    'versal-2ve-2vm': {
+        'bootmodes': {
+            'JTAG': '0','QSPI24': 1, 'QSPI32': 2, 'SD0 (v3.0)': 3,
+            'SD0 (v2.0)': 5, 'eMMC (v5.1)': 6, 'OSPI': 8,
+            'UFS': 11, 'SD1 (v3.0)': 14
+        },
+        'def_bootmode': '8'
+    }
+}
+
+
+def GenConf_bootmodes(proc):
+    soc_family = project_config.DetectSocFamily(proc)
+    bootmode_info = BootModes_dict.get(soc_family, {})
+    bootmodes = bootmode_info.get('bootmodes', {})
+    default_bootmode = bootmode_info.get('def_bootmode', '')
+    if not bootmodes:
+        return ''
+    confstr = '\nif !SUBSYSTEM_DISTRO_PETALINUX && SUBSYSTEM_SDT_FLOW\n'
+    confstr += '\nmenu "Boot Mode Settings"\n'
+    confstr += '\nchoice\n'
+    confstr += '\tprompt "Primary Boot Mode"\n'
+    if default_bootmode:
+        confstr += f'\tdefault SUBSYSTEM_BOOTMODE_{default_bootmode}\n'
+    confstr += '\thelp\n'
+    help_text = (
+        f'\tSelect the primary boot mode for the processor {proc}.\n'
+        '\tThis selection is used to package Boot.BIN and set runqemu\n'
+        '\tboot arguments.\n'
+        '\tFor details, see:\n'
+        '\t Zynq: UG585, "Flash-Devices-Master-Mode-Boot" section\n'
+        '\t ZynqMP: UG1085, "Boot Modes" section\n'
+        '\t Versal Gen1: AM011, "Boot Modes and Interfaces" section\n'
+        '\t Versal Gen2: AM026, "Boot Mode and Interfaces" section\n'
+    )
+    confstr += help_text
+    # The boot mode configs
+    for bootmode, value in bootmodes.items():
+        confstr += f'\nconfig SUBSYSTEM_BOOTMODE_{value}\n'
+        confstr += f'\tbool "{value} - {bootmode}"\n'
+    confstr += '\nendchoice\n'
+    confstr += '\nendmenu\n'
+    confstr += '\nendif\n'
+    return confstr
+
+
 # Supported Device Types to create Kconfig file
 devicetypes = {
     'memory': {'exclude': ['psu_ocm']},
@@ -527,6 +597,7 @@ def GenKconfigSysHW(hwyamlinfile, ipinfofile, outfile):
 
             KconfStr += eval('GenConf_%s(IpsToAdd, slavesdict, \
                                     proc_ipname, arch)' % (devtype))
+        KconfStr += GenConf_bootmodes(proc)
         KconfStr += '\nendif\n'
     KconfStr += '\nendmenu\n'
     common_utils.AddStrToFile(outfile, KconfStr)
