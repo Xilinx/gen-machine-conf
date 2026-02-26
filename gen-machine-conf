@@ -270,7 +270,7 @@ def main():
                                help='Specify Hardware(xsa) file or System Device-tree Directory',
                                default=yaml_utils.AddYamlDefaultValues('--hw-description'))
     optional_args.add_argument('--soc-family',
-                               choices=['microblaze', 'zynq',
+                               choices=['microblaze', 'microblaze-v', 'zynq',
                                         'zynqmp', 'versal', 'versal-2ve-2vm'],
                                default=yaml_utils.AddYamlDefaultValues('--soc-family'),
                                help='SOC family type from choice list (usually auto detected).')

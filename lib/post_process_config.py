@@ -294,7 +294,7 @@ def PostProcessSysConf(args, system_conffile, ipinfo_file, plnx_syshw_file):
                                        ethdevname, '"%s"' % new_mac, system_conffile)
         common_utils.UpdateConfigValue('CONFIG_SUBSYSTEM_ETHERNET_%s_MAC_AUTO' %
                                        ethdevname, 'disable', system_conffile)
-    if args.soc_family != 'microblaze':
+    if not args.soc_family.startswith('microblaze'):
         UpdateMemConfigs(args, system_conffile)
     if bootargs_auto == 'y':
         consolebootargs = GetSysConsoleBootargs(

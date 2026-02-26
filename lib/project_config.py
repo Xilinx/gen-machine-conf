@@ -104,6 +104,8 @@ def DetectSocFamily(proc_type):
         return 'zynqmp'
     elif re.search('.*a9.*', proc_type):
         return 'zynq'
+    elif re.search('microblaze_riscv', proc_type):
+        return 'microblaze-v'
     elif re.search('microblaze', proc_type):
         return 'microblaze'
     return proc_type

@@ -1,0 +1,14 @@
+# Copyright (C) 2026, Advanced Micro Devices, Inc.  All rights reserved.
+#
+# SPDX-License-Identifier: MIT
+#
+# Automatically generated file; DO NOT EDIT.
+# linux Configuration
+#
+CONFIG_SUBSYSTEM_TYPE_LINUX=y
+CONFIG_SYSTEM_MICROBLAZE-V=y
+
+#
+# Auto Config Settings
+#
+CONFIG_SUBSYSTEM_ARCH_MICROBLAZE=y
