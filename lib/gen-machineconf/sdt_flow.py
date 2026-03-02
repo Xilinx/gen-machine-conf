@@ -10,6 +10,7 @@
 import logging
 import os
 import common_utils
+import bitbake_utils
 import yaml_utils
 import sys
 import shutil
@@ -46,7 +47,7 @@ def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
     for dtsi_file in dtsi_files.split():
         dtsi_file = os.path.expandvars(dtsi_file)
         # Expand the bitbake variables
-        dtsi_file = common_utils.Bitbake.expand(dtsi_file)
+        dtsi_file = bitbake_utils.Bitbake.expand(dtsi_file)
         dtsi_file = os.path.realpath(dtsi_file)
         if not os.path.isfile(dtsi_file):
             raise Exception(f'Failed to get dtsi: {dtsi_file}')
@@ -1122,7 +1123,7 @@ def ParseSDT(args):
     for _file in domain_file_cfg.split():
         _file = os.path.expandvars(_file)
         # Expand the bitbake variables
-        _file = common_utils.Bitbake.expand(_file)
+        _file = bitbake_utils.Bitbake.expand(_file)
         args.domain_file += os.path.realpath(_file) + ' '
 
     # In case dts_path updated in config

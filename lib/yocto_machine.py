@@ -11,6 +11,7 @@
 import os
 import re
 import common_utils
+import bitbake_utils
 import yaml_utils
 import project_config
 import glob
@@ -616,7 +617,7 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     machine_override_string = UpdateYamlConfigs('post', machine_override_string)
 
     machine_override_string += '\n# This is an \'XSCT\' based BSP\n'
-    xsct_version = common_utils.Bitbake.getVar('XILINX_XSCT_VERSION')
+    xsct_version = bitbake_utils.Bitbake.getVar('XILINX_XSCT_VERSION')
     if xsct_version:
         machine_override_string += 'XILINX_XSCT_VERSION = "%s"\n' % xsct_version
     machine_override_string += 'XILINX_WITH_ESW = "xsct"\n'
