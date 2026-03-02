@@ -21,6 +21,7 @@ libs_path = scripts_path + '/lib'
 sys.path = sys.path + [libs_path]
 import logger_setup
 import common_utils
+import bitbake_utils
 import yaml_utils
 
 logger, console_h = logger_setup.setup_logger('Gen-Machineconf')
@@ -118,9 +119,9 @@ def GetHWDescription(hw_description, output, petalinux):
         hw_dir_root = hw_dir
     else:
         try:
-            hw_dir, hw_dir_root, src_uri, s_dir, localpath = common_utils.Bitbake.fetchAndUnpackURI(hw_description)
-        except common_utils.FetchError as e:
-            common_utils.Bitbake.shutdown()
+            hw_dir, hw_dir_root, src_uri, s_dir, localpath = bitbake_utils.Bitbake.fetchAndUnpackURI(hw_description)
+        except bitbake_utils.FetchError as e:
+            bitbake_utils.Bitbake.shutdown()
             raise Exception('Unable to fetch %s: %s' % (hw_description, e))
         except Exception as e:
             logger.debug('Unable to fetch with bitbake, falling back to copy: %s' % e)
@@ -211,36 +212,6 @@ def ValidateHWFile(hw_description, subparser=None):
     return hw_ext, hw_file, hw_dir
 
 
-def InitializeBitbake(parserhelp):
-    '''Initialize bitbake server and prepare it for use'''
-    # PetaLinux configuration tool skips bitbake usage
-    if 'PETALINUX' in os.environ.keys() or '--petalinux' in sys.argv:
-        common_utils.startBitbake(disabled=True)
-    else:
-        # Try to start bitbake
-        try:
-            common_utils.startBitbake()
-        except Exception as e:
-            if not parserhelp:
-                if '--native-sysroot' in sys.argv:
-                    logger.debug(str(e))
-                    logger.warning("Unable to start the bitbake server, bitbake may be required to build any missing tools and configurations.")
-                else:
-                    logger.error(str(e))
-                    raise Exception("Unable to start the bitbake server, bitbake is required for various tools and configurations.  " \
-                                    "Be sure to have bitbake in your environment's PATH and PYTHONPATH.  See oe-init-build-env.")
-        if not common_utils.Bitbake.disabled:
-            try:
-                # prepare can fail if there is an invalid configuration
-                common_utils.Bitbake.prepare(True)
-            except Exception as e:
-                common_utils.Bitbake.shutdown()
-                common_utils.Bitbake.disabled = True
-                logger.error("The error above must be corrected before running gen-machine-conf.\n")
-                if not parserhelp:
-                    raise e
-
-
 def main():
     # Check if help selected to skip hw_description check
     parserhelp = False
@@ -248,7 +219,7 @@ def main():
         parserhelp = True
 
     # Initialize bitbake server
-    InitializeBitbake(parserhelp)
+    bitbake_utils.InitializeBitbake(parserhelp)
 
     parser = argparse.ArgumentParser(
         description='PetaLinux/Yocto Machine Configuration File generation tool',
@@ -330,13 +301,13 @@ def main():
     # Try to get BBPATH to load modules
     # We can skip this by setting SKIP_BBPATH_SEARCH variable from env
     bbpath = ''
-    if common_utils.Bitbake.disabled:
+    if bitbake_utils.Bitbake.disabled:
         logger.debug('Bitbake is disabled, skip getting BBPATH')
     elif os.environ.get('SKIP_BBPATH_SEARCH'):
         logger.debug('SKIP_BBPATH_SEARCH is set, Skip getting '
                         'BBPATH to load gen-machineconf modules')
     else:
-        bbpath = common_utils.Bitbake.getVar('BBPATH') or ''
+        bbpath = bitbake_utils.Bitbake.getVar('BBPATH') or ''
 
     # Load the plugins from BBPATH and lib/gen-machineconf directory
     for path in bbpath.split(':') + [scripts_path]:
@@ -420,12 +391,12 @@ def main():
         common_utils.check_tool('mconf', 'kconfig-frontends-native')
         common_utils.check_tool('conf', 'kconfig-frontends-native')
     except Exception as e:
-        if not common_utils.Bitbake.disabled:
+        if not bitbake_utils.Bitbake.disabled:
             raise Exception(str(e) + "  This often means your build's tmp directory is corrupted.  Often removing it will fix the issue.")
         else:
             raise e
 
-    if not common_utils.Bitbake.disabled:
+    if not bitbake_utils.Bitbake.disabled:
         # We can only check for duplicate machines when bbpath checking is available
         if global_args.machine:
             logger.debug('checking for machine %s' % global_args.machine)
@@ -456,6 +427,6 @@ if __name__ == "__main__":
             traceback.print_exc()
         logger.error(e)
     finally:
-        if common_utils.Bitbake:
-            del common_utils.Bitbake
+        if bitbake_utils.Bitbake:
+            del bitbake_utils.Bitbake
     sys.exit(ret)
