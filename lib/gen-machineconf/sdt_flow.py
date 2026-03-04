@@ -145,9 +145,9 @@ def RunLopperPlOverlaycommand(outdir, dts_path, sdt_gen_pl_dtsi,
 def CopyPlOverlayfile(outdir, dts_path, pl_overlay_args):
     pl_dt_path = os.path.join(dts_path, 'pl-overlay-%s' % pl_overlay_args)
     common_utils.CreateDir(pl_dt_path)
-    common_utils.CopyFile(os.path.join(outdir, 'pl.dtsi'), pl_dt_path)
-    logger.info('Lopper generated pl overlay file is found in: %s and a copy of pl.dtsi is stored in: %s'
-                % (os.path.join(outdir, 'pl.dtsi'), pl_dt_path))
+    common_utils.CopyFile(os.path.join(outdir, 'pl.dtso'), pl_dt_path)
+    logger.info('Lopper generated pl overlay file is found in: %s and a copy of pl.dtso is stored in: %s'
+                % (os.path.join(outdir, 'pl.dtso'), pl_dt_path))
 
 def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''):
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
@@ -452,19 +452,19 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            # Get Actual pl.dtsi path
+            # Get Actual pl.dtso path
             hw_dir = pathlib.Path(self.args.hw_file).parent
-            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
+            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtso')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa9-zynq %s'
                                       % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a9 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
-            # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
-            # generated in lopper output directory. Hence copy pl.dtsi from
+            # Once RunLopperPlOverlaycommand API is executed pl.dtso will be
+            # generated in lopper output directory. Hence copy pl.dtso from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
-            # Later user can use this pl.dtsi as input file to firmware recipes.
+            # Later user can use this pl.dtso as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
@@ -509,19 +509,19 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            # Get Actual pl.dtsi path
+            # Get Actual pl.dtso path
             hw_dir = pathlib.Path(self.args.hw_file).parent
-            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
+            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtso')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa53-zynqmp %s'
                                       % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a53 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
-            # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
-            # generated in lopper output directory. Hence copy pl.dtsi from
+            # Once RunLopperPlOverlaycommand API is executed pl.dtso will be
+            # generated in lopper output directory. Hence copy pl.dtso from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
-            # Later user can use this pl.dtsi as input file to firmware recipes.
+            # Later user can use this pl.dtso as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
@@ -571,19 +571,19 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            # Get Actual pl.dtsi path
+            # Get Actual pl.dtso path
             hw_dir = pathlib.Path(self.args.hw_file).parent
-            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
+            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtso')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa72-versal %s'
                                       % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a72 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
-            # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
-            # generated in lopper output directory. Hence copy pl.dtsi from
+            # Once RunLopperPlOverlaycommand API is executed pl.dtso will be
+            # generated in lopper output directory. Hence copy pl.dtso from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
-            # Later user can use this pl.dtsi as input file to firmware recipes.
+            # Later user can use this pl.dtso as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
@@ -633,19 +633,19 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # file for lopper pl overlay operation.
             ps_dts_file = os.path.join(self.args.dts_path, '%s-no-pl.dts'
                                        % pathlib.Path(self.args.hw_file).stem)
-            # Get Actual pl.dtsi path
+            # Get Actual pl.dtso path
             hw_dir = pathlib.Path(self.args.hw_file).parent
-            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtsi')
+            sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtso')
             RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa78_0 %s'
                                       % (self.args.gen_pl_overlay),
                                       '-f')
             logger.info('pl-overlay [ %s ] is enabled for cortex-a78 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
-            # Once RunLopperPlOverlaycommand API is executed pl.dtsi will be
-            # generated in lopper output directory. Hence copy pl.dtsi from
+            # Once RunLopperPlOverlaycommand API is executed pl.dtso will be
+            # generated in lopper output directory. Hence copy pl.dtso from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
-            # Later user can use this pl.dtsi as input file to firmware recipes.
+            # Later user can use this pl.dtso as input file to firmware recipes.
             CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
