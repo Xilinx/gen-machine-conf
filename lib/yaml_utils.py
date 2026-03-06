@@ -13,6 +13,7 @@ import yaml
 import copy
 import logging
 import common_utils
+import bitbake_utils
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -159,7 +160,7 @@ def ReadTemplateYaml(yamlfile):
     for inherit_file in inherit_files.split():
         inherit_file = os.path.expandvars(inherit_file)
         # Expand the bitbake variables
-        inherit_file = common_utils.Bitbake.expand(inherit_file)
+        inherit_file = bitbake_utils.Bitbake.expand(inherit_file)
         inherit_file = os.path.realpath(inherit_file)
         InheritYamlData = ReadYaml(inherit_file) or {}
         InheritYamlData = CleanupEscapes(InheritYamlData)

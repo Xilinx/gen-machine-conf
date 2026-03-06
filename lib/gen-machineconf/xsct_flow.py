@@ -10,6 +10,7 @@
 import logging
 import os
 import common_utils
+import bitbake_utils
 import yaml_utils
 import sys
 import shutil
@@ -109,13 +110,13 @@ def AddXsctUtilsPath(xsct_tool):
             os.environ["PATH"] += os.pathsep + os.path.join(xsct_tool, 'bin')
     else:
         try:
-            xilinx_xsct_tool = common_utils.Bitbake.getVar('XILINX_SDK_TOOLCHAIN')
+            xilinx_xsct_tool = bitbake_utils.Bitbake.getVar('XILINX_SDK_TOOLCHAIN')
         except KeyError:
             raise Exception('Unable to get XILINX_SDK_TOOLCHAIN path, please verify meta-xilinx-tools layer is available.')
 
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
             logger.info('Installing xsct...')
-            common_utils.Bitbake.runBitbakeCmd('xsct-native')
+            bitbake_utils.Bitbake.runBitbakeCmd('xsct-native')
 
         if xilinx_xsct_tool and not os.path.isdir(xilinx_xsct_tool):
             raise Exception('Looking for xsct in "%s" but the path does not exist. '
@@ -227,11 +228,11 @@ def ParseXsa(args):
         raise Exception('Invalid HW source Specified for XSCT Flow.')
 
     if not 'PETALINUX' in os.environ.keys() and \
-       not common_utils.Bitbake.disabled and common_utils.Bitbake.getVar('XILINX_WITH_ESW') != 'xsct':
-        logger.debug('XILINX_WITH_ESW = %s' % common_utils.Bitbake.getVar('XILINX_WITH_ESW'))
-        common_utils.Bitbake.prepare(prefile=[os.path.join(os.path.dirname(__file__),'../../gen-machine-scripts/data/yocto_esw_xsct.conf')])
-        logger.debug('XILINX_WITH_ESW = %s' % common_utils.Bitbake.getVar('XILINX_WITH_ESW'))
-        if common_utils.Bitbake.getVar('XILINX_WITH_ESW') != 'xsct':
+       not bitbake_utils.Bitbake.disabled and bitbake_utils.Bitbake.getVar('XILINX_WITH_ESW') != 'xsct':
+        logger.debug('XILINX_WITH_ESW = %s' % bitbake_utils.Bitbake.getVar('XILINX_WITH_ESW'))
+        bitbake_utils.Bitbake.prepare(prefile=[os.path.join(os.path.dirname(__file__),'../../gen-machine-scripts/data/yocto_esw_xsct.conf')])
+        logger.debug('XILINX_WITH_ESW = %s' % bitbake_utils.Bitbake.getVar('XILINX_WITH_ESW'))
+        if bitbake_utils.Bitbake.getVar('XILINX_WITH_ESW') != 'xsct':
             raise Exception('XILINX_WITH_ESW must be set to "xsct".  Add the following to your local.conf file: XILINX_WITH_ESW = "xsct"')
 
     def LookupCpuInfoFromSocFam(proc_type):

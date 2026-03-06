@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import common_utils
+import bitbake_utils
 import logging
 
 logger = logging.getLogger('Gen-Machineconf')
@@ -86,7 +87,7 @@ def AddUserLayers(args):
     with open(layers_list, 'a') as layers_list_f:
         for layer in bb_layers:
             if layer in add_layers and os.path.isdir(layer):
-                common_utils.Bitbake.shutdown()
+                bitbake_utils.Bitbake.shutdown()
                 logger.debug('Adding layer: %s' % layer)
                 command = 'bitbake-layers -F add-layer %s' % (layer)
                 common_utils.RunCmd(command, builddir, shell=True)
