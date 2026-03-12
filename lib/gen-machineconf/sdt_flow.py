@@ -83,6 +83,14 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
             {domain_args} -i {domain_yamls_str} {hw_file} {yaml_dts_file}'
     common_utils.RunCmd(cmd, dts_path, shell=True)
 
+    # Update chosen node from /domains to /root
+    yaml_chosen_dts_file = dts_file.replace('.dts', '-chosen.dts')
+    logger.debug(f'Generating DTS {yaml_chosen_dts_file} to update chosen node')
+    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
+            -i lop-domain-chosen.dts -t {domain_name} {yaml_dts_file} {yaml_chosen_dts_file}'
+    common_utils.RunCmd(cmd, dts_path, shell=True)
+    yaml_dts_file = yaml_chosen_dts_file
+
     # Run domain_access if config domain_access is enabled
     domain_access_enabled = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_DOMAIN_ACCESS',
                                                          system_conffile)
