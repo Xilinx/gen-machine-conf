@@ -8,12 +8,14 @@
 #
 # SPDX-License-Identifier: MIT
 
+import configparser
 import os
 import re
 import common_utils
 import bitbake_utils
 import yaml_utils
 import project_config
+import lopper_utils
 import glob
 from post_process_config import CheckIP, GetIPProperty, CheckDeviceCount
 import logging
@@ -106,6 +108,19 @@ def GetMachineFeatures(args, system_conffile, MultiConfDict):
         machine_features += ' efi'
 
     return ' '.join(machine_features.split())
+
+
+def GetQemuMemCfg(outdir, dts_path, hw_file):
+    lopper_utils.RunLopperSubcommand(outdir, dts_path, hw_file, 'gen_qemu_mem_cfg')
+    qemu_mem_cfg = os.path.join(outdir, 'memory.qemuboot.conf')
+    if os.path.isfile(qemu_mem_cfg):
+        config = configparser.ConfigParser(interpolation=None)
+        config.read(qemu_mem_cfg)
+        data = config.get('config_bsp', 'qb_mem', fallback='').strip()
+        logger.debug(f'QEMU Memory Config: {data}')
+        if data:
+            return f'QB_MEM = "{data}"\n'
+    return ''
 
 
 def GetBootCompSource(args, comp, mcdepends, deploydir, MultiConfDict, system_conffile):
@@ -668,6 +683,12 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     machine_override_string += '\n# Required generic machine inclusion\n'
     machine_override_string += 'require conf/machine/%s\n' % \
         req_conf_file
+
+    # Add QEMU memory configuration if applicable
+    qemu_memory = GetQemuMemCfg(args.output, args.dts_path, args.hw_file)
+    if qemu_memory:
+        machine_override_string += '\n# QEMU Memory Configuration\n'
+        machine_override_string += qemu_memory
 
     # Add YAML post yocto configs
     machine_override_string = UpdateYamlConfigs('post', machine_override_string)

@@ -9,162 +9,22 @@
 
 import logging
 import os
-import common_utils
-import bitbake_utils
-import yaml_utils
 import sys
 import shutil
 import re
 import glob
 import pathlib
+import common_utils
+import bitbake_utils
+import yaml_utils
 import project_config
 import post_process_config
 import rootfs_config
 import multiconfigs
 import kconfig_syshw
+import lopper_utils
 
 logger = logging.getLogger('Gen-Machineconf')
-
-def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
-    """
-    Includes custom DTSI files into a final DTS file based on configuration.
-
-    This function retrieves DTSI file paths from the system configuration using domain-specific
-    configuration key. For each DTSI file:
-      - Expands environment and bitbake variables in the file path.
-      - Verifies the file exists.
-      - Copies the file to the output directory with a domain-specific name.
-      - Checks if the file is an overlay (contains '/plugin/;') and raises an exception if so.
-      - Appends an #include directive for the DTSI file to the final DTS file.
-
-    If any DTSI files are included, it triggers the Lopper tool to process the final DTS file.
-    """
-    if not mcname:
-        mcname = 'linux'
-    dtsi_conf = f'CONFIG_YOCTO_BBMC_{mcname.upper().replace("-", "_")}_DTSI'
-    dtsi_files = common_utils.GetConfigValue(dtsi_conf, system_conffile)
-
-    for dtsi_file in dtsi_files.split():
-        dtsi_file = os.path.expandvars(dtsi_file)
-        # Expand the bitbake variables
-        dtsi_file = bitbake_utils.Bitbake.expand(dtsi_file)
-        dtsi_file = os.path.realpath(dtsi_file)
-        if not os.path.isfile(dtsi_file):
-            raise Exception(f'Failed to get dtsi: {dtsi_file}')
-
-        DomainCustomDtsi = f'{mcname}_{os.path.basename(dtsi_file)}'
-        domain_dtsi_path = os.path.join(outdir, DomainCustomDtsi)
-        with open(dtsi_file, 'r') as f:
-            for line in f:
-                if '/plugin/;' in line:
-                    raise Exception(f'{dtsi_file} is an overlay file and cannot be appended to the final dts file.')
-        common_utils.CopyFile(dtsi_file, domain_dtsi_path)
-        common_utils.AddStrToFile(dts_file, f'#include "{domain_dtsi_path}"\n', mode='a+')
-    if dtsi_files:
-        logger.debug(f'Generating {dts_file} including {dtsi_files}')
-        RunLopperUsingDomainFile([], outdir, outdir, dts_file, dts_file)
-
-def RunLopperGenDomainYaml(hw_file, iss_file, dts_path, domain_yaml, outdir):
-    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s -f --enhanced %s -- isospec -v -v --audit %s %s' % (
-                             lopper, outdir, hw_file, iss_file, domain_yaml)
-    stdout = common_utils.RunCmd(cmd, outdir, shell=True)
-    return stdout
-
-def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
-                          domain_yamls, system_conffile):
-    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    domain_yamls_str = ' -i '.join(domain_yamls)
-    domain_args = "-x '*.yaml'"
-    # Append all the yaml files to SDT
-    yaml_dts_file = dts_file.replace('.dts', '-yaml.dts')
-    logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {domain_yamls}')
-    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
-            {domain_args} -i {domain_yamls_str} {hw_file} {yaml_dts_file}'
-    common_utils.RunCmd(cmd, dts_path, shell=True)
-
-    # Update chosen node from /domains to /root
-    yaml_chosen_dts_file = dts_file.replace('.dts', '-chosen.dts')
-    logger.debug(f'Generating DTS {yaml_chosen_dts_file} to update chosen node')
-    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
-            -i lop-domain-chosen.dts -t {domain_name} {yaml_dts_file} {yaml_chosen_dts_file}'
-    common_utils.RunCmd(cmd, dts_path, shell=True)
-    yaml_dts_file = yaml_chosen_dts_file
-
-    # Run domain_access if config domain_access is enabled
-    domain_access_enabled = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_DOMAIN_ACCESS',
-                                                         system_conffile)
-    if domain_access_enabled:
-        logger.debug(f'Generating DTS {dts_file} with {yaml_dts_file} using domain_access')
-        cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
-                {yaml_dts_file} {dts_file} -- domain_access -t {domain_name}'
-        common_utils.RunCmd(cmd, dts_path, shell=True)
-        yaml_dts_file = dts_file
-
-    return yaml_dts_file
-
-def RunLopperUsingDomainFile(domain_files, outdir, dts_path, hw_file,
-                             dts_file='', lopper_args='', subcommand_args=''):
-    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    domain_args = ''
-    for domain in list(filter(None, domain_files)):
-        if not os.path.isabs(domain):
-            domain_args += ' -i %s' % os.path.join(lops_dir, domain)
-        else:
-            domain_args += ' -i %s' % domain
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s -f --enhanced %s %s %s %s' % (
-        lopper, outdir, lopper_args,
-        domain_args, hw_file, dts_file)
-
-    if subcommand_args != '':
-        cmd += ' -- %s' % (subcommand_args)
-
-    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
-    return stdout
-
-def RunLopperGenLinuxDts(outdir, dts_path, domain_files, hw_file, dts_file, subcommand_args, lopper_args=''):
-    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    domain_args = ''
-    for domain in list(filter(None, domain_files)):
-        if not os.path.isabs(domain):
-            domain_args += ' -i %s' % os.path.join(lops_dir, domain)
-        else:
-            domain_args += ' -i %s' % domain
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -O %s %s %s %s %s -- %s' % (
-        lopper, outdir, lopper_args, domain_args, hw_file, dts_file, subcommand_args)
-    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
-    return stdout
-
-def RunLopperSubcommand(outdir, dts_path, hw_file, subcommand_args, lopper_args=''):
-    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s %s %s -- %s' % (
-        lopper, outdir, lopper_args, hw_file, subcommand_args)
-    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
-    return stdout
-
-def RunLopperPlOverlaycommand(outdir, dts_path, sdt_gen_pl_dtsi,
-                              hw_file, ps_dts_file, subcommand_args, lopper_args=''):
-    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -O %s %s %s %s -- %s %s' % (
-        lopper, outdir, lopper_args, hw_file, ps_dts_file, subcommand_args, sdt_gen_pl_dtsi)
-    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
-    return stdout
-
-def CopyPlOverlayfile(outdir, dts_path, pl_overlay_args):
-    pl_dt_path = os.path.join(dts_path, 'pl-overlay-%s' % pl_overlay_args)
-    common_utils.CreateDir(pl_dt_path)
-    common_utils.CopyFile(os.path.join(outdir, 'pl.dtso'), pl_dt_path)
-    logger.info('Lopper generated pl overlay file is found in: %s and a copy of pl.dtso is stored in: %s'
-                % (os.path.join(outdir, 'pl.dtso'), pl_dt_path))
-
-def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''):
-    lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s -O %s -f %s \
-                "%s" -- baremetaldrvlist_xlnx %s "%s"' % (
-        lopper, outdir, lopper_args,
-        hw_file, cpuname, embeddedsw)
-    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
-    return stdout
 
 def IsOpenampEnabled(cpuname, cpu, os_hint, domain_files):
     """
@@ -205,7 +65,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         logger.debug(f'Generating OpenAMP DTS for core {self.cpuname} {self.core}')
         # Generate Domain specific dts file
         openamp_dts_file = os.path.join(self.args.output, f'{self.cpuname}-openamp.dts')
-        RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+        lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
                                 ps_dts_file, openamp_dts_file, '',
                                 f'openamp {self.cpuname} {subcommand_args}')
         return openamp_dts_file
@@ -232,7 +92,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Sanitize domain_name to avoid invalid filename characters
             sanitized_domain_name = re.sub(r'[^A-Za-z0-9_\-]', '_', domain_name.lower())
             sanitized_dts_file = os.path.join(self.args.output, '%s.dts' % sanitized_domain_name)
-            dts_file = RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
+            dts_file = lopper_utils.RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
                                   sanitized_dts_file, '/domains/%s' % domain_name,
                                   self.args.domain_file.split(), self.system_conffile)
         else:
@@ -258,7 +118,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             openamp_args = 'zephyr_dt'
         DTSFile = self.GenOpenampDts(DTSFile, openamp_args)
 
-        RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
+        lopper_utils.RunLopperUsingDomainFile(domain_files, self.args.output, self.args.dts_path,
                                 DTSFile, dts_file, lopper_args, subcommand_args)
 
         # Return domain specific full dts file if domain file specified
@@ -276,7 +136,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         domain_dts_file = self.GenDomainDTS(dts_file, lopdts)
         lopper_args = ''
         # Build baremetal multiconfig
-        GetLopperBaremetalDrvList(self.cpuname, self.args.output, self.args.dts_path,
+        lopper_utils.GetLopperBaremetalDrvList(self.cpuname, self.args.output, self.args.dts_path,
                                   domain_dts_file, lopper_args)
 
         common_utils.RenameFile(os.path.join(
@@ -286,7 +146,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         common_utils.ReplaceStrFromFile(
             features, 'DISTRO_FEATURES', 'MACHINE_FEATURES')
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
-        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         conf_file_str += 'ESW_MACHINE = "%s"\n' % self.cpuname
         conf_file_str += extra_conf
         common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -407,7 +267,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
         # Generate zephyr dt
         ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
-        RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+        lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
                                  ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
         # Update multiconfig with dt file
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
@@ -425,7 +285,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
 
         # Generate zephyr dt
         ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
-        RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+        lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
                                  ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
         # Update multiconfig with dt file
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
@@ -463,7 +323,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Get Actual pl.dtso path
             hw_dir = pathlib.Path(self.args.hw_file).parent
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtso')
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
+            lopper_utils.RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa9-zynq %s'
                                       % (self.args.gen_pl_overlay),
                                       '-f')
@@ -473,7 +333,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # generated in lopper output directory. Hence copy pl.dtso from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtso as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
+            lopper_utils.CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a9 Linux dts file: %s'
@@ -482,10 +342,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # We need linux dts for with and without pl-overlay else without
         # cortexa9-linux.dts it fails to build.
         lop_files = []
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
+        lopper_utils.RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             '-f')
-        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -520,7 +380,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Get Actual pl.dtso path
             hw_dir = pathlib.Path(self.args.hw_file).parent
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtso')
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
+            lopper_utils.RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa53-zynqmp %s'
                                       % (self.args.gen_pl_overlay),
                                       '-f')
@@ -530,7 +390,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # generated in lopper output directory. Hence copy pl.dtso from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtso as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
+            lopper_utils.CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a53 Linux dts file: %s'
@@ -543,10 +403,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # cortexa53-zynqmp-linux.dts it fails to build.
         lopper_args = '-f --enhanced '
         lop_files = ['lop-a53-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
+        lopper_utils.RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
-        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -582,7 +442,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Get Actual pl.dtso path
             hw_dir = pathlib.Path(self.args.hw_file).parent
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtso')
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
+            lopper_utils.RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa72-versal %s'
                                       % (self.args.gen_pl_overlay),
                                       '-f')
@@ -592,7 +452,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # generated in lopper output directory. Hence copy pl.dtso from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtso as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
+            lopper_utils.CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a72 Linux dts file: %s'
@@ -605,10 +465,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # cortexa72-versal-linux.dts it fails to build.
         lopper_args = '-f --enhanced '
         lop_files = ['lop-a72-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
+        lopper_utils.RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
-        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -644,7 +504,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Get Actual pl.dtso path
             hw_dir = pathlib.Path(self.args.hw_file).parent
             sdt_gen_pl_dtsi = os.path.join(hw_dir, 'pl.dtso')
-            RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
+            lopper_utils.RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa78_0 %s'
                                       % (self.args.gen_pl_overlay),
                                       '-f')
@@ -654,7 +514,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # generated in lopper output directory. Hence copy pl.dtso from
             # output directory to dts_path/pl-overlay-{full|dfx} directory.
             # Later user can use this pl.dtso as input file to firmware recipes.
-            CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
+            lopper_utils.CopyPlOverlayfile(self.args.output, self.args.dts_path, self.args.gen_pl_overlay)
         else:
             ps_dts_file = DTSFile
             logger.debug('No pl-overlay is enabled for cortex-a78 Linux dts file: %s'
@@ -667,10 +527,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # cortexa78-versal-linux.dts it fails to build.
         lopper_args = ' -f --enhanced '
         lop_files = ['lop-a78-imux.dts']
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
+        lopper_utils.RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, ps_dts_file,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
-        IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(dts_file)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
@@ -688,7 +548,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Generate Linux dts for Microblaze-V
         lopper_args = ' -f --enhanced '
         lop_files = []
-        RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, DTSFile,
+        lopper_utils.RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, DTSFile,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
 
@@ -704,10 +564,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Generate Domain specific dts file
         domain_dts_file = self.GenDomainDTS(DomainDTS, 'lop-microblaze-riscv.dts')
         # Generate zephyr dt
-        RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'], self.args.output, self.args.dts_path,
+        lopper_utils.RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'], self.args.output, self.args.dts_path,
                                  DomainDTS, BoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
         # Generate zephyr mbv32 dt
-        RunLopperUsingDomainFile(['lop-mbv-zephyr-intc.dts'], self.args.output, self.args.dts_path,
+        lopper_utils.RunLopperUsingDomainFile(['lop-mbv-zephyr-intc.dts'], self.args.output, self.args.dts_path,
                                  BoardDTS, Mbv32Dts)
         SocKconfigFile_S = os.path.join(self.args.output, 'Kconfig')
         SocKconfigFile_D = os.path.join(self.args.dts_path, '%s-Kconfig' % mc_filename)
@@ -725,7 +585,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         if self.MBTunesDone:
             return
         logger.info('Generating microblaze processor tunes')
-        stdout = RunLopperUsingDomainFile(['lop-microblaze-yocto.dts'],
+        stdout = lopper_utils.RunLopperUsingDomainFile(['lop-microblaze-yocto.dts'],
                                           self.args.output, os.getcwd(), self.args.hw_file)
         microblaze_inc = os.path.join(self.args.bbconf_dir, 'microblaze.inc')
         common_utils.AddStrToFile(microblaze_inc, stdout[0])
@@ -735,7 +595,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         self.MBTunesDone = True
 
     def GetRiscVTuneFeatures(self):
-        RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'],
+        lopper_utils.RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'],
                                  self.args.output, os.getcwd(), self.args.hw_file)
         cflags_file = os.path.join(self.args.output, 'cflags.yaml')
         if not os.path.isfile(cflags_file):
@@ -988,7 +848,7 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
         genmachine_scripts, 'data', 'ipinfo.yaml')
     plnx_syshw_file = os.path.join(output, 'petalinux_config.yaml')
 
-    RunLopperSubcommand(output, output, hw_file,
+    lopper_utils.RunLopperSubcommand(output, output, hw_file,
                                      'petalinuxconfig_xlnx %s %s' % (proc_type,
                                                                      sdtipinfo_schema))
     logger.debug('Generating System HW file')
@@ -1024,7 +884,7 @@ def ParseSDT(args):
             hw_info['soc_variant'] = args.soc_variant
 
         # Get machinefile name, device-id and model
-        machine_info = RunLopperUsingDomainFile(['lop-machine-name.dts'],
+        machine_info = lopper_utils.RunLopperUsingDomainFile(['lop-machine-name.dts'],
                                                              args.output, args.output,
                                                              args.hw_file, '')[0]
         local_machine_conf, hw_info['device_id'], hw_info['model'] = machine_info.strip().split(' ', 2)
@@ -1033,7 +893,7 @@ def ParseSDT(args):
             hw_info['machine'] = local_machine_conf
 
         # Generate CPU list
-        cpu_info = RunLopperUsingDomainFile(['lop-xilinx-id-cpus.dts'],
+        cpu_info = lopper_utils.RunLopperUsingDomainFile(['lop-xilinx-id-cpus.dts'],
                                                          args.output, args.output,
                                                          args.hw_file, '')[0]
         hw_info['cpu_info_dict'] = CpuInfoToDict(cpu_info)
