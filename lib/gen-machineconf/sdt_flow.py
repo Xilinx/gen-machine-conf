@@ -1026,7 +1026,11 @@ def register_commands(subparsers):
                                        )
     parser_sdt.add_argument('-g', '--gen-pl-overlay', choices=['full', 'dfx'],
                             default=yaml_utils.AddYamlDefaultValues(['-g', '--gen-pl-overlay']),
-                            help='Generate pl overlay for full, dfx configuration using xlnx_overlay_pl_dt lopper script')
+                            help='Generate PL overlays for full or DFX configurations using\n'
+                            'the xlnx_overlay_pl_dt lopper script.\n\n'
+                            'Use this option only when PL is present in the design. Do\n'
+                            'not use this option if the design does not include PL,\n'
+                            'as no overlay is required.')
     parser_sdt.add_argument('-d', '--domain-file', metavar='<domain_file>',
                             default=yaml_utils.AddYamlDefaultValues(['-d', '--domain-file']),
                             action=common_utils.AppendArgWithSpace,
