@@ -111,7 +111,12 @@ after it has been processed by System Device Tree Generator.
   options:
     -h, --help            show this help message and exit
     -g {full,dfx}, --gen-pl-overlay {full,dfx}
-                          Generate pl overlay for full, dfx configuration using xlnx_overlay_pl_dt lopper script
+                          Generate PL overlays for full or DFX configurations using
+                          the xlnx_overlay_pl_dt lopper script.
+
+                          Use this option only when PL is present in the design. Do
+                          not use this option if the design does not include PL,
+                          as no overlay is required.
     -d <domain_file>, --domain-file <domain_file>
                           Path to domain file (.yaml) to use for generating the device tree.
     -i <psu_init_path>, --psu-init-path <psu_init_path>
