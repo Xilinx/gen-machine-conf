@@ -647,7 +647,7 @@ def GeneratePlnxConfig(args, machine_conf_file):
                    'u-boot-xlnx-scr'],
         'versal': ['virtual/bootloader', 'virtual/psm-firmware', 'virtual/plm',
                    'virtual/arm-trusted-firmware', 'u-boot-xlnx-scr',
-                   'qemu-devicetrees-native', 'extract-cdo'],
+                   'qemu-devicetrees-native'],
     }
     imagedepends_remove = ['virtual/boot-bin']
     is_imgsel = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_COMPONENT_IMG_SEL',
