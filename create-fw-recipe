@@ -1,0 +1,466 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2026, Advanced Micro Devices, Inc.  All rights reserved.
+#
+# Author:
+#       Ashwini Lomate <ashwini.lomate@amd.com>
+#
+# SPDX-License-Identifier: MIT
+
+import argparse
+import glob
+import logging
+import os
+import re
+import sys
+import tempfile
+
+scripts_path = os.path.dirname(os.path.realpath(__file__))
+libs_path = scripts_path + '/lib'
+sys.path = sys.path + [libs_path]
+import logger_setup
+import common_utils
+import lopper_utils
+import bitbake_utils
+
+logger, console_h = logger_setup.setup_logger('Gen-Machineconf')
+
+def GetProcNameFromCpuInfo(cpuinfo_dict):
+    """
+    Get processor name from CPU info dict and map to platform name for xlnx_overlay_pl_dt.
+    """
+    for cpukey in cpuinfo_dict.keys():
+        if 'cortexa9' in cpukey:
+            return 'cortexa9-zynq'
+        elif 'cortexa53' in cpukey:
+            return 'cortexa53-zynqmp'
+        elif 'cortexa72' in cpukey:
+            return 'cortexa72-versal'
+        elif 'cortexa78' in cpukey:
+            return 'cortexa78_0'
+    return None
+
+
+def CpuInfoToDict(cpu_info):
+    """Parse CPU info string from lopper into a dictionary."""
+    cpu_info_dict = {}
+    for _cpu in cpu_info.splitlines():
+        if not _cpu.startswith('#') and not _cpu.startswith('['):
+            parts = _cpu.split(' ', 4)
+            if len(parts) >= 4:
+                cpu, core, domain, cpu_name = parts[:4]
+                os_hint = parts[4] if len(parts) > 4 else ''
+                cpu_info_dict[cpu_name] = {'cpu': cpu, 'core': core,
+                                           'domain': domain, 'os_hint': os_hint}
+    return cpu_info_dict
+
+
+def ExtractFirmwareNameFromDtsi(dtsi_file):
+    """
+    Extract firmware-name from a DTSI file.
+
+    """
+    try:
+        with open(dtsi_file, 'r') as f:
+            content = f.read()
+        # Match firmware-name = "filename.pdi" or firmware-name = "filename.bit" or "filename.bit.bin"
+        match = re.search(r'firmware-name\s*=\s*["\']([^"\']+)["\']', content)
+        if match:
+            return match.group(1)
+    except Exception as e:
+        logger.warning(f"Failed to read firmware-name from {dtsi_file}: {e}")
+    return None
+
+
+def CreateFirmwareRecipe(pdi_file, dt_overlay, json_file, recipe_name=None, recipe_path=None, gen_pl_overlay='full', hw_desc_path=None):
+    """
+    Creates a Yocto/OpenEmbedded firmware recipe structure by creating
+    the necessary directories, copying the user-provided firmware files,
+    and generating the recipe file.
+
+    """
+
+    # Use recipe_path if provided, else default to current working directory
+    base_path = recipe_path if recipe_path else os.getcwd()
+
+    # Create directory structure: recipes-firmware/<recipe-name>-pl-firmware/files/
+    recipes_firmware_dir = os.path.join(base_path, 'recipes-firmware')
+    common_utils.CreateDir(recipes_firmware_dir)
+
+    # Create recipe subdirectory: <recipe-name>-pl-firmware
+    recipe_subdir_name = f'{recipe_name.replace("_", "-")}-pl-firmware'
+    recipe_dir = os.path.join(recipes_firmware_dir, recipe_subdir_name)
+    common_utils.CreateDir(recipe_dir)
+
+    # Create files directory for recipe
+    files_dir = os.path.join(recipe_dir, 'files')
+    common_utils.CreateDir(files_dir)
+
+    # Copy PDI/BIT file to files directory
+    if os.path.exists(pdi_file):
+        common_utils.CopyFile(pdi_file, files_dir)
+        logger.debug(f'Copied {pdi_file} to {files_dir}')
+    else:
+        logger.error(f'PDI/BIT file not found: {pdi_file}')
+        raise FileNotFoundError(f'PDI/BIT file not found: {pdi_file}')
+
+    # Copy DTSI file to files directory
+    if os.path.exists(dt_overlay):
+        common_utils.CopyFile(dt_overlay, files_dir)
+        logger.debug(f'Copied {dt_overlay} to {files_dir}')
+    else:
+        logger.error(f'File not found: {dt_overlay}')
+        raise FileNotFoundError(f'File not found: {dt_overlay}')
+
+    # Handle JSON file: use user-provided shell.json or create default
+    if json_file and os.path.exists(json_file):
+        # Copy user-provided json file to files_dir
+        json_filename = os.path.basename(json_file)
+        common_utils.CopyFile(json_file, files_dir)
+        logger.debug(f'Copied {json_file} to {files_dir}')
+    else:
+        if json_file and not os.path.exists(json_file):
+            logger.warning(f'Provided JSON file not found: {json_file}. Creating default shell.json file instead.')
+        # Create default json file based on overlay type
+        if gen_pl_overlay == 'full':
+            json_file = os.path.join(files_dir, 'shell.json')
+            json_content = '''{
+    "shell_type": "XRT_FLAT",
+    "num_slots": "1"
+}
+'''
+            logger.info('Creating default shell.json for full Case')
+        elif gen_pl_overlay == 'dfx':
+            # check if this specific recipe is for a partial PDI (dfx-rprm case)
+            # not just whether partial files exist in hw_desc_path
+            pdi_basename = os.path.basename(pdi_file)
+            is_partial_recipe = '_partial' in pdi_basename
+
+            if is_partial_recipe:
+                # accel.json for dfx RP/RM partial recipe
+                json_file = os.path.join(files_dir, 'accel.json')
+                json_content = '''{
+    "//supported_types": "Supported types are SIHA_PL_DFX/XRT_AIE_DFX/XRT_PL_DFX",
+    "accel_type": "XRT_PL_DFX"
+}
+'''
+                logger.info('Creating default accel.json for dfx partial Case.please update the field accel_type in json file based on your design')
+            else:
+                # shell.json for dfx static/base recipe
+                json_file = os.path.join(files_dir, 'shell.json')
+                json_content = '''{
+    "//supported_types": "Supported types are XRT_FLAT/PL_FLAT/PL_DFX",
+    "shell_type": "PL_DFX",
+    "num_pl_slots": "user need to update this field as 1 or 2 or 3 and more based on their design",
+    "load_base_design": "user need to update this field as yes or no for auto loading base design bitstream in case of pl dfx"
+}
+'''
+                logger.info('Creating default shell.json for dfx static Case.please update the fields num_pl_slots and load_base_design in json file based on your design')
+        with open(json_file, 'w') as f:
+            f.write(json_content)
+
+
+    # Get just the filenames for SRC_URI
+    pdi_filename = os.path.basename(pdi_file)
+    dt_overlay_filename = os.path.basename(dt_overlay)
+    json_filename = os.path.basename(json_file)
+
+    # Create recipe file
+    recipe_file = os.path.join(recipe_dir, f'{recipe_name.replace("_", "-")}-pl-firmware.bb')
+    recipe_content = f'''SUMMARY = "static pl firmware using dfx_user_dts bbclass"
+DESCRIPTION = "{recipe_name} static PL firmware application"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${{COMMON_LICENSE_DIR}}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+inherit dfx_user_dts
+
+
+SRC_URI = "file://{pdi_filename} \\
+           file://{dt_overlay_filename} \\
+           file://{json_filename} "
+'''
+    with open(recipe_file, 'w') as f:
+        f.write(recipe_content)
+    logger.info(f'Created firmware recipe at {recipe_file}')
+    return recipe_file
+
+
+def main():
+    # Check if help selected to skip hw_description check
+    parserhelp = False
+    if {'-h', '--help'} & set(sys.argv):
+        parserhelp = True
+
+    # Initialize bitbake server
+    bitbake_utils.InitializeBitbake(parserhelp)
+
+    parser = argparse.ArgumentParser(
+        description='Create a firmware recipe for a given machine configuration',
+        formatter_class=argparse.RawTextHelpFormatter, add_help=False,
+        epilog='''
+Examples:
+  # Full PL overlay - dtso , PDI/BIT, shell.json will be generated based on hw description
+  %(prog)s --hw-description <path to full design> -g full
+
+  # DFX overlay - creates base recipe + partial recipes for each *_partial.dtsi
+  %(prog)s --hw-description <path to dfx design> -g dfx
+
+  # With custom recipe name in both cases
+  %(prog)s --hw-description /path/to/design -g full --recipe-name my-firmware
+  %(prog)s --hw-description /path/to/design -g dfx --recipe-name my-firmware
+
+  # With custom output layer path in both cases (e.g., ../sources/meta-user/)
+  %(prog)s --hw-description /path/to/design -g full --layer-path ../sources/meta-user/
+  %(prog)s --hw-description /path/to/design -g dfx --layer-path ../sources/meta-user/
+
+  # With custom recipe name and layer path in both cases
+  %(prog)s --hw-description /path/to/design -g full --recipe-name my-firmware --layer-path ../sources/meta-user/
+  %(prog)s --hw-description /path/to/design -g dfx --recipe-name my-firmware --layer-path ../sources/meta-user/
+
+  # Provide all files explicitly (no --hw-description) for both full and dfx cases
+  (Note: for dfx, you would need to run this multiple times with different partial DTSI and PDI/BIT files to create separate recipes)
+  %(prog)s --dtso <path to dtso file> --fpga <path to pdi/bit> --json <path to shell.json file>
+'''
+    )
+
+    parser.add_argument(
+        '--hw-description', help='Path to the hardware description directory'
+    )
+    parser.add_argument('-g', '--gen-pl-overlay', choices=['full', 'dfx'],
+                        help='Generate PL overlay using lopper (requires --hw-description)')
+    parser.add_argument(
+        '--dtso', help='Path to the PL DTSO file (e.g., my-pl.dtso)'
+    )
+    parser.add_argument(
+        '--fpga', help='Path to the FPGA bit, bit.bin or pdi  file (e.g., my-fpga.bit)'
+    )
+    parser.add_argument(
+        '--json', help='Path to the JSON file (e.g., my-json.json)'
+    )
+    parser.add_argument(
+        '--recipe-name', default=None, help='Name of the recipe to create (e.g., my-recipe). If not provided, derived from PDI filename'
+    )
+    parser.add_argument(
+        '--layer-path', default=None, help='Path to the layer where the recipe will be created (e.g., meta-my-layer). If not provided, defaults to current working directory'
+    )
+    parser.add_argument(
+        '-h', '--help', action='help', help='Show this help message and exit'
+    )
+    args = parser.parse_args()
+
+    # If no arguments provided, print help and exit
+    if not args.hw_description and not args.dtso and not args.fpga:
+        parser.print_help()
+        sys.exit(0)
+
+    dtso_file = args.dtso
+    fpga_file = args.fpga
+    json_file = args.json
+    hw_desc_path = args.hw_description
+    all_pdi_files = []
+
+    # Warn if --json is not provided and --hw-description is also not provided
+    if not json_file and not hw_desc_path:
+        logger.warning('Please provide a JSON file for your design using the --json <path to json file> option. Otherwise, the default shell.json file will be used, which may not be suitable for DFX cases.')
+
+    # If --hw-description is provided, extract files from there (can be overridden by explicit args)
+    if hw_desc_path:
+        # Require -g when --hw-description is provided
+        if not args.gen_pl_overlay:
+            parser.error("--gen-pl-overlay (-g) is required when using --hw-description")
+
+        if not os.path.isdir(hw_desc_path):
+            logger.error(f"Hardware description directory not found: {hw_desc_path}")
+            sys.exit(1)
+
+        # Find pl.dtsi file and convert to pl.dtso if not provided via --dtso
+        if not dtso_file:
+            # Search for pl.dtsi in hw_description directory
+            dtsi_files = common_utils.GetFilesFromDir(hw_desc_path, 'pl.dtsi')
+            if not dtsi_files:
+                logger.error(f"pl.dtsi not found in {hw_desc_path}")
+                sys.exit(1)
+
+            pl_dtsi_file = dtsi_files[0]
+            logger.info(f"Found pl.dtsi: {pl_dtsi_file}")
+
+            # Create temporary directory for lopper output
+            tmpdir = tempfile.mkdtemp(prefix='lopper_pl_')
+
+
+            # Find system-top.dts or any .dts file for hw_file (DTSFile)
+            dts_files = common_utils.GetFilesFromDir(hw_desc_path, 'system-top.dts')
+            if not dts_files:
+                logger.error(f"No .dts file found in {hw_desc_path}")
+                sys.exit(1)
+            hw_file = dts_files[0]
+            logger.info(f"Found DTS file: {hw_file}")
+
+            # Get processor name from system-top.dts using lopper
+            cpu_info = lopper_utils.RunLopperUsingDomainFile(
+                ['lop-xilinx-id-cpus.dts'], tmpdir, tmpdir, hw_file, '')[0]
+            cpu_info_dict = CpuInfoToDict(cpu_info)
+            proc_type = GetProcNameFromCpuInfo(cpu_info_dict)
+            if not proc_type:
+                logger.error(f"Failed to get processor type from {hw_file}")
+                sys.exit(1)
+            logger.info(f"Detected processor type: {proc_type}")
+
+            # Create a ps_dts_file (intermediate file for lopper output)
+            ps_dts_file = os.path.join(tmpdir, 'ps-no-pl.dts')
+
+            # Run lopper command to convert pl.dtsi to pl.dtso
+            logger.info(f"Converting pl.dtsi to pl.dtso using lopper...")
+            lopper_utils.RunLopperPlOverlaycommand(
+                outdir=tmpdir,
+                dts_path=tmpdir,
+                sdt_gen_pl_dtsi=pl_dtsi_file,
+                hw_file=hw_file,
+                ps_dts_file=ps_dts_file,
+                subcommand_args=f'xlnx_overlay_pl_dt {proc_type} {args.gen_pl_overlay} ',
+                lopper_args='-f'
+            )
+
+            # Find generated pl.dtso file
+            dtso_files = common_utils.GetFilesFromDir(tmpdir, 'pl.dtso')
+            if dtso_files:
+                dtso_file = dtso_files[0]
+                logger.info(f"Generated pl.dtso: {dtso_file}")
+            else:
+                logger.error(f"Failed to generate pl.dtso from pl.dtsi")
+                sys.exit(1)
+
+        # Find pdi or bit files if not provided via --fpga
+        firmware_name = ''
+        if not fpga_file:
+            pdi_files = common_utils.GetFilesFromDir(hw_desc_path, '.pdi')
+            bit_files = common_utils.GetFilesFromDir(hw_desc_path, '.bit')
+            bit_files += common_utils.GetFilesFromDir(hw_desc_path, '.bit.bin')  # include .bit.bin files as well
+            all_pdi_files = pdi_files if pdi_files else bit_files
+
+            if not all_pdi_files:
+                logger.error(f"No .pdi or .bit file found in {hw_desc_path}")
+                sys.exit(1)
+
+            # Find pl.dtsi to extract firmware-name
+            dtsi_files = common_utils.GetFilesFromDir(hw_desc_path, 'pl.dtsi')
+
+            # Extract firmware-name from pl.dtsi to find the correct FPGA file
+            firmware_name = ExtractFirmwareNameFromDtsi(dtsi_files[0]) if dtsi_files else ''
+            if firmware_name:
+                # Search for exact match first, then try without .bin extension
+                matching_fpga = [f for f in all_pdi_files if os.path.basename(f) == firmware_name]
+                if not matching_fpga and firmware_name.endswith('.bin'):
+                    # Try without .bin extension (e.g., design.bit.bin -> design.bit)
+                    firmware_name_no_bin = firmware_name[:-4]
+                    matching_fpga = [f for f in all_pdi_files if os.path.basename(f) == firmware_name_no_bin]
+                if matching_fpga:
+                    fpga_file = matching_fpga[0]
+                    logger.info(f"Found FPGA file from firmware-name '{firmware_name}': {fpga_file}")
+                else:
+                    logger.error(f"firmware-name '{firmware_name}' not found in FPGA files, please use proper FPGA file")
+                    sys.exit(1)
+            else:
+                logger.error(f"Could not extract firmware-name from dtsi, please use proper FPGA file")
+                sys.exit(1)
+            logger.info(f"Found FPGA file for firmware recipe: {fpga_file}")
+
+        # if recipe name is provided along with hw_description, use it as base recipe name, otherwise derive from FPGA filename (without extension)
+        if args.recipe_name:
+            base_recipe_name = f"{args.recipe_name}-{firmware_name.split('_')[0]}" if firmware_name else args.recipe_name
+        else:
+            fpga_basename = os.path.basename(fpga_file)
+            base_recipe_name = os.path.splitext(fpga_basename)[0]
+    else:
+        # --hw-description not provided, use explicit args
+        if args.recipe_name:
+            base_recipe_name = args.recipe_name
+        else:
+            base_recipe_name = os.path.splitext(os.path.basename(fpga_file))[0]
+
+    if not dtso_file or not os.path.isfile(dtso_file):
+        logger.error(f"PL DTSO file not found: {dtso_file}. Provide --dtso or --hw-description")
+        sys.exit(1)
+    if not fpga_file or not os.path.isfile(fpga_file):
+        logger.error(f"FPGA file not found: {fpga_file}. Provide --fpga or --hw-description")
+        sys.exit(1)
+
+    # Use layer_path if provided, otherwise use current working directory
+    output_dir = args.layer_path if args.layer_path else os.getcwd()
+    # Create base/static firmware recipe first
+    CreateFirmwareRecipe(
+        pdi_file=fpga_file,
+        dt_overlay=dtso_file,
+        json_file=json_file,
+        recipe_name=base_recipe_name,
+        recipe_path=output_dir,
+        gen_pl_overlay=args.gen_pl_overlay if args.gen_pl_overlay else 'full',
+        hw_desc_path=hw_desc_path,
+    )
+
+    # For dfx, create one recipe per partial DTSI file
+    if args.gen_pl_overlay == 'dfx' and hw_desc_path:
+        # Find all partial DTSI files first
+        partial_dtsi_files = glob.glob(os.path.join(hw_desc_path, '**', '*_partial.dtsi'), recursive=True)
+
+        # Find all available PDI/BIT files
+        all_fpga_files = glob.glob(os.path.join(hw_desc_path, '**', '*_partial.pdi'), recursive=True) + \
+                         glob.glob(os.path.join(hw_desc_path, '**', '*_partial.bit'), recursive=True) + \
+                         glob.glob(os.path.join(hw_desc_path, '**', '*_partial.bit.bin'), recursive=True)
+
+        for partial_dtsi in partial_dtsi_files:
+            # Extract firmware-name from partial DTSI file
+            firmware_name = ExtractFirmwareNameFromDtsi(partial_dtsi)
+
+            if not firmware_name:
+                logger.warning(f"Could not extract firmware-name from {partial_dtsi}, skipping")
+                continue
+
+            # Find matching PDI/BIT file based on firmware-name
+            # Search for exact match first, then try without .bin extension
+            matching_fpga = [f for f in all_fpga_files if os.path.basename(f) == firmware_name]
+            if not matching_fpga and firmware_name.endswith('.bin'):
+                # Try without .bin extension (e.g., design.bit.bin -> design.bit)
+                firmware_name_no_bin = firmware_name[:-4]
+                matching_fpga = [f for f in all_fpga_files if os.path.basename(f) == firmware_name_no_bin]
+
+            if not matching_fpga:
+                logger.warning(f"No matching FPGA file found for firmware-name '{firmware_name}' from {partial_dtsi}, skipping")
+                continue
+
+            partial_pdi = matching_fpga[0]
+            logger.info(f"Found FPGA file from firmware-name '{firmware_name}': {partial_pdi}")
+
+            # Derive recipe name from PDI filename (without extension) if not specified
+            if args.recipe_name:
+                partial_recipe_name = f"{args.recipe_name}-{firmware_name.split('_')[0]}"
+            else:
+                pdi_basename = os.path.basename(partial_pdi)
+                partial_recipe_name = os.path.splitext(pdi_basename)[0]  # e.g., rp0rm0_partial
+
+            logger.info(f"Creating recipe: FPGA={partial_pdi}, DTSI={partial_dtsi}, name={partial_recipe_name}")
+
+            # Create separate recipe directory for each
+            CreateFirmwareRecipe(
+                pdi_file=partial_pdi,
+                dt_overlay=partial_dtsi,
+                json_file=json_file,
+                recipe_name=partial_recipe_name,
+                recipe_path=output_dir,
+                gen_pl_overlay='dfx',
+                hw_desc_path=hw_desc_path,
+            )
+    return 0
+
+
+if __name__ == "__main__":
+    ret = 0
+    try:
+        ret = main()
+    except Exception as e:
+        ret = 1
+        logger.error(e)
+    finally:
+         if getattr(bitbake_utils, 'Bitbake', None):
+             del bitbake_utils.Bitbake
+    sys.exit(ret)
