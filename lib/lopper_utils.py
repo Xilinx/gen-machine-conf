@@ -10,7 +10,6 @@
 import logging
 import os
 import common_utils
-import bitbake_utils
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -35,10 +34,7 @@ def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
     dtsi_files = common_utils.GetConfigValue(dtsi_conf, system_conffile)
 
     for dtsi_file in dtsi_files.split():
-        dtsi_file = os.path.expandvars(dtsi_file)
-        # Expand the bitbake variables
-        dtsi_file = bitbake_utils.Bitbake.expand(dtsi_file)
-        dtsi_file = os.path.realpath(dtsi_file)
+        dtsi_file = common_utils.ExpandFilePath(dtsi_file)
         if not os.path.isfile(dtsi_file):
             raise Exception(f'Failed to get dtsi: {dtsi_file}')
 

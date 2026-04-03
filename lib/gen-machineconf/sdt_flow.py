@@ -15,7 +15,6 @@ import re
 import glob
 import pathlib
 import common_utils
-import bitbake_utils
 import yaml_utils
 import project_config
 import post_process_config
@@ -993,10 +992,8 @@ def ParseSDT(args):
                                                     system_conffile)
     args.domain_file = ''
     for _file in domain_file_cfg.split():
-        _file = os.path.expandvars(_file)
-        # Expand the bitbake variables
-        _file = bitbake_utils.Bitbake.expand(_file)
-        args.domain_file += os.path.realpath(_file) + ' '
+        _file = common_utils.ExpandFilePath(_file)
+        args.domain_file += _file + ' '
 
     # In case dts_path updated in config
     cfg_dtspath = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',
