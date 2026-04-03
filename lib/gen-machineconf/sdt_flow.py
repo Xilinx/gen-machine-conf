@@ -269,6 +269,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
         lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
                                  ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, ZephyrBoardDTS, self.system_conffile)
         # Update multiconfig with dt file
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
         conf_file = os.path.join(self.args.config_dir,
@@ -287,6 +288,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
         lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
                                  ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, ZephyrBoardDTS, self.system_conffile)
         # Update multiconfig with dt file
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
         conf_file = os.path.join(self.args.config_dir,
@@ -551,6 +553,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         lopper_utils.RunLopperGenLinuxDts(self.args.output, self.args.dts_path, lop_files, DTSFile,
                             dts_file, 'gen_domain_dts %s linux_dt' % self.cpuname,
                             lopper_args)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, dts_file, self.system_conffile)
 
     def MBRiscVZephyr(self):
         mc_filename = "%s-%s" % (self.args.machine, self.mcname)
@@ -569,6 +572,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Generate zephyr mbv32 dt
         lopper_utils.RunLopperUsingDomainFile(['lop-mbv-zephyr-intc.dts'], self.args.output, self.args.dts_path,
                                  BoardDTS, Mbv32Dts)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, Mbv32Dts, self.system_conffile)
         SocKconfigFile_S = os.path.join(self.args.output, 'Kconfig')
         SocKconfigFile_D = os.path.join(self.args.dts_path, '%s-Kconfig' % mc_filename)
         SocKconfigDefconfigFile_S = os.path.join(self.args.output, 'Kconfig.defconfig')
