@@ -192,27 +192,42 @@ def GenCPUNames(cluster: str, cpu: str, cpumask_hex: str):
     Args:
         cluster (str): The name of the CPU cluster, expected to match the pattern 'cpus_<type>[_<number>]'.
         cpu (str): A string representing CPU identifiers, typically comma-separated and may include ranges.
+                   Comma-separated (e.g. 'arm,cortex-a78') produces names like 'cortexa78_0'.
+                   Non-comma (e.g. 'pmc-microblaze') produces names like 'pmc_0', but only if
+                   the cluster cpu_type appears in the cpu string.
         cpumask_hex (str or int): A hexadecimal string or integer representing the CPU mask.
     Returns:
-        list[str]: A list of CPU names in the format '<cpu_prefix><cpu_type>_<core_index>' for each core enabled in the mask.
-        If the cluster name does not match the expected pattern, returns an empty string.
+        list[str]: A list of CPU names for each core enabled in the mask.
+        Returns an empty list if the cluster name does not match or is incompatible with the cpu string.
     """
     match = re.match(r'cpus_(\w+?)(?:_\d+)?$', cluster)
     if not match:
-        return ''
+        return []
     cpu_split = cpu.split(',')
+    cpu_type = match.group(1)
     if len(cpu_split) > 1:
         cpu_prefix = cpu_split[1].split('-')[0]
     else:
-        cpu_prefix = cpu_split[0].split('-')[0]
-    cpu_type = match.group(1)
+        # For non-comma CPUs (e.g. pmc-microblaze), validate that the
+        # cluster cpu_type is part of the cpu string to avoid matching
+        # unrelated clusters (e.g. cpus_a78 for pmc-microblaze)
+        cpu_parts = cpu_split[0].split('-')
+        if cpu_type not in cpu_parts:
+            return []
+        cpu_prefix = cpu_parts[0]
+    if not cpumask_hex and cpumask_hex != 0:
+        return []
     if isinstance(cpumask_hex, int):
         cpumask = cpumask_hex
     else:
         cpumask = int(str(cpumask_hex), 16)
     bit_positions = [i for i in range(cpumask.bit_length()) if cpumask & (1 << i)]
-    # Generate cpunames like cortex<type>_<core_index>
-    cpunames = [f"{cpu_prefix}{cpu_type}_{i}" for i in bit_positions]
+    # For comma-separated CPUs (e.g. arm,cortex-a78): cortexa78_0
+    # For non-comma CPUs (e.g. pmc-microblaze): pmc_0
+    if len(cpu_split) > 1:
+        cpunames = [f"{cpu_prefix}{cpu_type}_{i}" for i in bit_positions]
+    else:
+        cpunames = [f"{cpu_prefix}_{i}" for i in bit_positions]
 
     return cpunames
 
@@ -223,10 +238,11 @@ def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
     Args:
         proc_name (str): The name of the processor to search for.
         cpu (str): The CPU identifier used for generating CPU names.
-        os_hint (str): The operating system type to match.
+        os_hint (str): The operating system type to match. 'None' (string) means lopper did not
+                       specify an OS, so any os,type (or missing os,type) in the YAML is accepted.
         yaml_file (str): Path to the YAML file containing domain configurations.
     Returns:
-        str or None: The domain name if found, otherwise None.
+        tuple: (domain_name, schema) if found, (None, None) otherwise.
     """
     try:
         yaml_content = ReadYaml(yaml_file)
@@ -239,13 +255,19 @@ def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
                 cluster = cpu_dict.get('cluster', '')
                 cpumask = cpu_dict.get('cpumask', '')
                 cpunames = GenCPUNames(cluster, cpu, cpumask)
-                if proc_name.endswith(tuple(cpunames)):
-                    if not os_type:
-                        logger.warning(f'OS type not defined for domain {subsystem} (proc_name: {proc_name}), skipping entry.')
-                        return None, None
-                    elif os_type.lower() == os_hint:
-                        logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} with os type {os_type}')
-                        return subsystem, schema
+                if not cpunames or not proc_name.endswith(tuple(cpunames)):
+                    continue
+                # CPU matched, now check os_type compatibility
+                if os_hint == 'None':
+                    # Lopper didn't specify OS (e.g. PMC/PSM/PMU), accept any
+                    logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} (os_hint unspecified)')
+                    return subsystem, schema
+                if not os_type:
+                    logger.warning(f'OS type not defined for domain {subsystem} (proc_name: {proc_name}), skipping entry.')
+                    continue
+                if os_type.lower() == os_hint:
+                    logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} with os type {os_type}')
+                    return subsystem, schema
     except Exception as e:
         raise Exception(f"Error in GetDomainName: {e}")
     return None, None
