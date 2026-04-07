@@ -15,7 +15,6 @@ import re
 import glob
 import pathlib
 import common_utils
-import bitbake_utils
 import yaml_utils
 import project_config
 import post_process_config
@@ -328,7 +327,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             lopper_utils.RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa9-zynq %s'
                                       % (self.args.gen_pl_overlay),
-                                      '-f')
+                                      '-f', self.system_conffile)
             logger.info('pl-overlay [ %s ] is enabled for cortex-a9 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtso will be
@@ -385,7 +384,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             lopper_utils.RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa53-zynqmp %s'
                                       % (self.args.gen_pl_overlay),
-                                      '-f')
+                                      '-f', self.system_conffile)
             logger.info('pl-overlay [ %s ] is enabled for cortex-a53 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtso will be
@@ -447,7 +446,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             lopper_utils.RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa72-versal %s'
                                       % (self.args.gen_pl_overlay),
-                                      '-f')
+                                      '-f', self.system_conffile)
             logger.info('pl-overlay [ %s ] is enabled for cortex-a72 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtso will be
@@ -509,7 +508,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             lopper_utils.RunLopperPlOverlaycommand(self.args.output, self.args.dts_path, sdt_gen_pl_dtsi, DTSFile,
                                       ps_dts_file, 'xlnx_overlay_pl_dt cortexa78_0 %s'
                                       % (self.args.gen_pl_overlay),
-                                      '-f')
+                                      '-f', self.system_conffile)
             logger.info('pl-overlay [ %s ] is enabled for cortex-a78 file: %s and stored in intermediate ps dts file: %s'
                         % (self.args.gen_pl_overlay, self.args.hw_file, ps_dts_file))
             # Once RunLopperPlOverlaycommand API is executed pl.dtso will be
@@ -993,10 +992,8 @@ def ParseSDT(args):
                                                     system_conffile)
     args.domain_file = ''
     for _file in domain_file_cfg.split():
-        _file = os.path.expandvars(_file)
-        # Expand the bitbake variables
-        _file = bitbake_utils.Bitbake.expand(_file)
-        args.domain_file += os.path.realpath(_file) + ' '
+        _file = common_utils.ExpandFilePath(_file)
+        args.domain_file += _file + ' '
 
     # In case dts_path updated in config
     cfg_dtspath = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',

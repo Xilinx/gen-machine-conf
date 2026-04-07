@@ -123,6 +123,14 @@ def CopyFile(infile, dest, follow_symlinks=False):
         shutil.copy2(infile, dest, follow_symlinks=follow_symlinks)
 
 
+def ExpandFilePath(filepath):
+    '''Expand environment variables, bitbake variables and resolve to real path.'''
+    filepath = os.path.expandvars(filepath)
+    filepath = bitbake_utils.Bitbake.expand(filepath)
+    filepath = os.path.realpath(filepath)
+    return filepath
+
+
 def RunCmd(command, out_dir, extraenv=None,
            failed_msg='External command failed', shell=False, checkcall=False):
     '''Run Shell commands from python'''

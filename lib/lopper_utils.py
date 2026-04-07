@@ -10,7 +10,6 @@
 import logging
 import os
 import common_utils
-import bitbake_utils
 
 logger = logging.getLogger('Gen-Machineconf')
 
@@ -35,10 +34,7 @@ def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
     dtsi_files = common_utils.GetConfigValue(dtsi_conf, system_conffile)
 
     for dtsi_file in dtsi_files.split():
-        dtsi_file = os.path.expandvars(dtsi_file)
-        # Expand the bitbake variables
-        dtsi_file = bitbake_utils.Bitbake.expand(dtsi_file)
-        dtsi_file = os.path.realpath(dtsi_file)
+        dtsi_file = common_utils.ExpandFilePath(dtsi_file)
         if not os.path.isfile(dtsi_file):
             raise Exception(f'Failed to get dtsi: {dtsi_file}')
 
@@ -165,7 +161,8 @@ def RunLopperSubcommand(outdir, dts_path, hw_file, subcommand_args, lopper_args=
 
 
 def RunLopperPlOverlaycommand(outdir, dts_path, sdt_gen_pl_dtsi,
-                              hw_file, ps_dts_file, subcommand_args, lopper_args=''):
+                              hw_file, ps_dts_file, subcommand_args,
+                              lopper_args='', system_conffile=''):
     """
     Generate Programmable Logic (PL) overlay device tree using xlnx_overlay_pl_dt lopper script.
 
@@ -173,10 +170,23 @@ def RunLopperPlOverlaycommand(outdir, dts_path, sdt_gen_pl_dtsi,
     combines the Processing System (PS) device tree with PL DTSI files generated from System
     Device Tree (SDT) to produce overlay files that can be dynamically loaded for partial
     reconfiguration or Device Tree overlay use cases.
+
+    If CONFIG_SUBSYSTEM_PL_INPUT_DTSI is set in system_conffile, the specified dtsi file
+    is passed as a lopper input (-i) to be merged into the generated PL overlay.
     """
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -O %s %s %s %s -- %s %s' % (
-        lopper, outdir, lopper_args, hw_file, ps_dts_file, subcommand_args, sdt_gen_pl_dtsi)
+    pl_input_dtsi_arg = ''
+    if system_conffile:
+        pl_input_dtsi_files = common_utils.GetConfigValue(
+            'CONFIG_SUBSYSTEM_PL_INPUT_DTSI', system_conffile)
+        for pl_input_dtsi in pl_input_dtsi_files.split():
+            pl_input_dtsi = common_utils.ExpandFilePath(pl_input_dtsi)
+            if not os.path.isfile(pl_input_dtsi):
+                raise Exception(f'Failed to get PL input dtsi: {pl_input_dtsi}')
+            pl_input_dtsi_arg += ' -i %s' % pl_input_dtsi
+            logger.debug(f'Using PL input dtsi: {pl_input_dtsi}')
+    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -O %s %s%s %s %s -- %s %s' % (
+        lopper, outdir, lopper_args, pl_input_dtsi_arg, hw_file, ps_dts_file, subcommand_args, sdt_gen_pl_dtsi)
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
     return stdout
 

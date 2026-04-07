@@ -13,7 +13,6 @@ import os
 import re
 import yaml
 import common_utils
-import bitbake_utils
 import yaml_utils
 import logging
 import glob
@@ -141,10 +140,7 @@ def MultiConfigYaml(yaml_file, multiconfig_dict):
     multiconf_yaml = []
     os_hint_yaml = []
     for _file in yaml_file.split():
-        _file = os.path.expandvars(_file)
-        # Expand the bitbake variables
-        _file = bitbake_utils.Bitbake.expand(_file)
-        _file = os.path.realpath(_file)
+        _file = common_utils.ExpandFilePath(_file)
         for mc_config in multiconfig_dict:
             _mc_config_dict = multiconfig_dict.get(mc_config)
             cpuname = _mc_config_dict.get('cpuname', '')
