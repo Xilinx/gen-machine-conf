@@ -667,6 +667,8 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
         machine_override_string += 'CONFIG_DTFILE ?= "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(config_dtfile)
     machine_override_string += 'CONFIG_DTFILE[vardepsexclude] += "CONFIG_DTFILE_DIR"\n'
 
+    machine_override_string += '\nDTB_FILE_PATH ?= "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
+
     serial_console, baudrate = SerialConsoleSettings(system_conffile, sdt=True)
     if serial_console:
         machine_override_string += '\n# Serial Console Settings\n'
@@ -815,7 +817,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     machine_override_string += 'DEFAULT_HW_BOOT_MODE = "%s"\n' % bootmode_value
 
     machine_override_string += '\n# Update bootbin to use proper device tree\n'
-    machine_override_string += 'BIF_PARTITION_IMAGE[device-tree] = "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
+    machine_override_string += 'BIF_PARTITION_IMAGE[device-tree] = "${DTB_FILE_PATH}"\n'
     machine_override_string += '\n# Remap boot files to ensure the right device tree is listed first\n'
     machine_override_string += 'IMAGE_BOOT_FILES =+ "devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
 
