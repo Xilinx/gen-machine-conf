@@ -250,6 +250,9 @@ def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
             return None, None
         schema = yaml_content['domains']
         for subsystem in schema:
+            # Skip non-dict entries (e.g. metadata or comments) that are not valid domain definitions
+            if not isinstance(schema[subsystem], dict):
+                continue
             os_type = schema[subsystem].get('os,type', '')
             for cpu_dict in schema[subsystem].get('cpus', []):
                 cluster = cpu_dict.get('cluster', '')
