@@ -199,11 +199,21 @@ def CopyPlOverlayfile(outdir, dts_path, pl_overlay_args):
     and copies the generated pl.dtso file from the lopper output directory. This organizes overlay
     files for different partial reconfiguration scenarios and logs the file locations for user reference.
     """
+    pl_dtso_file = os.path.join(outdir, 'pl.dtso')
+    if not os.path.isfile(pl_dtso_file):
+        logger.warning('pl.dtso not found in: %s. '
+                       'This may indicate that the design has no PL components or '
+                       'the lopper pl overlay command (xlnx_overlay_pl_dt) did not produce '
+                       'an overlay output. Skipping pl overlay copy to '
+                       'pl-overlay-%s directory.' % (outdir, pl_overlay_args))
+        return
+
     pl_dt_path = os.path.join(dts_path, 'pl-overlay-%s' % pl_overlay_args)
     common_utils.CreateDir(pl_dt_path)
-    common_utils.CopyFile(os.path.join(outdir, 'pl.dtso'), pl_dt_path)
+
+    common_utils.CopyFile(pl_dtso_file, pl_dt_path)
     logger.info('Lopper generated pl overlay file is found in: %s and a copy of pl.dtso is stored in: %s'
-                % (os.path.join(outdir, 'pl.dtso'), pl_dt_path))
+                % (pl_dtso_file, pl_dt_path))
 
 
 def GetLopperBaremetalDrvList(cpuname, outdir, dts_path, hw_file, lopper_args=''):
