@@ -359,6 +359,37 @@ SUBSYSTEM_PL_DT_OVERLAY_DFX
     This config will Generate DFX (Dynamic Function eXchange) PL device tree overlay for
     partial reconfiguration.
 
+CONFIG_SUBSYSTEM_PL_INPUT_DTSI
+------------------------------
+
+:Type: string
+:Default: "" (empty)
+:Dependencies: SUBSYSTEM_FPGA_MANAGER && SUBSYSTEM_SDT_FLOW
+:Description:
+
+    Custom input DTSI file path(s) for PL overlay generation. Specify one or
+    more ``.dtsi`` files separated by spaces. These files are passed to the
+    ``xlnx_overlay_pl_dt`` lopper assist using the ``-i`` flag, and their
+    contents are merged into the generated ``pl.dtso`` overlay.
+
+**Usage:**
+
+   Set this option to custom ``.dtsi`` file path(s) in system configuration.
+   Leave empty to generate only the default ``pl.dtso`` without additional
+   input.
+
+**Usage Example:**
+
+.. code-block:: kconfig
+
+   CONFIG_SUBSYSTEM_PL_INPUT_DTSI="/path/to/pl-custom.dtsi"
+
+**Multiple Files Example:**
+
+.. code-block:: kconfig
+
+   CONFIG_SUBSYSTEM_PL_INPUT_DTSI="/path/to/pl-custom1.dtsi /path/to/pl-custom2.dtsi"
+
 
 TF-A (Trusted Firmware-A) Configuration
 ----------------------------------------

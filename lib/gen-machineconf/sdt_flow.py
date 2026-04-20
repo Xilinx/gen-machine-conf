@@ -646,7 +646,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         ''' pmu-microblaze is ALWAYS Baremetal, no domain'''
         logger.info('Generating microblaze baremetal configuration for ZynqMP PMU')
         self.MBTuneFeatures()
-        extra_conf_str = 'TARGET_CFLAGS += "-DVERSAL_PLM=1"\n'
+        extra_conf_str = ''
         self.GenLibxilFeatures('', extra_conf_str)
 
     def PmcMicroblaze(self):
