@@ -103,6 +103,14 @@ The parse-sdt is the "newer" way of getting hardware configuration
 information into Yocto. It uses the output of AMD Vivado™ Design Suite
 after it has been processed by System Device Tree Generator.
 
+For QEMU-capable designs, the SDT flow also derives the hardware DDR map
+from the QEMU command line description. gen-machine-conf runs the lopper
+``gen_qemu_mem_cfg`` subcommand, reads the generated
+``memory.qemuboot.conf`` file, and appends the resulting ``QB_MEM``
+setting to the generated machine override. This allows later tools such
+as ``qemuboot-tool`` to merge the same memory map into the combined QEMU
+configuration used by ``runqemu``.
+
 .. code-block:: console
 
   $ gen-machine-conf parse-sdt -h
