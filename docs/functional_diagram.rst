@@ -278,6 +278,7 @@ their interactions, and the data transformations that occur at each stage.
    │  output/                                                                  │
    │  ├─ config                        # System configuration                  │
    │  ├─ gen-machineconf.log          # Tool log                               │
+   │  ├─ memory.qemuboot.conf         # QEMU HW DDR map for qemuboot/runqemu  │
    │  ├─ petalinux_config.yaml        # Hardware info YAML                     │
    │  ├─ configs/                     # Kconfig files                          │
    │  │   ├─ Kconfig                                                           │
@@ -286,7 +287,8 @@ their interactions, and the data transformations that occur at each stage.
    │  │                                                                        │
    │  build/conf/ (or --config-dir)                                            │
    │  ├─ machine/                                                              │
-   │  │   ├─ <machine>.conf          # Main machine configuration              │
+   │  │   ├─ <machine>.conf          # Main machine configuration, includes    │
+   │  │   │                          # QB_MEM when memory.qemuboot.conf exists │
    │  │   └─ include/<machine>/       # Machine-specific includes              │
    │  │       ├─ microblaze.inc                                                │
    │  │       ├─ <machine>-<target>-libxil.conf                                │
