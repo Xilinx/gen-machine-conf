@@ -65,6 +65,28 @@ System device tree(SDT) Based Examples
   # Using a custom xsct install location
   $ gen-machine-conf parse-xsa --soc-family versal --hw-description /<path_to_hdf_artifactory>/vck190-versal/system.xsa --machine-name vck190-versal --xsct-tool /<Vitis_or_Petalinux_install_directory>/tools/xsct
 
+Creating Yocto PL Firmware Recipes
+----------------------------------
+
+After generating PL overlays from an SDT design, you can package them into a
+Yocto layer with ``create-fw-recipe``. For a full description of the helper,
+see `Firmware Recipe Generation <firmware_recipes.rst>`_.
+
+.. code-block:: console
+
+  # Full overlay recipe from SDT output
+  $ create-fw-recipe --hw-description /<path_to_sdtdir>/ -g full
+
+  # DFX base plus partial recipes from SDT output
+  $ create-fw-recipe --hw-description /<path_to_sdtdir>/ -g dfx --recipe-name vek385static
+
+  # Explicit overlay and FPGA files
+  $ create-fw-recipe --dtso /<path_to_pl.dtso> --fpga /<path_to_design.pdi> --recipe-name my-overlay
+
+.. note::
+
+  ``create-fw-recipe`` only supports local files. Remote URLs or network paths
+  are not supported for input files.
 
 Using gen-machine-conf with native sysroot
 ------------------------------------------
