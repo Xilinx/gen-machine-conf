@@ -25,6 +25,8 @@ See detailed examples in [Gen-Machine-Conf Examples](docs/examples.rst)
 
 See detailed commandline options in [Gen-Machine-Conf options](docs/options.rst)
 
+See firmware recipe automation in [Firmware Recipe Generation](docs/firmware_recipes.rst)
+
 See functional architecture diagram in [Gen-Machine-Conf Functional Diagram](docs/functional_diagram.rst)
 
 See detailed workflow flowcharts in [Gen-Machine-Conf Flowcharts](docs/flowcharts.rst)

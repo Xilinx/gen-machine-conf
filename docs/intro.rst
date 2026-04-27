@@ -200,6 +200,7 @@ If gen-machine-conf is right for your project, here's how to get started:
 3. **Understand options**: Check `Gen Machine Conf: Detailed Options and Usage <options.rst>`_ for all available configurations
 4. **Create configuration**: Use template YAML or command-line options
 5. **Generate files**: Run gen-machine-conf to create your machine configuration
-6. **Build**: Use the generated files with Yocto/PetaLinux
+6. **Package PL overlays when needed**: Use `Firmware Recipe Generation <firmware_recipes.rst>`_ to turn SDT PL overlay outputs into Yocto firmware recipes
+7. **Build**: Use the generated files with Yocto/PetaLinux
 
 For detailed usage examples, see `gen-machine-conf Examples <examples.rst>`_.
