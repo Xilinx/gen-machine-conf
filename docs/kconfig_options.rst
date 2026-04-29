@@ -300,6 +300,44 @@ SUBSYSTEM_FLASH__ADVANCED_AUTOCONFIG:
 
      When this option is enabled, PetaLinux will automatically detect and generate the flash partitions, offsets, and sizes.
 
+Boot Mode Settings
+------------------
+
+Available for: Zynq, ZynqMP, Versal, Versal Net, Versal 2VE/2VM
+
+SUBSYSTEM_BOOTMODE_<value>
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: bool (choice)
+:Default: SoC-family specific default selected by the generated Kconfig menu
+:Dependencies: ``SUBSYSTEM_SDT_FLOW``
+:Description:
+
+    Select the primary boot mode for the processor. The available primary boot modes are
+    SoC-family specific (numeric values from SoC TRM):
+
+    - **Zynq**: QSPI (1), NOR (2), NAND (4), SD (5)
+    - **ZynqMP**: QSPI (24b) (1), QSPI (32b) (2), SD0 (2.0) (3), NAND (4), SD1 (2.0) (5), eMMC (1.8V) (6), SD1 LS (3.0) (14)
+    - **Versal**: QSPI24 (1), QSPI32 (2), SD0 (v3.0) (3), SD1 (v2.0) (5), eMMC1 (v4.51) (6), OSPI (8), SD1 (v3.0) (14)
+    - **Versal Net**: QSPI24 (1), QSPI32 (2), SD0 (v3.0) (3), SD1 (v2.0) (5), eMMC1 (v4.51) (6), OSPI (8), SD1 (v3.0) (14)
+    - **Versal 2VE/2VM**: QSPI24 (1), QSPI32 (2), SD (v3.0) (3), SD (v2.0) (5), eMMC (v5.1) (6), OSPI (8), UFS (11), SD (v3.0) second (14)
+
+    The selected boot mode value is written to ``DEFAULT_HW_BOOT_MODE`` in the
+    generated machine configuration. This variable defaults ``HW_BOOT_MODE``, which
+    controls Boot.BIN packaging and runqemu boot arguments. The ``SOC_ON_DISK_BOOT_BIN``
+    variable determines whether Boot.BIN is included in the disk image based on
+    whether ``HW_BOOT_MODE`` matches the SoC-specific ``SOC_DISK_BOOT_MODE_MAPPING``
+    (e.g., SD-type and eMMC boot modes). When Boot.BIN is included, a combined WIC
+    image (Boot.BIN + root filesystem) is automatically generated for direct SD card
+    or eMMC flashing.
+
+    **Secondary boot modes** (JTAG and others) are not primary boot modes and are
+    handled by leaving ``DEFAULT_HW_BOOT_MODE`` blank/empty, which results in Boot.BIN
+    not being included in the disk image by default.
+
+    **Reference:** Zynq (UG585 "Flash-Devices-Master-Mode-Boot"), ZynqMP (UG1085 "Boot Modes"),
+    Versal Gen1 (AM011 "Boot Modes and Interfaces"), Versal Gen2 (AM026 "Boot Mode and Interfaces").
+
 Device Tree Settings
 ====================
 
