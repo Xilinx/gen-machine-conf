@@ -25,39 +25,18 @@ import lopper_utils
 
 logger = logging.getLogger('Gen-Machineconf')
 
-def IsOpenampEnabled(cpuname, cpu, os_hint, domain_files):
-    """
-    Check if OpenAMP is enabled for a given CPU and domain configuration.
-    This function iterates through domain files to determine if OpenAMP
-    is enabled by checking for the 'openamp,domain-to-domain-v1' compatible
-    string in the domain-to-domain configuration.
-
-    Returns:
-        str: The domain name if OpenAMP is enabled with compatible version,
-             empty string otherwise.
-    """
-    for _file in domain_files.split():
-        domain_name, schema = yaml_utils.GetDomainName(cpuname, cpu, os_hint, _file)
-        if domain_name:
-            domain_info = schema.get(domain_name, {})
-            domain_to_domain = domain_info.get('domain-to-domain') or {}
-            compatible = domain_to_domain.get('compatible')
-            if compatible and compatible in ('openamp,domain-to-domain-v1'):
-                return domain_name
-    return ''
-
 class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
     def GenOpenampDts(self, ps_dts_file, subcommand_args=''):
         """
         Generate OpenAMP device tree source file for the specified CPU.
-        This method checks if OpenAMP is enabled for the current CPU and generates
-        an OpenAMP-specific device tree source (DTS) file if applicable.
+        This method checks if OpenAMP is enabled for the current CPU by merging
+        domain YAML files and checking for OpenAMP configuration.
 
         Returns:
             str: The path to the generated OpenAMP DTS file or the original DTS file
                  if OpenAMP is not enabled.
         """
-        openamp_domain = IsOpenampEnabled(self.cpuname, self.cpu,
+        openamp_domain = yaml_utils.IsOpenampEnabledInDomains(self.cpuname, self.cpu,
                                         self.os_hint, self.args.domain_file)
         if not openamp_domain:
             return ps_dts_file

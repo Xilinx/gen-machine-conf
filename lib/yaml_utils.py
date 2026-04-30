@@ -232,6 +232,42 @@ def GenCPUNames(cluster: str, cpu: str, cpumask_hex: str):
     return cpunames
 
 
+def _FindMatchingDomainInSchema(proc_name: str, cpu: str, os_hint: str, domains_schema: dict):
+    """
+    Internal helper to find a domain matching the given processor name, CPU, and OS hint
+    in a domains schema dictionary.
+    """
+    for domain_name, domain_config in domains_schema.items():
+        # Skip non-dict entries (e.g. metadata or comments) that are not valid domain definitions
+        if not isinstance(domain_config, dict):
+            continue
+
+        os_type = domain_config.get('os,type', '')
+        for cpu_dict in domain_config.get('cpus', []):
+            cluster = cpu_dict.get('cluster', '')
+            cpumask = cpu_dict.get('cpumask', '')
+            cpunames = GenCPUNames(cluster, cpu, cpumask)
+
+            if not cpunames or not proc_name.endswith(tuple(cpunames)):
+                continue
+
+            # CPU matched, now check os_type compatibility
+            if os_hint == 'None':
+                # Lopper didn't specify OS (e.g. PMC/PSM/PMU), accept any
+                logger.debug(f'Found domain name {domain_name} for proc_name {proc_name} (os_hint unspecified)')
+                return domain_name
+
+            if not os_type:
+                logger.warning(f'OS type not defined for domain {domain_name} (proc_name: {proc_name}), skipping entry.')
+                continue
+
+            if os_type.lower() == os_hint:
+                logger.debug(f'Found domain name {domain_name} for proc_name {proc_name} with os type {os_type}')
+                return domain_name
+
+    return None
+
+
 def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
     """
     Retrieves the domain name for a given processor name, CPU, and OS hint from a YAML configuration file.
@@ -248,29 +284,106 @@ def GetDomainName(proc_name: str, cpu: str, os_hint: str, yaml_file: str):
         yaml_content = ReadYaml(yaml_file)
         if not yaml_content or 'domains' not in yaml_content:
             return None, None
+
         schema = yaml_content['domains']
-        for subsystem in schema:
-            # Skip non-dict entries (e.g. metadata or comments) that are not valid domain definitions
-            if not isinstance(schema[subsystem], dict):
-                continue
-            os_type = schema[subsystem].get('os,type', '')
-            for cpu_dict in schema[subsystem].get('cpus', []):
-                cluster = cpu_dict.get('cluster', '')
-                cpumask = cpu_dict.get('cpumask', '')
-                cpunames = GenCPUNames(cluster, cpu, cpumask)
-                if not cpunames or not proc_name.endswith(tuple(cpunames)):
-                    continue
-                # CPU matched, now check os_type compatibility
-                if os_hint == 'None':
-                    # Lopper didn't specify OS (e.g. PMC/PSM/PMU), accept any
-                    logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} (os_hint unspecified)')
-                    return subsystem, schema
-                if not os_type:
-                    logger.warning(f'OS type not defined for domain {subsystem} (proc_name: {proc_name}), skipping entry.')
-                    continue
-                if os_type.lower() == os_hint:
-                    logger.debug(f'Found domain name {subsystem} for proc_name {proc_name} with os type {os_type}')
-                    return subsystem, schema
+        domain_name = _FindMatchingDomainInSchema(proc_name, cpu, os_hint, schema)
+
+        if domain_name:
+            return domain_name, schema
+
     except Exception as e:
         raise Exception(f"Error in GetDomainName: {e}")
+
     return None, None
+
+
+def _MergeTwoDomainDicts(base_domain, overlay_domain):
+    """
+    Internal helper to deep merge two domain configuration dictionaries.
+    Modifies base_domain in place and returns it.
+    """
+    if not isinstance(base_domain, dict) or not isinstance(overlay_domain, dict):
+        return overlay_domain if overlay_domain else base_domain
+
+    for key, value in overlay_domain.items():
+        if key not in base_domain:
+            base_domain[key] = copy.deepcopy(value)
+        elif isinstance(value, dict) and isinstance(base_domain[key], dict):
+            _MergeTwoDomainDicts(base_domain[key], value)
+        elif isinstance(value, list) and isinstance(base_domain[key], list):
+            for item in value:
+                if item not in base_domain[key]:
+                    base_domain[key].append(copy.deepcopy(item))
+        else:
+            base_domain[key] = copy.deepcopy(value)
+
+    return base_domain
+
+
+def MergeDomainConfigs(domain_files):
+    """
+    Read and merge domain configurations from multiple YAML files.
+
+    This function reads domain YAML files (base + overlays) and merges them into
+    a single domain configuration dictionary. Domains with the same name across
+    files are deep merged.
+    """
+    if not domain_files or not domain_files.strip():
+        return {}
+
+    merged_domains = {}
+
+    for yaml_file in domain_files.split():
+        if not yaml_file:  # Skip empty strings from split
+            continue
+
+        try:
+            yaml_content = ReadYaml(yaml_file)
+            if not yaml_content or 'domains' not in yaml_content:
+                continue
+
+            # Merge each domain from this file
+            for domain_name, domain_config in yaml_content['domains'].items():
+                # Skip non-dict domain configs early
+                if not isinstance(domain_config, dict):
+                    continue
+
+                if domain_name not in merged_domains:
+                    merged_domains[domain_name] = copy.deepcopy(domain_config) if domain_config else {}
+                else:
+                    _MergeTwoDomainDicts(merged_domains[domain_name], domain_config)
+        except Exception as e:
+            logger.warning(f"Error reading domain file {yaml_file}: {e}")
+            continue
+
+    return merged_domains
+
+
+def IsOpenampEnabledInDomains(cpuname, cpu, os_hint, domain_files):
+    """
+    Check if OpenAMP is enabled for a given CPU by merging domain YAML files.
+
+    This function:
+    1. Merges all domain YAML files into a single configuration
+    2. Searches for a domain matching the CPU and OS hint (using same logic as GetDomainName)
+    3. Checks if that domain has OpenAMP enabled (domain-to-domain with openamp,domain-to-domain-v1)
+    """
+    # Merge all domain YAML files
+    merged_domains = MergeDomainConfigs(domain_files)
+    if not merged_domains:
+        return ''
+
+    # Find matching domain using the common helper function
+    domain_name = _FindMatchingDomainInSchema(cpuname, cpu, os_hint, merged_domains)
+    if not domain_name:
+        return ''
+
+    # Check if the matched domain has OpenAMP enabled
+    domain_config = merged_domains[domain_name]
+    compatible = domain_config.get('domain-to-domain', {}).get('compatible', '')
+
+    if compatible == 'openamp,domain-to-domain-v1':
+        logger.debug(f'OpenAMP enabled for domain {domain_name}')
+        return domain_name
+
+    return ''
