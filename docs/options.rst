@@ -294,7 +294,9 @@ If not provided on the command line:
 --soc-family <family>
 ~~~~~~~~~~~~~~~~~~~~~
 
-Specifies the SoC family (microblaze, zynq, zynqmp, versal).
+Specifies the SoC family (microblaze, microblaze-v, zynq, zynqmp, versal, versal-2ve-2vm).
+``microblaze-v`` is supported only in the system device tree (SDT) flow and
+is not supported in the XSA/XSCT flow.
 If not provided on the command line gen-machine-conf will be extracted from the System-Device-Tree (SDT) file
 based on the Processor name.
 
