@@ -26,7 +26,8 @@ gen-machine-conf usage
 
   $ gen-machine-conf -h
   usage: gen-machine-conf [--template Template yaml file] [--hw-description [<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>]
-                          [--soc-family {microblaze,zynq,zynqmp,versal,versal-2ve-2vm}] [--soc-variant SOC_VARIANT] [--machine-name MACHINE]
+                          [--soc-family {microblaze,microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}]
+                          [--soc-variant SOC_VARIANT] [--machine-name MACHINE]
                           [-c <config_dir>] [-r REQUIRE_MACHINE] [-O MACHINE_OVERRIDES] [--output OUTPUT] [--native-sysroot NATIVE_SYSROOT]
                           [--menuconfig [{project,rootfs}]] [--petalinux] [--add-config [CONFIG_<macro>=y]] [--add-rootfsconfig ADD_ROOTFSCONFIG] [-D]
                           [-h] [-v]
@@ -41,7 +42,7 @@ gen-machine-conf usage
   options:
     --template Template yaml file
                           Yaml template file
-    --soc-family {microblaze,zynq,zynqmp,versal,versal-2ve-2vm}
+    --soc-family {microblaze,microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}
                           SOC family type from choice list (usually auto detected).
     --soc-variant SOC_VARIANT
                           SOC Variant: Ex: cg, dr, eg, ev, ai-prime, premium (usually auto detected).
@@ -75,7 +76,6 @@ gen-machine-conf usage
       parse-xsa           Parse xsa file and generate Yocto/PetaLinux configurations.
 
   Use gen-machine-conf <subcommand> --help to get help on a specific command
-
 
 gen-machine-conf parse-xsa usage
 --------------------------------

@@ -82,6 +82,17 @@ psu_uart:
     device_type: serial
     baudrate_editable: y
 
+axi_uartlite:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - xlnx,axi-uartlite-2.0
+              - xlnx,xps-uartlite-1.00.a
+    device_type: serial
+    linux_console_file_name: ttyUL0
+
 psu_ethernet:
     properties:
       compatible:

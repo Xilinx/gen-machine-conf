@@ -197,6 +197,7 @@ def GenConf_serial(IpsToAdd, slavesdict, proc_ipname, arch):
     serialconfstr = ''
     serial_Kconf = 'SUBSYSTEM_SERIAL'
     serialdict = {'microblaze': ['FSBOOT', 'DTG'],
+                  'microblaze_riscv': ['DTG'],
                   'ps7_cortexa9': ['FSBL', 'DTG'],
                   'psu_cortexa53': ['PMUFW', 'FSBL', 'TF-A', 'DTG'],
                   'psv_cortexa72': ['PLM', 'TF-A', 'DTG'],

@@ -43,8 +43,8 @@ System device tree(SDT) Based Examples
 
 .. note::
 
-  - MicroBlaze is not supported in system device tree generator at this time.
-  - Zynq-7000 does not support DFX static pl overlay
+  - Classic MicroBlaze is not supported in the system device tree generator flow at this time.
+  - MicroBlaze-V is supported for Linux machine generation in the system device tree flow.
 
 .. code-block:: console
 
@@ -250,3 +250,209 @@ Troubleshooting
 - Verify the Kconfig option name matches the target exactly
 - Check that the file path is absolute and the file exists
 - Review gen-machineconf.log for any warnings or errors
+
+
+Scripted WIC Image Generation with Transparent BOOT.BIN Packaging
+-----------------------------------------------------------------
+
+Applies to: **Zynq**, **ZynqMP**, **Versal**, **Versal Net**, and
+**Versal 2VE/2VM**.
+
+This section describes how to drive the primary boot-mode selection from the
+``gen-machine-conf`` command line so that a WIC disk image is produced with
+``BOOT.BIN`` packaged in automatically — no interactive menu required.
+
+Overview
+~~~~~~~~
+
+The primary boot mode is selected through the ``SUBSYSTEM_BOOTMODE_<value>``
+Kconfig option. Pass ``--add-config`` to ``gen-machine-conf`` to set the
+option non-interactively (i.e. without launching ``menuconfig``):
+
+- **Option:** ``--add-config CONFIG_SUBSYSTEM_BOOTMODE_<value>=y``
+- **Type:** bool (choice)
+- **Depends on:** ``SUBSYSTEM_SDT_FLOW``
+
+Available Boot Modes
+~~~~~~~~~~~~~~~~~~~~
+
+The table below summarises the boot-mode values supported by each SoC family
+and the corresponding Kconfig macro to pass via ``--add-config``.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 10 30 42
+
+   * - SoC Family
+     - Value
+     - Boot Mode
+     - ``CONFIG_`` Macro
+   * - Zynq
+     - 1
+     - QSPI
+     - ``CONFIG_SUBSYSTEM_BOOTMODE_1``
+   * - Zynq
+     - 2
+     - NOR
+     - ``CONFIG_SUBSYSTEM_BOOTMODE_2``
+   * - Zynq
+     - 4
+     - NAND
+     - ``CONFIG_SUBSYSTEM_BOOTMODE_4``
+   * - Zynq
+     - 5
+     - SD
+     - ``CONFIG_SUBSYSTEM_BOOTMODE_5``
+   * - ZynqMP
+     - 1–14
+     - QSPI/SD/NAND/eMMC
+     - ``CONFIG_SUBSYSTEM_BOOTMODE_<N>``
+   * - Versal / Net
+     - 1–14
+     - QSPI/SD/eMMC/OSPI
+     - ``CONFIG_SUBSYSTEM_BOOTMODE_<N>``
+   * - Versal 2VE/2VM
+     - 1–14
+     - + UFS (11)
+     - ``CONFIG_SUBSYSTEM_BOOTMODE_<N>``
+
+.. note::
+
+   JTAG (value ``0``) is *not* a primary boot mode. Selecting it leaves
+   ``DEFAULT_HW_BOOT_MODE`` blank, and ``BOOT.BIN`` is therefore **not**
+   included in the generated disk image.
+
+Usage
+~~~~~
+
+Invoke ``gen-machine-conf`` with ``--add-config`` to bake the boot-mode
+selection into the generated machine configuration:
+
+.. code-block:: console
+
+   $ gen-machine-conf --hw-description ./sdt_output/ \
+       --add-config CONFIG_SUBSYSTEM_BOOTMODE_5=y
+
+Examples by SoC Family
+~~~~~~~~~~~~~~~~~~~~~~
+
+Quick reference for the most common boot media on each SoC family:
+
+- **Zynq** — SD (5): ``--add-config CONFIG_SUBSYSTEM_BOOTMODE_5=y``
+- **ZynqMP** — SD0 2.0 (3): ``--add-config CONFIG_SUBSYSTEM_BOOTMODE_3=y``
+- **Versal / Versal Net** — eMMC1 (6): ``--add-config CONFIG_SUBSYSTEM_BOOTMODE_6=y``
+- **Versal 2VE/2VM** — UFS (11): ``--add-config CONFIG_SUBSYSTEM_BOOTMODE_11=y``
+
+Effect on the Generated Machine Config
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Selecting a boot mode causes ``gen-machine-conf`` to emit the corresponding
+``DEFAULT_HW_BOOT_MODE`` assignment in the machine override, for example:
+
+.. code-block:: bitbake
+
+   DEFAULT_HW_BOOT_MODE = "5"
+
+The variables driven by this setting are:
+
+- ``HW_BOOT_MODE`` — defaults from ``DEFAULT_HW_BOOT_MODE`` and controls
+  ``BOOT.BIN`` packaging as well as the ``runqemu`` arguments.
+- ``SOC_ON_DISK_BOOT_BIN`` — determines whether ``BOOT.BIN`` is embedded in
+  the disk image. SD and eMMC boot modes trigger a combined WIC image that
+  contains both the boot artifacts and the root filesystem.
+
+
+Creating Multiple Machine Configurations for Different PL Variants Using ``--output``
+-------------------------------------------------------------------------------------
+
+When the same base SoC is used with several different programmable logic (PL)
+designs, it is convenient to generate one machine per PL variant and select
+between them at build time using ``MACHINE=...``. The ``--output`` flag lets
+each invocation of ``gen-machine-conf`` write into a dedicated directory
+while still sharing the same Yocto layer layout.
+
+Step 1: Prepare Handoff Directories (per PL variant)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For each PL variant, ensure you have a valid handoff (SDT) directory exported
+from Vivado. For example:
+
+.. code-block:: text
+
+   /path/to/sdt-video/
+   /path/to/sdt-network/
+   /path/to/sdt-dsp/
+
+Each directory contains the PL-specific design data for that variant.
+
+Step 2: Generate One Machine per PL Variant
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Run the ``gen-machine-conf`` utility once per PL variant. Each invocation
+should use:
+
+- A unique ``--machine-name``.
+- A unique ``--output`` directory.
+- Its own handoff (SDT) directory passed via ``--hw-description``.
+
+**PL Variant 1 — Video Pipeline**
+
+.. code-block:: console
+
+   $ gen-machine-conf \
+       --hw-description /path/to/sdt-video/ \
+       --machine-name zcu104-video \
+       --output /path/to/output/zcu104
+
+**PL Variant 2 — Network Offload**
+
+.. code-block:: console
+
+   $ gen-machine-conf \
+       --hw-description /path/to/sdt-network/ \
+       --machine-name zcu104-network \
+       --output /path/to/output/zcu104-network \
+       -c conf -g full
+
+**PL Variant 3 — DSP Accelerator**
+
+.. code-block:: console
+
+   $ gen-machine-conf \
+       --hw-description /path/to/sdt-dsp/ \
+       --machine-name zcu104-dsp \
+       --output /path/to/output/zcu104-dsp \
+       -c conf -g full
+
+Step 3: Resulting Configuration Layout
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After running all three commands, the shared ``conf/`` tree contains one
+entry per PL variant under ``machine/``, ``dts/``, and ``multiconfig/``:
+
+.. code-block:: text
+
+   conf/
+   ├── machine/
+   │   ├── zcu104-video.conf
+   │   ├── zcu104-network.conf
+   │   └── zcu104-dsp.conf
+   ├── dts/
+   │   ├── zcu104-video/
+   │   ├── zcu104-network/
+   │   └── zcu104-dsp/
+   └── multiconfig/
+       ├── zcu104-video-cortexa53-0-fsbl.conf
+       ├── zcu104-network-cortexa53-0-fsbl.conf
+       ├── zcu104-dsp-cortexa53-0-fsbl.conf
+       └── ...
+
+Step 4: Build a Specific PL Variant in Yocto
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To build with a specific PL image, simply select the corresponding machine
+at the BitBake command line:
+
+.. code-block:: console
+
+   $ MACHINE=zcu104-video bitbake <image>
