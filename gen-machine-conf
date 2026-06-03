@@ -40,19 +40,6 @@ def DisplayVersion(unparsed_args):
     return 0
 
 
-def DisplayChangelog():
-    '''Display the release changelog and exit'''
-    changelog_path = os.path.join(scripts_path, 'changelog.md')
-    if not os.path.isfile(changelog_path):
-        raise Exception('Unable to find changelog file: %s' % changelog_path)
-
-    with open(changelog_path, 'r', encoding='utf-8') as changelog_fd:
-        sys.stdout.write(changelog_fd.read())
-        if not sys.stdout.closed:
-            sys.stdout.write('\n')
-    return 0
-
-
 def GetOutputDir(output, machine, hw_file):
     ''' If user specified output directory use it
         If not specified output directory,
@@ -231,9 +218,6 @@ def main():
     if {'-h', '--help'} & set(sys.argv):
         parserhelp = True
 
-    if {'-C', '--changelog'} & set(sys.argv):
-        return DisplayChangelog()
-
     # Initialize bitbake server
     bitbake_utils.InitializeBitbake(parserhelp)
 
@@ -311,9 +295,6 @@ def main():
                         help='show this help message and exit')
     parser.add_argument('-v', '--version', action='version', version=DisplayVersion(unparsed_args),
                         help='show version information and exit')
-    parser.add_argument('-C', '--changelog', action='store_true',
-                        help='Display the release changelog and exit',
-                        default=False)
     subparsers = parser.add_subparsers(title='subcommands', metavar='<subcommand>',
                                        dest='subcommand')
 
