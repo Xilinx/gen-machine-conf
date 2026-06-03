@@ -25,7 +25,7 @@ See detailed examples in [Gen-Machine-Conf Examples](docs/examples.rst)
 
 See detailed commandline options in [Gen-Machine-Conf options](docs/options.rst)
 
-See release notes in [Changelog](changelog.md)
+See release notes in [Changelog](docs/changelog.rst)
 
 See firmware recipe automation in [Firmware Recipe Generation](docs/firmware_recipes.rst)
 
