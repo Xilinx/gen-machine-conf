@@ -30,7 +30,7 @@ gen-machine-conf usage
                           [--soc-variant SOC_VARIANT] [--machine-name MACHINE]
                           [-c <config_dir>] [-r REQUIRE_MACHINE] [-O MACHINE_OVERRIDES] [--output OUTPUT] [--native-sysroot NATIVE_SYSROOT]
                           [--menuconfig [{project,rootfs}]] [--petalinux] [--add-config [CONFIG_<macro>=y]] [--add-rootfsconfig ADD_ROOTFSCONFIG] [-D]
-                          [-h] [-v] [-C]
+                          [-h] [-v]
                           <subcommand> ...
 
   PetaLinux/Yocto Machine Configuration File generation tool
@@ -69,7 +69,6 @@ gen-machine-conf usage
     -D, --debug           Enable debug output
     -h, --help            show this help message and exit
     -v, --version         show version information and exit
-    -C, --changelog       Display the release changelog and exit
 
   subcommands:
     <subcommand>
