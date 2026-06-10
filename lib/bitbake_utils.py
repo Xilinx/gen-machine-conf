@@ -262,7 +262,7 @@ class bitbake():
             if url.startswith("file:///"):
                 # If the file can't be unpacked or refers to a directory
                 # then it will be in the same directory structure as the
-                # original file:// URL.  hw_dir = ${WORKDIR}
+                # original file:// URL.  hw_dir = ${UNPACKDIR}
                 base_sdir = os.path.dirname(uri[8:])
                 maybe_s_dir = os.path.join(base_sdir, s_dir)
                 if os.path.exists(os.path.join(hw_dir, maybe_s_dir)):
