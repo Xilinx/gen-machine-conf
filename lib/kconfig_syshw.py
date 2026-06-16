@@ -21,7 +21,7 @@ def GenConf_processor(procdata):
     ''' Generate Processor Info as Kconfig'''
     if not procdata:
         raise Exception('ERROR: No CPU can be found in the system. Please review your hardware system. '
-              'Valid processors are: microblaze, ps7_cortexa9, psu_cortexa53, psv_cortexa72, psx_cortexa78.')
+              'Valid processors are: microblaze-v, ps7_cortexa9, psu_cortexa53, psv_cortexa72, psx_cortexa78.')
     KconfStr = 'SUBSYSTEM_PROCESSOR'
     confstr = ''
     procconfstr = '\nchoice\n'
@@ -29,8 +29,6 @@ def GenConf_processor(procdata):
     procconfstr += '\thelp\n'
     procconfstr += '\tSelect a processor as the system processor.\n'
 
-    archdict = {}
-    archKdict = {'microblaze': 'ARCHMB', 'arm': 'ARCHARM', 'aarch64': 'ARCH64'}
     for index, proc in enumerate(procdata.keys()):
         confstr += '\nconfig %s%s_IP_NAME\n' % (KconfStr, index)
         confstr += '\tstring\n'
@@ -43,18 +41,8 @@ def GenConf_processor(procdata):
         Kprocselect = '%s_%s_SELECT' % (KconfStr, proc)
         procconfstr += '\nconfig %s\n' % Kprocselect
         procconfstr += '\tbool "%s"\n' % proc
-        arch = procdata[proc].get('arch')
-        if arch:
-            archdict.setdefault(arch, []).append(Kprocselect)
 
     procconfstr += '\nendchoice\n'
-
-    for arch in archdict.keys():
-        confstr += '\nconfig SUBSYSTEM_ENABLE_%s\n' % archKdict.get(arch)
-        confstr += '\tbool\n'
-        confstr += '\tdefault y\n'
-        confstr += '\tselect SUBSYSTEM_ARCH_%s\n' % arch.upper()
-        confstr += '\tdepends on %s\n' % ' || '.join(archdict.get(arch))
 
     confstr += procconfstr
     return confstr
@@ -128,7 +116,7 @@ def GenConf_memory(IpsToAdd, slavesdict, proc_ipname, arch):
             hex(int(baseaddr, base=16) + 0x8000000))
         memoryconfstr += '\tdefault %s if SUBSYSTEM_ARCH_ARM\n' % (
             hex(int(baseaddr, base=16) + 0x4000000))
-        memoryconfstr += '\tdefault %s if SUBSYSTEM_ARCH_MICROBLAZE\n' % (
+        memoryconfstr += '\tdefault %s if SUBSYSTEM_ARCH_MICROBLAZE-V\n' % (
             hex(int(baseaddr, base=16) + 0x100000))
         memoryconfstr += '\trange %s %s\n' % (hex(int(baseaddr, base=16) + 0x100000),
                                               hex(int(baseaddr, base=16) + int(highaddr, base=16) - 0x2000000 + 0x100000))
@@ -438,7 +426,7 @@ def GenConf_bootmodes(proc):
     default_bootmode = bootmode_info.get('def_bootmode', '')
     if not bootmodes:
         return ''
-    confstr = '\nif !SUBSYSTEM_DISTRO_PETALINUX && SUBSYSTEM_SDT_FLOW\n'
+    confstr = '\nif SUBSYSTEM_SDT_FLOW\n'
     confstr += '\nmenu "Boot Mode Settings"\n'
     confstr += '\nchoice\n'
     confstr += '\tprompt "Primary Boot Mode"\n'
@@ -469,7 +457,7 @@ def GenConf_bootmodes(proc):
 # Supported Device Types to create Kconfig file
 devicetypes = {
     'memory': {'exclude': ['psu_ocm']},
-    'serial': {}, 'ethernet': {}, 'flash': {}, 'sd': {}
+    'serial': {}, 'flash': {}, 'sd': {}
 }
 
 
