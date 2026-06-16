@@ -252,7 +252,7 @@ class bitbake():
             raise FetchError(message=e, url=uri)
         hw_dir_root = hw_dir
         # Get the S from url if exists, Helps if the specified path or url has multiple
-        # SDT/XSA directories user can specify sub source directory. similar to
+        # SDT directories user can specify sub source directory. similar to
         # S variable in bb files.
         s_dir = ''
         localpath = ''
@@ -279,32 +279,28 @@ class bitbake():
 def InitializeBitbake(parserhelp):
     '''Initialize bitbake server and prepare it for use'''
     import sys
-    # PetaLinux configuration tool skips bitbake usage
-    if 'PETALINUX' in os.environ.keys() or '--petalinux' in sys.argv:
-        startBitbake(disabled=True)
-    else:
-        # Try to start bitbake
+    # Try to start bitbake
+    try:
+        startBitbake()
+    except Exception as e:
+        if not parserhelp:
+            if '--native-sysroot' in sys.argv:
+                logger.debug(str(e))
+                logger.warning("Unable to start the bitbake server, bitbake may be required to build any missing tools and configurations.")
+            else:
+                logger.error(str(e))
+                raise Exception("Unable to start the bitbake server, bitbake is required for various tools and configurations.  " \
+                                "Be sure to have bitbake in your environment's PATH and PYTHONPATH.  See oe-init-build-env.")
+    if not Bitbake.disabled:
         try:
-            startBitbake()
+            # prepare can fail if there is an invalid configuration
+            Bitbake.prepare(True)
         except Exception as e:
+            Bitbake.shutdown()
+            Bitbake.disabled = True
+            logger.error("The error above must be corrected before running gen-machine-conf.\n")
             if not parserhelp:
-                if '--native-sysroot' in sys.argv:
-                    logger.debug(str(e))
-                    logger.warning("Unable to start the bitbake server, bitbake may be required to build any missing tools and configurations.")
-                else:
-                    logger.error(str(e))
-                    raise Exception("Unable to start the bitbake server, bitbake is required for various tools and configurations.  " \
-                                    "Be sure to have bitbake in your environment's PATH and PYTHONPATH.  See oe-init-build-env.")
-        if not Bitbake.disabled:
-            try:
-                # prepare can fail if there is an invalid configuration
-                Bitbake.prepare(True)
-            except Exception as e:
-                Bitbake.shutdown()
-                Bitbake.disabled = True
-                logger.error("The error above must be corrected before running gen-machine-conf.\n")
-                if not parserhelp:
-                    raise e
+                raise e
 
 
 def startBitbake(disabled=False):

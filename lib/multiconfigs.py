@@ -119,7 +119,7 @@ class ParseMultiConfigFiles():
 class GenerateMultiConfigFiles():
     def ZephyrConfigurations(self, mc_target):
         ZephyrDict = {
-            'microblaze' : { 'board' : 'mbv32' },
+            'microblaze-v' : { 'board' : 'mbv32' },
             'versal-net' : { 'board' : 'versalnet_rpu'},
             'versal-2ve-2vm' : { 'board' : 'versal2_rpu'}
             }
@@ -210,7 +210,7 @@ class GenerateMultiConfigFiles():
                         if cpu.startswith('xlnx,microblaze-riscv'):
                             McExtraVars += '#Risc-V Tune features\n'
                             McExtraVars += 'require conf/machine/include/riscv/tune-riscv.inc\n'
-                            mc_target = 'microblaze'
+                            mc_target = 'microblaze-v'
                         distro, ExtraVars = self.ZephyrConfigurations(mc_target)
                         McExtraVars += ExtraVars
 
