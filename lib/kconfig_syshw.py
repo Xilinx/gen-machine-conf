@@ -294,13 +294,11 @@ def GenConf_flash(IpsToAdd, slavesdict, proc_ipname, arch):
             continue
         ip_name = slavesdict.get(slave)['ip_name']
         global ipinfodata
-        try:
-            flash_prefix = '%s' % (
-                ipinfodata[ip_name]['device_type']['flash'].get('flash_prefix', ''))
-            if flash_prefix:
-                flash_prefix = flash_prefix + '-'
-        except KeyError:
-            flash_prefix = ''
+        flash_prefix = ''
+        if ip_name in ipinfodata and ipinfodata[ip_name].get('device_type') == 'flash':
+            flash_prefix = ipinfodata[ip_name].get('flash_prefix', '')
+        if flash_prefix:
+            flash_prefix = flash_prefix + '-'
         flashconfstr += '\nconfig %s__ADVANCED_AUTOCONFIG\n' % flash_Kconf
         flashconfstr += '\tbool "Advanced Flash Auto Configuration"\n'
         flashconfstr += '\tdefault n\n'
