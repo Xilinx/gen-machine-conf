@@ -234,6 +234,25 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             'Generating cortex-r52 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
         self.GenLibxilFeatures('lop-r52-imux.dts')
 
+    def CortexR5Zephyr(self):
+        logger.info(
+            'Generating cortex-r5 Zephyr configuration for core %s [ %s ]' % (self.core, self.domain))
+        # Generate Domain specific dts file
+        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
+        ZephyrImuxDTS = os.path.join(self.args.output, '%s-imux.dts' % mc_filename)
+        domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, 'lop-r5-imux.dts')
+
+        # Generate zephyr dt
+        ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
+        lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+                                 ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, ZephyrBoardDTS, self.system_conffile)
+        # Update multiconfig with dt file
+        conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
+        conf_file = os.path.join(self.args.config_dir,
+                                 'multiconfig', '%s.conf' % mc_filename)
+        common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
+
     def CortexR52Zephyr(self):
         logger.info(
             'Generating cortex-r52 Zephyr configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -241,6 +260,25 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         mc_filename = "%s-%s" % (self.args.machine, self.mcname)
         ZephyrImuxDTS = os.path.join(self.args.output, '%s-imux.dts' % mc_filename)
         domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, 'lop-r52-imux.dts')
+
+        # Generate zephyr dt
+        ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
+        lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+                                 ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, ZephyrBoardDTS, self.system_conffile)
+        # Update multiconfig with dt file
+        conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
+        conf_file = os.path.join(self.args.config_dir,
+                                 'multiconfig', '%s.conf' % mc_filename)
+        common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
+
+    def CortexA72Zephyr(self):
+        logger.info(
+            'Generating cortex-a72 Zephyr configuration for core %s [ %s ]' % (self.core, self.domain))
+        # Generate Domain specific dts file
+        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
+        ZephyrImuxDTS = os.path.join(self.args.output, '%s-imux.dts' % mc_filename)
+        domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, 'lop-a72-imux.dts')
 
         # Generate zephyr dt
         ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
@@ -692,6 +730,8 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             self.CortexA72Baremetal()
         elif self.os_hint.startswith('freertos'):
             self.CortexA72FreeRtos()
+        elif self.os_hint.startswith('zephyr'):
+            self.CortexA72Zephyr()
         else:
             logger.warning('cortex-a72 for unknown OS (%s), \
                         parsing Baremetal. %s' % (self.os_hint, self.domain))
@@ -719,6 +759,8 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             self.CortexR5Baremetal()
         elif self.os_hint.startswith('freertos'):
             self.CortexR5FreeRtos()
+        elif self.os_hint.startswith('zephyr'):
+            self.CortexR5Zephyr()
         else:
             self.CortexR5Baremetal()
 
