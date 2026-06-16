@@ -609,14 +609,14 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         if m_arch:
             if self.args.soc_family == 'microblaze-v':
                 MBV_variables = '\n# compatible = "xlnx,microblaze_v";\n'
-                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@oe.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
             else:
                 MBV_variables = '\nrequire conf/machine/include/xilinx-microblaze-v.inc\n'
                 MBV_variables += '\n# compatible = "xlnx,microblaze_v";\n'
-                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@oe.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
                 MBV_variables += '\n# compatible = "xlnx,microblaze_v_asu";\n'
                 MBV_variables += 'AVAILTUNES += "microblaze-v-asu"\n'
-                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v-asu = "${{@mbv.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
+                MBV_variables += f'TUNE_FEATURES:tune-microblaze-v-asu = "${{@oe.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
                 MBV_variables += 'PACKAGE_EXTRA_ARCHS:tune-microblaze-v-asu = "${TUNE_RISCV_PKGARCH}"\n'
             common_utils.AddStrToFile(microblaze_riscv_inc, MBV_variables)
         self.MBVTunesDone = True

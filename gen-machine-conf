@@ -30,7 +30,7 @@ plugins = []
 global exc_backtrace
 exc_backtrace = False
 
-__version__ = '2026.1'
+__version__ = '2026.2'
 
 def DisplayVersion(unparsed_args):
     '''Display Gen Machine Conf version and exit'''

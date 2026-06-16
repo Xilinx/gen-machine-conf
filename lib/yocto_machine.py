@@ -646,7 +646,7 @@ def YoctoXsctConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     except AttributeError:
         raise Exception('XSA workflow requires a sha256sum to have been computed.')
     if args.s_dir:
-        machine_override_string += 'HDF_URI[S] = "%s"\n' % os.path.join("${WORKDIR}", args.s_dir).rstrip('/')
+        machine_override_string += 'HDF_URI[S] = "%s"\n' % os.path.join("${UNPACKDIR}", args.s_dir).rstrip('/')
 
     return machine_override_string
 
@@ -713,7 +713,7 @@ def YoctoSdtConfigs(args, arch, dtg_machine, system_conffile, req_conf_file,
     if hasattr(args, 'sha256sum'):
         machine_override_string += 'SDT_URI[sha256sum] = "%s"\n' % args.sha256sum
     if args.s_dir:
-        machine_override_string += 'SDT_URI[S] = "%s"\n' % os.path.join("${WORKDIR}", args.s_dir).rstrip('/')
+        machine_override_string += 'SDT_URI[S] = "%s"\n' % os.path.join("${UNPACKDIR}", args.s_dir).rstrip('/')
 
     if args.psu_init_path != os.path.dirname(args.hw_file):
         machine_override_string += '\n# Custom PSU_INIT_PATH artifacts URL\n'
