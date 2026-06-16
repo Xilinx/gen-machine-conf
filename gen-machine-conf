@@ -61,9 +61,7 @@ def GetOutputDir(output, machine, hw_file):
     return output, _out_dir
 
 
-def RenameHWDir(hw_file, hw_dir_root, _out_dir, petalinux):
-    if 'PETALINUX' in os.environ.keys() or petalinux:
-        return hw_file
+def RenameHWDir(hw_file, hw_dir_root, _out_dir):
     ''' Create the machine/sha_key subdirectory to the hw-description dir'''
     if _out_dir:
         hw_dir_base = os.path.dirname(hw_dir_root)
@@ -74,7 +72,7 @@ def RenameHWDir(hw_file, hw_dir_root, _out_dir, petalinux):
     return hw_file
 
 
-def GetHWDescription(hw_description, output, petalinux):
+def GetHWDescription(hw_description, output):
     '''Fetch/Copy the user specified uri/dir/file to localpath
     and frame the yocto specific src_uri, s_dir variables'''
     # Make sure bitbake has started, if it's available:
@@ -97,115 +95,80 @@ def GetHWDescription(hw_description, output, petalinux):
         if os.path.exists(os.path.join(dirname, 'include')):
             hw_description = dirname
 
-    if 'PETALINUX' in os.environ.keys() or petalinux:
+    # Reject XSA files early - only SDT directories are supported
+    if hw_description.lower().rstrip('/').endswith('.xsa'):
+        raise Exception('XSA files are not supported. '
+                        'Please provide a System Device-tree directory.')
+
+    try:
+        hw_dir, hw_dir_root, src_uri, s_dir, localpath = bitbake_utils.Bitbake.fetchAndUnpackURI(hw_description)
+    except bitbake_utils.FetchError as e:
+        bitbake_utils.Bitbake.shutdown()
+        raise Exception('Unable to fetch %s: %s' % (hw_description, e))
+    except Exception as e:
+        logger.debug('Unable to fetch with bitbake, falling back to copy: %s' % e)
         # We can only copy actual file paths, not URIs.
         if '://' in hw_description:
             if not hw_description.startswith('file://'):
                 raise Exception('Unable to fetch URI, URI fetching requires bitbake.')
+
             # Strip the file:// off
             hw_description = hw_description[7:]
 
-        # PetaLinux workflow expects the hw_description path to be where we load and process from
-        if os.path.isfile(hw_description):
-            hw_dir = os.path.dirname(hw_description)
+        # Based on the args.output processing below to copy hw description
+        if not output:
+            hw_dir = os.path.join(os.getcwd(), 'output', '.hw-description')
         else:
-            hw_dir = hw_description
-        localpath = hw_description
+            hw_dir = os.path.realpath(output)
+        common_utils.CreateDir(hw_dir)
+
+        target = os.path.join(hw_dir, os.path.basename(hw_description))
+
+        if os.path.isdir(hw_description):
+            common_utils.RemoveDir(target)
+            shutil.copytree(hw_description, target, dirs_exist_ok=True)
+            localpath = target
+        else:
+            shutil.copyfile(hw_description, target)
+            localpath = target
+
         src_uri = 'file://%s' % (hw_description)
 
         # A file path ends up 'downloading' in a recipe with the full path,
         # so the s_dir needs to have the dirname, but without a any leading '/'
-        s_dir = hw_dir.lstrip('/')
+        s_dir = os.path.dirname(hw_description).lstrip('/')
         hw_dir_root = hw_dir
-    else:
-        try:
-            hw_dir, hw_dir_root, src_uri, s_dir, localpath = bitbake_utils.Bitbake.fetchAndUnpackURI(hw_description)
-        except bitbake_utils.FetchError as e:
-            bitbake_utils.Bitbake.shutdown()
-            raise Exception('Unable to fetch %s: %s' % (hw_description, e))
-        except Exception as e:
-            logger.debug('Unable to fetch with bitbake, falling back to copy: %s' % e)
-            # We can only copy actual file paths, not URIs.
-            if '://' in hw_description:
-                if not hw_description.startswith('file://'):
-                    raise Exception('Unable to fetch URI, URI fetching requires bitbake.')
-
-                # Strip the file:// off
-                hw_description = hw_description[7:]
-
-            # Based on the args.output processing below to copy hw description
-            if not output:
-                hw_dir = os.path.join(os.getcwd(), 'output', '.hw-description')
-            else:
-                hw_dir = os.path.realpath(output)
-            common_utils.CreateDir(hw_dir)
-
-            target = os.path.join(hw_dir, os.path.basename(hw_description))
-
-            if os.path.isdir(hw_description):
-                common_utils.RemoveDir(target)
-                shutil.copytree(hw_description, target, dirs_exist_ok=True)
-                localpath = target
-            else:
-                shutil.copyfile(hw_description, target)
-                localpath = target
-
-            src_uri = 'file://%s' % (hw_description)
-
-            # A file path ends up 'downloading' in a recipe with the full path,
-            # so the s_dir needs to have the dirname, but without a any leading '/'
-            s_dir = os.path.dirname(hw_description).lstrip('/')
-            hw_dir_root = hw_dir
     return hw_dir, hw_dir_root, src_uri, s_dir, localpath
 
 
-# Validate the hw_description given and justify xsct/sdt flow.
+# Validate the hw_description given and justify sdt flow.
 def ValidateHWFile(hw_description, subparser=None):
     if not os.path.exists(hw_description):
         raise Exception('Given path does not exists: %s' % hw_description)
     elif os.path.isfile(hw_description):
         hw_ext = pathlib.Path(hw_description).suffix
-        if hw_ext != '.xsa':
-            raise Exception('Only .xsa files are supported given %s' % hw_ext)
-        hw_ext = 'xsct'
-        hw_file = hw_description
+        raise Exception('Only System Device-tree directory is supported, given file %s' % hw_description)
     elif os.path.isdir(hw_description):
-        XsaFiles = SDTFiles = []
+        SDTFiles = []
         if subparser:
-            if subparser == 'parse-xsa':
-                XsaFiles = common_utils.GetFilesFromDir(hw_description, '.xsa')
-                if not XsaFiles:
-                     raise Exception('parse-xsa: No .xsa file found in specified directory %s' % hw_description)
-            elif subparser == 'parse-sdt':
+            if subparser == 'parse-sdt':
                 SDTFiles = common_utils.GetFilesFromDir(hw_description, 'system-top.dts')
                 if not SDTFiles:
                     raise Exception('parse-sdt: No system-top.dts file found in specified directory %s' % hw_description)
         else:
-            XsaFiles = common_utils.GetFilesFromDir(hw_description, '.xsa')
             SDTFiles = common_utils.GetFilesFromDir(hw_description, 'system-top.dts')
-            if not XsaFiles and not SDTFiles:
-                raise Exception('No .xsa or system-top.dts file found in specified directory %s' % hw_description)
-
-        if len(XsaFiles) > 1:
-            raise Exception('More than one .xsa files found in specified directory %s' % hw_description)
+            if not SDTFiles:
+                raise Exception('No system-top.dts file found in specified directory %s' % hw_description)
 
         if len(SDTFiles) > 1:
             raise Exception('More than one system-top.dts files found in specified directory %s' % hw_description)
 
-        if XsaFiles and SDTFiles:
-            logger.info('Both .xsa and .dts files found in specified directory %s' % hw_description)
-            logger.info('Using system-top.dts file as default %s' % SDTFiles[0])
-            hw_ext = 'sdt'
-            hw_file = SDTFiles[0]
-        elif XsaFiles:
-            hw_ext = 'xsct'
-            hw_file = XsaFiles[0]
-        elif SDTFiles:
+        if SDTFiles:
             hw_ext = 'sdt'
             hw_file = SDTFiles[0]
     else:
         raise Exception(
-           'Only .xsa file or System Device-tree directory supported.')
+           'Only System Device-tree directory supported.')
 
     hw_dir = os.path.relpath(os.path.dirname(hw_file), start=hw_description)
 
@@ -222,7 +185,7 @@ def main():
     bitbake_utils.InitializeBitbake(parserhelp)
 
     parser = argparse.ArgumentParser(
-        description='PetaLinux/Yocto Machine Configuration File generation tool',
+        description='Yocto Machine Configuration File generation tool',
         formatter_class=argparse.RawTextHelpFormatter, add_help=False,
         epilog='Use %(prog)s <subcommand> --help to get help on a specific command'
     )
@@ -237,11 +200,11 @@ def main():
     #Extract the YAML data into a global variable
     yaml_utils.ReadTemplateYaml(yaml_args.template)
 
-    required_args.add_argument('--hw-description', metavar='[<PATH_TO_XSA>/<xsa_name>.xsa] or <PATH_TO_SDTDIR>',
-                               help='Specify Hardware(xsa) file or System Device-tree Directory',
+    required_args.add_argument('--hw-description', metavar='<PATH_TO_SDTDIR>',
+                               help='Specify System Device-tree Directory',
                                default=yaml_utils.AddYamlDefaultValues('--hw-description'))
     optional_args.add_argument('--soc-family',
-                               choices=['microblaze', 'microblaze-v', 'zynq',
+                               choices=['microblaze-v', 'zynq',
                                         'zynqmp', 'versal', 'versal-2ve-2vm'],
                                default=yaml_utils.AddYamlDefaultValues('--soc-family'),
                                help='SOC family type from choice list (usually auto detected).')
@@ -266,24 +229,14 @@ def main():
     optional_args.add_argument('--native-sysroot',
                                help='Native sysroot path to use the mconf/conf or lopper commands.',
                                default=yaml_utils.AddYamlDefaultValues('--native-sysroot'))
-    optional_args.add_argument('--menuconfig', help='UI menuconfig option '
-                               'to update configuration(default is project).'
-                               '\nproject - To update System Level configurations '
-                               '\nrootfs  - To update Rootfs configurations',
-                               default=yaml_utils.AddYamlDefaultValues('--menuconfig'),
-                               nargs='?', const='project',
-                               choices=['project', 'rootfs'])
-    optional_args.add_argument('--petalinux', help='Generate Rootfs and PetaLinux Tool conf '
-                               'files and update the build/local.conf file '
-                               'with generated .conf files.', action='store_true',
-                               default=yaml_utils.AddYamlDefaultValues('--petalinux'))
+    optional_args.add_argument('--menuconfig', help='Launch menuconfig UI'
+                               ' to update system level configurations.',
+                               action='store_true',
+                               default=yaml_utils.AddYamlDefaultValues('--menuconfig'))
     optional_args.add_argument('--add-config', help='Specify config macro or file containing config macros '
                                'to be added on top of default configs', action='append',
                                nargs='?', default=yaml_utils.AddYamlDefaultValues('--add-config', []),
                                metavar='CONFIG_<macro>=y')
-    optional_args.add_argument('--add-rootfsconfig', help='Specify a file with list of '
-                               'package names to add into rootfs menu entry',
-                               default=yaml_utils.AddYamlDefaultValues('--add-rootfsconfig', []))
     optional_args.add_argument(
         '-D', '--debug', help='Enable debug output', action='store_true',
         default=yaml_utils.AddYamlDefaultValues(['-D', '--debug']))
@@ -339,9 +292,9 @@ def main():
 
     if not parserhelp:
         hw_dir, hw_dir_root, global_args.src_uri, global_args.s_dir, localpath = GetHWDescription(
-                        global_args.hw_description, global_args.output, global_args.petalinux)
+                        global_args.hw_description, global_args.output)
 
-        # Validate the given hw_description and get xsct/sdt
+        # Validate the given hw_description and get sdt flow
         global_args.hw_flow, global_args.hw_file, s_dir = ValidateHWFile(hw_dir, _subparser)
         if s_dir and s_dir != '.':
             global_args.s_dir = os.path.join(global_args.s_dir or "", s_dir)
@@ -354,21 +307,14 @@ def main():
             logger.debug('%s is a directory, no sha256sum' % (localpath))
 
         if not _hassubcommand:
-            if global_args.hw_flow == 'xsct':
-                unparsed_args.insert(0, 'parse-xsa')
-                _hassubcommand = True
-            elif global_args.hw_flow == 'sdt':
-                unparsed_args.insert(0, 'parse-sdt')
-                _hassubcommand = True
-            else:
-                logger.error('Unable to autodetect xsct or sdt flow, use parse-xsa or parse-sdt to define the flow')
-                return 1
+            unparsed_args.insert(0, 'parse-sdt')
+            _hassubcommand = True
 
     args = parser.parse_args(unparsed_args, namespace=global_args)
 
     args.output, _out_dir = GetOutputDir(args.output, args.machine, args.hw_file)
 
-    args.hw_file = RenameHWDir(args.hw_file, hw_dir_root, _out_dir, args.petalinux)
+    args.hw_file = RenameHWDir(args.hw_file, hw_dir_root, _out_dir)
 
     logger.info('Using HW file: %s' % args.hw_file)
     # Define log file

@@ -18,7 +18,6 @@ import common_utils
 import yaml_utils
 import project_config
 import post_process_config
-import rootfs_config
 import multiconfigs
 import kconfig_syshw
 import lopper_utils
@@ -826,8 +825,7 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
     logger.info('Generating Kconfig for the project')
     sdtipinfo_schema = os.path.join(
         genmachine_scripts, 'data', 'sdt_ipinfo.yaml')
-    ipinfo_schema = os.path.join(
-        genmachine_scripts, 'data', 'ipinfo.yaml')
+    ipinfo_schema = sdtipinfo_schema
     plnx_syshw_file = os.path.join(output, 'petalinux_config.yaml')
 
     lopper_utils.RunLopperSubcommand(output, output, hw_file,
@@ -840,9 +838,6 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
 
 
 def ParseSDT(args):
-    if args.hw_flow == 'xsct':
-        raise Exception('Invalid HW source Specified for System-Device-Tree.')
-
     '''Check if vitis environment set and show the warning'''
     if 'XILINX_VITIS' in os.environ.keys():
         logger.warning('Vitis environment(XILINX_VITIS) found, '
@@ -894,12 +889,6 @@ def ParseSDT(args):
             GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw,
                                hw_info['proc_type'], args.hw_file, args.output)
 
-        template_cfgfile = os.path.join(
-            genmachine_scripts, 'configs', 'config_%s' % hw_info['soc_family'])
-
-        if not os.path.isfile(template_cfgfile):
-            raise Exception('Unsupported soc_family: %s' % hw_info['soc_family'])
-
         return hw_info
 
 
@@ -912,7 +901,6 @@ def ParseSDT(args):
 
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
-    ipinfo_file = os.path.join(genmachine_scripts, 'data', 'ipinfo.yaml')
     plnx_syshw_file = os.path.join(args.output, 'petalinux_config.yaml')
     system_conffile = os.path.join(args.output, 'config')
 
@@ -953,12 +941,12 @@ def ParseSDT(args):
     # to reflect in menuconfig/config
     project_config.PreProcessSysConf(args, system_conffile, hw_info)
     common_utils.RunMenuconfig(Kconfig, system_conffile,
-                               True if args.menuconfig == 'project' else False,
+                               args.menuconfig,
                                args.output, 'project')
 
     #### Process the configuration:
     post_process_config.PostProcessSysConf(
-        args, system_conffile, ipinfo_file, plnx_syshw_file)
+        args, system_conffile, plnx_syshw_file)
 
     # In case machine name updated in config
     cfg_machine = common_utils.GetConfigValue('CONFIG_YOCTO_MACHINE_NAME',
@@ -975,7 +963,7 @@ def ParseSDT(args):
         args.domain_file += _file + ' '
 
     # In case dts_path updated in config
-    cfg_dtspath = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',
+    cfg_dtspath = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_WORKSPACE',
                                                      system_conffile)
     if cfg_dtspath:
         args.dts_path = os.path.expandvars(cfg_dtspath)
@@ -987,9 +975,6 @@ def ParseSDT(args):
     else:
         args.dts_path = os.path.realpath(args.dts_path)
 
-    if args.petalinux:
-        rootfs_config.GenRootfsConfig(args, system_conffile)
-
     #### Generate the configuration:
     MCObject = sdtGenerateMultiConfigFiles(args, hw_info['multiconfigs'], system_conffile=system_conffile)
 
@@ -1000,7 +985,7 @@ def ParseSDT(args):
 
 def register_commands(subparsers):
     parser_sdt = subparsers.add_parser('parse-sdt',
-                                       help='Parse System device-tree file and generate Yocto/PetaLinux configurations.',
+                                       help='Parse System device-tree file and generate Yocto configurations.',
                                        usage='%(prog)s [--hw-description'
                                        ' <PATH_TO_SDTDIR>] [other options]'
                                        )
