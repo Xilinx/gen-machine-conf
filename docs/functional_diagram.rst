@@ -1,4 +1,4 @@
-.. Copyright (C) 2022-2025, Advanced Micro Devices, Inc. All rights reserved.
+.. Copyright (C) 2022-2026, Advanced Micro Devices, Inc. All rights reserved.
 
 .. SPDX-License-Identifier: MIT
 
@@ -23,7 +23,6 @@ their interactions, and the data transformations that occur at each stage.
    │                          INPUT LAYER                                      │
    ├───────────────────────────────────────────────────────────────────────────┤
    │  • Hardware Description:                                                  │
-   │    - .xsa files (Vivado/Vitis)                                            │
    │    - System Device Tree (system-top.dts)                                  │
    │    - URIs/Local paths/Directories                                         │
    │  • Template YAML (optional)                                               │
@@ -40,8 +39,8 @@ their interactions, and the data transformations that occur at each stage.
    │  ├─ Read Template YAML (yaml_utils.ReadTemplateYaml)                      │
    │  ├─ Initialize Bitbake (if available)                                     │
    │  ├─ Validate HW Description (ValidateHWFile)                              │
-   │  │   ├─ Check .xsa or system-top.dts                                      │
-   │  │   └─ Auto-detect hw_flow: 'xsct' or 'sdt'                              │
+   │  │   ├─ Check system-top.dts                                              │
+   │  │   └─ Auto-detect hw_flow: 'sdt'                                        │
    │  ├─ Fetch/Copy HW Description (GetHWDescription)                          │
    │  │   ├─ Handle URIs with Bitbake                                          │
    │  │   └─ Copy local files to output directory                              │
@@ -49,17 +48,14 @@ their interactions, and the data transformations that occur at each stage.
    │  └─ Setup Logging                                                         │
    └───────────────────────────────────────────────────────────────────────────┘
                                        │
-                       ┌───────────────┴───────────────┐
-                       │                               │
-                       ▼                               ▼
-       ┌───────────────────────────┐   ┌──────────────────────────┐
-       │   PARSE-XSA FLOW          │   │   PARSE-SDT FLOW         │
-       │   (xsct_flow.py)          │   │   (sdt_flow.py)          │
-       │   [DEPRECATED]            │   │   [RECOMMENDED]          │
-       └───────────────────────────┘   └──────────────────────────┘
-                       │                               │
-                       └───────────────┬───────────────┘
-                                       ▼
+                       │
+                       ▼
+       ┌──────────────────────────────────────────────┐
+       │   PARSE-SDT FLOW                             │
+       │   (sdt_flow.py)                              │
+       └──────────────────────────────────────────────┘
+                       │
+                       ▼
    ┌───────────────────────────────────────────────────────────────────────────┐
    │                    HARDWARE INFORMATION GATHERING                         │
    ├───────────────────────────────────────────────────────────────────────────┤
@@ -78,7 +74,6 @@ their interactions, and the data transformations that occur at each stage.
    │  │                                                                        │
    │  ├─ Generate System HW Configuration:                                     │
    │  │   ├─ Run Lopper scripts (for SDT)                                      │
-   │  │   ├─ Run XSCT commands (for XSA)                                       │
    │  │   └─ Generate Kconfig.syshw                                            │
    │  │                                                                        │
    │  └─ Detect Peripherals:                                                   │
@@ -218,9 +213,6 @@ their interactions, and the data transformations that occur at each stage.
    │  │       └─ microblaze-riscv.inc (if applicable)                          │
    │  │                                                                        │
    │  ├─ Flow-Specific Configuration:                                          │
-   │  │   ├─ XSCT Flow (YoctoXsctConfigs):                                     │
-   │  │   │   ├─ HDF_MACHINE and HDF_BASE                                      │
-   │  │   │   └─ XSCTH_* variables                                             │
    │  │   └─ SDT Flow (YoctoSdtConfigs):                                       │
    │  │       ├─ SYSTEM_DTFILE paths                                           │
    │  │       └─ CONFIG_DTFILE_DIR                                             │
@@ -237,7 +229,7 @@ their interactions, and the data transformations that occur at each stage.
    ┌───────────────────────────────────────────────────────────────────────────┐
    │                  PETALINUX CONFIGURATION (Optional)                       │
    ├───────────────────────────────────────────────────────────────────────────┤
-   │  [plnx_machine.py, rootfs_config.py]                                      │
+   │  [rootfs_config.py]                                                        │
    │  ├─ Generate plnxtool.conf:                                               │
    │  │   ├─ PETALINUX_PRODUCT                                                 │
    │  │   ├─ Platform-specific variables                                       │

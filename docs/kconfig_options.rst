@@ -1,4 +1,4 @@
-.. Copyright (C) 2022-2025, Advanced Micro Devices, Inc.  All rights reserved.
+.. Copyright (C) 2022-2026, Advanced Micro Devices, Inc.  All rights reserved.
 .. SPDX-License-Identifier: MIT
 
 ========================================
@@ -344,12 +344,12 @@ Device Tree Settings
 Basic Configuration
 -------------------
 
-SUBSYSTEM_DT_XSCT_WORKSPACE
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SUBSYSTEM_DT_WORKSPACE
+~~~~~~~~~~~~~~~~~~~~~~
 
 :Type: string
 :Description:
-    This config Provides the location to use as Device-tree XSCT workspace location for
+    This config Provides the location to use as Device-tree workspace location for
     hardware software handoff processing.
 
 SUBSYSTEM_DT_DOMAIN_ACCESS
