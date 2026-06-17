@@ -62,7 +62,7 @@ their interactions, and the data transformations that occur at each stage.
    │  ├─ Extract Platform Information:                                         │
    │  │   ├─ Machine Name                                                      │
    │  │   ├─ Device ID                                                         │
-   │  │   ├─ SoC Family (microblaze/zynq/zynqmp/versal/versal-2ve-2vm)         │
+   │  │   ├─ SoC Family (microblaze-v/zynq/zynqmp/versal/versal-2ve-2vm)       │
    │  │   ├─ SoC Variant (cg/dr/eg/ev/ai-prime/premium/net/hbm)                │
    │  │   └─ Model/Board Name                                                  │
    │  │                                                                        │

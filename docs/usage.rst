@@ -21,7 +21,7 @@ gen-machine-conf usage
 
   $ gen-machine-conf -h
   usage: gen-machine-conf [--template Template yaml file] [--hw-description <PATH_TO_SDTDIR>]
-                          [--soc-family {microblaze,microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}]
+                          [--soc-family {microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}]
                           [--soc-variant SOC_VARIANT] [--machine-name MACHINE]
                           [-c <config_dir>] [-r REQUIRE_MACHINE] [-O MACHINE_OVERRIDES] [--output OUTPUT] [--native-sysroot NATIVE_SYSROOT]
                           [--menuconfig] [--add-config [CONFIG_<macro>=y]] [-D]
@@ -37,7 +37,7 @@ gen-machine-conf usage
   options:
     --template Template yaml file
                           Yaml template file
-    --soc-family {microblaze,microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}
+    --soc-family {microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}
                           SOC family type from choice list (usually auto detected).
     --soc-variant SOC_VARIANT
                           SOC Variant: Ex: cg, dr, eg, ev, ai-prime, premium (usually auto detected).

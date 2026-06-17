@@ -126,18 +126,18 @@ ARM Cortex-R Multiconfig Setup
    configuration requirements for ARM Cortex-R processors, typically used for
    real-time processing and firmware components.
 
-MicroBlaze Multiconfig Setup
------------------------------
+MicroBlaze-V Multiconfig Setup
+------------------------------
 
 .. figure:: ../images/microblaze_multiconfig.svg
    :name: fig-microblaze-multiconfig
    :align: center
    :width: 50%
-   :alt: MicroBlaze multiconfig setup flowchart
+   :alt: MicroBlaze-V multiconfig setup flowchart
 
-   **Figure 7:** MicroBlaze multiconfig setup workflow. Details the configuration
-   process for Xilinx MicroBlaze soft processors, including tune features and
-   baremetal/Linux variants.
+   **Figure 7:** MicroBlaze-V multiconfig setup workflow. Details the configuration
+   process for AMD MicroBlaze-V (RISC-V) soft processors, including tune features
+   and Linux/Zephyr variants.
 
 Firmware Multiconfig
 ====================
