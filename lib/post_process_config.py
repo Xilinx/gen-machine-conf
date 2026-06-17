@@ -14,14 +14,14 @@ import common_utils
 
 
 def CheckIP(prop, system_conffile):
-    global plnx_syshw_data
+    global syshw_data
     processor = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_PROCESSOR_', system_conffile, 'choice', '_SELECT=y')
     if prop == 'MANUAL':
         return ''
-    for key in plnx_syshw_data['processor'][processor]['slaves'].keys():
-        if 'ip_name' in plnx_syshw_data['processor'][processor]['slaves'][key].keys():
-            if prop == plnx_syshw_data['processor'][processor]['slaves'][key]['ip_name']:
+    for key in syshw_data['processor'][processor]['slaves'].keys():
+        if 'ip_name' in syshw_data['processor'][processor]['slaves'][key].keys():
+            if prop == syshw_data['processor'][processor]['slaves'][key]['ip_name']:
                 return True
     return ''
 
@@ -29,8 +29,8 @@ def CheckIP(prop, system_conffile):
 def CheckDeviceCount(device_type, system_conffile):
     processor = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_PROCESSOR_', system_conffile, 'choice', '_SELECT=y')
-    global plnx_syshw_data
-    slaves = plnx_syshw_data["processor"][processor]["slaves"]
+    global syshw_data
+    slaves = syshw_data["processor"][processor]["slaves"]
     device_ips = []
     for key, value in slaves.items():
        if isinstance(value, dict) and value.get('device_type', '') == device_type:
@@ -45,9 +45,9 @@ def GetIPProperty(device_name, system_conffile, prop='ip_name'):
         return ''
     ipname = ''
     global slaves_dict
-    global plnx_syshw_data
+    global syshw_data
     slaves_dict = common_utils.convert_dictto_lowercase(
-        plnx_syshw_data['processor'][processor]['slaves'])
+        syshw_data['processor'][processor]['slaves'])
     if device_name.lower() in slaves_dict.keys():
         if prop == 'ip_name':
             ipname = slaves_dict[device_name.lower()]['ip_name']
@@ -62,7 +62,7 @@ def GetIPProperty(device_name, system_conffile, prop='ip_name'):
     return ''
 
 
-def PostProcessSysConf(args, system_conffile, plnx_syshw_file):
-    global plnx_syshw_data
-    with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
-        plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
+def PostProcessSysConf(args, system_conffile, syshw_file):
+    global syshw_data
+    with open(syshw_file, 'r') as syshw_file_f:
+        syshw_data = yaml.safe_load(syshw_file_f)

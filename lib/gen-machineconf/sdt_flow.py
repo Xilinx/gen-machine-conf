@@ -9,10 +9,7 @@
 
 import logging
 import os
-import sys
-import shutil
 import re
-import glob
 import pathlib
 import common_utils
 import yaml_utils
@@ -868,13 +865,13 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
     sdtipinfo_schema = os.path.join(
         genmachine_scripts, 'data', 'sdt_ipinfo.yaml')
     ipinfo_schema = sdtipinfo_schema
-    plnx_syshw_file = os.path.join(output, 'petalinux_config.yaml')
+    syshw_file = os.path.join(output, 'sys_hw_data.yaml')
 
     lopper_utils.RunLopperSubcommand(output, output, hw_file,
                                      'petalinuxconfig_xlnx %s %s' % (proc_type,
                                                                      sdtipinfo_schema))
     logger.debug('Generating System HW file')
-    kconfig_syshw.GenKconfigSysHW(plnx_syshw_file, ipinfo_schema, Kconfig_syshw)
+    kconfig_syshw.GenKconfigSysHW(syshw_file, ipinfo_schema, Kconfig_syshw)
     if not os.path.exists(Kconfig_syshw):
         raise Exception('Failed to Generate Kconfig_syshw File')
 
@@ -943,7 +940,7 @@ def ParseSDT(args):
 
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
-    plnx_syshw_file = os.path.join(args.output, 'petalinux_config.yaml')
+    syshw_file = os.path.join(args.output, 'sys_hw_data.yaml')
     system_conffile = os.path.join(args.output, 'config')
 
     config_dtsdir = os.path.join(args.config_dir, 'dts')
@@ -988,7 +985,7 @@ def ParseSDT(args):
 
     #### Process the configuration:
     post_process_config.PostProcessSysConf(
-        args, system_conffile, plnx_syshw_file)
+        args, system_conffile, syshw_file)
 
     # In case machine name updated in config
     cfg_machine = common_utils.GetConfigValue('CONFIG_YOCTO_MACHINE_NAME',
@@ -1022,7 +1019,7 @@ def ParseSDT(args):
 
     project_config.GenerateConfiguration(args, hw_info,
                                          system_conffile,
-                                         plnx_syshw_file,
+                                         syshw_file,
                                          MCObject=MCObject)
 
 def register_commands(subparsers):
