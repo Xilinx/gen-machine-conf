@@ -6,8 +6,7 @@
 gen-machine-conf
 ----------------
 
-This repo provides support to generate machine conf and plnxtool.conf 
-files for the given HW file.
+This repo provides support to generate machine conf files for the given HW file.
 
 gen-machine-conf is a tool for creating [Yocto project](https://www.yoctoproject.org/)
 [machine configurations](https://docs.yoctoproject.org/ref-manual/variables.html#term-MACHINE)
@@ -43,6 +42,26 @@ submission guidelines, as described in:
 
 https://docs.yoctoproject.org/dev/contributor-guide/submit-changes.html
 
+gen-machine-conf follows the OE community patch format and style guidelines
+with two project-specific differences:
+
+1. **Subject prefix** — Use `[gen-machine-conf][PATCH n/m]` instead of the
+   plain `[PATCH n/m]`, so patches are easily identified against this repo.
+
+2. **Branch tag** — Add a `BRANCH:` line below the `---` separator (after the
+   commit message, before the diffstat) indicating the target branch. Text in
+   this area is informational only and is dropped by `git am`.
+
+	For example:
+
+	Subject: [gen-machine-conf][PATCH] ...
+
+	<commit message>
+	---
+	BRANCH: wrynose
+
+	 <diffstat>
+
 **Maintainers:**
 
 	Mark Hatle <mark.hatle@amd.com>
@@ -59,24 +78,18 @@ Dependencies
 
 This repo depends on:
 
-	URI: https://git.yoctoproject.org/poky
-	layers: meta, meta-poky
-	branch: scarthgap
+	URI: https://git.openembedded.org/openembedded-core
+	branch: wrynose
+
+	URI: git://git.openembedded.org/bitbake
+	branch: wrynose
 
 	URI: https://git.openembedded.org/meta-openembedded
-	layers: meta-oe, meta-perl, meta-python, meta-filesystems, meta-gnome,
-            meta-multimedia, meta-networking, meta-webserver, meta-xfce,
-            meta-initramfs.
-	branch: scarthgap
+	layers: meta-oe, meta-perl, meta-python
+	branch: wrynose
 
 	URI:
         https://git.yoctoproject.org/meta-xilinx (official version)
         https://github.com/Xilinx/meta-xilinx (development and amd xilinx release)
-	layers: meta-xilinx-core, meta-xilinx-microblaze, meta-xilinx-bsp,
-            meta-xilinx-standalone, meta-xilinx-vendor.
-	branch: scarthgap or amd xilinx release version (e.g. rel-v2026.1)
-
-	URI:
-        https://git.yoctoproject.org/meta-xilinx-tools (official version)
-        https://github.com/Xilinx/meta-xilinx-tools (development and amd xilinx release)
-	branch: scarthgap or amd xilinx release version (e.g. rel-v2026.1)
+	layers: meta-xilinx-core, meta-xilinx-bsp, meta-xilinx-standalone.
+	branch: wrynose or amd xilinx release version (e.g. rel-v2026.2)
