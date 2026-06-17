@@ -296,9 +296,9 @@ SUBSYSTEM_FLASH__ADVANCED_AUTOCONFIG:
 :Dependencies: SUBSYSTEM_PROCESSOR && SUBSYSTEM_FLASH
 :Description:
 
-     This config enables advanced flash auto-configuration for the Flash subsystem (usually QSPI/OSPI) in PetaLinux.
+     This config enables advanced flash auto-configuration for the Flash subsystem (usually QSPI/OSPI).
 
-     When this option is enabled, PetaLinux will automatically detect and generate the flash partitions, offsets, and sizes.
+     When this option is enabled, the tool will automatically detect and generate the flash partitions, offsets, and sizes.
 
 Boot Mode Settings
 ------------------

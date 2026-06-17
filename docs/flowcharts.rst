@@ -20,7 +20,7 @@ Overview
 ========
 
 The Gen-Machine-Conf tool follows a multi-stage pipeline to transform hardware descriptions
-into Yocto/PetaLinux machine configurations. The following flowcharts provide visual
+into Yocto machine configurations. The following flowcharts provide visual
 representations of each stage and component interaction.
 
 Argument Parsing
@@ -170,22 +170,6 @@ settings and dependencies.
    **Figure 9:** Yocto machine configuration generation workflow. Illustrates
    the creation of machine.conf files, multiconfig files, device tree sources,
    and machine-specific include files.
-
-PetaLinux Machine Configuration
-================================
-
-When operating in PetaLinux mode, additional configuration files and rootfs
-settings are generated.
-
-.. figure:: ../images/petalinux_machine_config.svg
-   :name: fig-petalinux-machine
-   :align: center
-   :width: 30%
-   :alt: PetaLinux machine configuration flowchart
-
-   **Figure 10:** PetaLinux-specific machine configuration workflow. Shows the
-   generation of plnxtool.conf, rootfs configuration files, and PetaLinux-specific
-   build settings.
 
 
 Image Format Notes
