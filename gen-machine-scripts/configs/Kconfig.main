@@ -1,11 +1,13 @@
 # Copyright (C) 2021-2022, Xilinx, Inc.  All rights reserved.
-# Copyright (C) 2022-2024, Advanced Micro Devices, Inc.  All rights reserved.
+# Copyright (C) 2022-2026, Advanced Micro Devices, Inc.  All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
 
 choice
 	prompt "Subsystem Architecture (NO EDIT!)"
+	default SUBSYSTEM_ARCH_AARCH64 if SYSTEM_ZYNQMP || SYSTEM_VERSAL || SYSTEM_VERSAL-2VE-2VM
+	default SUBSYSTEM_ARCH_MICROBLAZE-V if SYSTEM_MICROBLAZE-V
 	default SUBSYSTEM_ARCH_ARM
 	help
 	  This option is to control the processor targeted by System Configuration.
@@ -21,10 +23,10 @@ config SUBSYSTEM_ARCH_ARM
 	help
 	  Choose this option to specify ARM as the SUBSYSTEM architecture
 
-config SUBSYSTEM_ARCH_MICROBLAZE
-	bool "microblaze"
+config SUBSYSTEM_ARCH_MICROBLAZE-V
+	bool "microblaze-v"
 	help
-	  Choose this option to specify MicroBlaze as the SUBSYSTEM architecture
+	  Choose this option to specify MicroBlaze-V as the SUBSYSTEM architecture
 endchoice
 
 config SUBSYSTEM_ENDIAN_LITTLE
@@ -37,24 +39,10 @@ source ./Kconfig.bootcompselection
 
 endif
 
-if SUBSYSTEM_DISTRO_PETALINUX
-
-source ./Kconfig.linuxcompselection
-
-source ./Kconfig.autoconfigsettings
-
-endif
-
 source ./Kconfig.syshw
 
 source ./Kconfig.dtgsettings
 
 source ./Kconfig.bootcompconfigurations
 
-if SUBSYSTEM_DISTRO_PETALINUX
-
-source ./Kconfig.imagepkgconfigurations
-
-endif
-
-source ./Kconfig.yoctobuildsettings
+source ./Kconfig.yoctomachinesettings

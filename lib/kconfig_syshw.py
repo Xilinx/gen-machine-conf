@@ -21,7 +21,7 @@ def GenConf_processor(procdata):
     ''' Generate Processor Info as Kconfig'''
     if not procdata:
         raise Exception('ERROR: No CPU can be found in the system. Please review your hardware system. '
-              'Valid processors are: microblaze, ps7_cortexa9, psu_cortexa53, psv_cortexa72, psx_cortexa78.')
+              'Valid processors are: microblaze-v, ps7_cortexa9, psu_cortexa53, psv_cortexa72, psx_cortexa78.')
     KconfStr = 'SUBSYSTEM_PROCESSOR'
     confstr = ''
     procconfstr = '\nchoice\n'
@@ -29,8 +29,6 @@ def GenConf_processor(procdata):
     procconfstr += '\thelp\n'
     procconfstr += '\tSelect a processor as the system processor.\n'
 
-    archdict = {}
-    archKdict = {'microblaze': 'ARCHMB', 'arm': 'ARCHARM', 'aarch64': 'ARCH64'}
     for index, proc in enumerate(procdata.keys()):
         confstr += '\nconfig %s%s_IP_NAME\n' % (KconfStr, index)
         confstr += '\tstring\n'
@@ -43,18 +41,8 @@ def GenConf_processor(procdata):
         Kprocselect = '%s_%s_SELECT' % (KconfStr, proc)
         procconfstr += '\nconfig %s\n' % Kprocselect
         procconfstr += '\tbool "%s"\n' % proc
-        arch = procdata[proc].get('arch')
-        if arch:
-            archdict.setdefault(arch, []).append(Kprocselect)
 
     procconfstr += '\nendchoice\n'
-
-    for arch in archdict.keys():
-        confstr += '\nconfig SUBSYSTEM_ENABLE_%s\n' % archKdict.get(arch)
-        confstr += '\tbool\n'
-        confstr += '\tdefault y\n'
-        confstr += '\tselect SUBSYSTEM_ARCH_%s\n' % arch.upper()
-        confstr += '\tdepends on %s\n' % ' || '.join(archdict.get(arch))
 
     confstr += procconfstr
     return confstr
@@ -128,7 +116,7 @@ def GenConf_memory(IpsToAdd, slavesdict, proc_ipname, arch):
             hex(int(baseaddr, base=16) + 0x8000000))
         memoryconfstr += '\tdefault %s if SUBSYSTEM_ARCH_ARM\n' % (
             hex(int(baseaddr, base=16) + 0x4000000))
-        memoryconfstr += '\tdefault %s if SUBSYSTEM_ARCH_MICROBLAZE\n' % (
+        memoryconfstr += '\tdefault %s if SUBSYSTEM_ARCH_MICROBLAZE-V\n' % (
             hex(int(baseaddr, base=16) + 0x100000))
         memoryconfstr += '\trange %s %s\n' % (hex(int(baseaddr, base=16) + 0x100000),
                                               hex(int(baseaddr, base=16) + int(highaddr, base=16) - 0x2000000 + 0x100000))
@@ -196,8 +184,7 @@ def GenConf_serial(IpsToAdd, slavesdict, proc_ipname, arch):
     confstr = '\nmenu "Serial Settings"\n'
     serialconfstr = ''
     serial_Kconf = 'SUBSYSTEM_SERIAL'
-    serialdict = {'microblaze': ['FSBOOT', 'DTG'],
-                  'microblaze_riscv': ['DTG'],
+    serialdict = {'microblaze_riscv': ['DTG'],
                   'ps7_cortexa9': ['FSBL', 'DTG'],
                   'psu_cortexa53': ['PMUFW', 'FSBL', 'TF-A', 'DTG'],
                   'psv_cortexa72': ['PLM', 'TF-A', 'DTG'],
@@ -215,14 +202,9 @@ def GenConf_serial(IpsToAdd, slavesdict, proc_ipname, arch):
             'U-boot and Linux' if comp == 'DTG' else comp)
         confstr += '\tIf you select \'manual\', you will need to add this variable\n'
         if comp == 'TF-A':
-            confstr += '\tTFA_CONSOLE:forcevariable = "<serial_ipname>" in petalinuxbps.conf or local.conf\n'
+            confstr += '\tTFA_CONSOLE:forcevariable = "<serial_ipname>" in local.conf\n'
         elif comp == 'OP-TEE':
-            confstr += '\tOPTEE_CONSOLE:forcevariable = "<serial_number>" in petalinuxbps.conf or local.conf\n'
-        else:
-            confstr += '\tFor XSCT flow:\n'
-            confstr += '\t YAML_SERIAL_CONSOLE_STDIN:forcevariable:pn-<recipename> = "<serial_ipname>"\n'
-            confstr += '\t YAML_SERIAL_CONSOLE_STDOUT:forcevariable:pn-<recipename> = \"<serial_ipname>\"\n'
-            confstr += '\t in petalinuxbsp.conf file or local.conf to specify the stdin/stdout."\n'
+            confstr += '\tOPTEE_CONSOLE:forcevariable = "<serial_number>" in local.conf\n'
         if comp == 'DTG':
             serialconfstr += '\nconfig %s_IP_NAME\n' % (
                 serial_Kconf)
@@ -287,104 +269,12 @@ def GenConf_serial(IpsToAdd, slavesdict, proc_ipname, arch):
     return confstr
 
 
-def GenConf_ethernet(IpsToAdd, slavesdict, proc_ipname, arch):
-    ''' Generate Ethernet Info as Kconfig'''
-    eth_Kconf = 'SUBSYSTEM_ETHERNET'
-    confstr = '\nmenu "Ethernet Settings"\n'
-    confstr += '\nchoice\n'
-    confstr += '\tprompt "Primary Ethernet"\n'
-    confstr += '\thelp\n'
-    confstr += '\tSelect a Ethernet used as primary Ethernet.\n'
-    confstr += '\tThe primary ethernet will be used for u-boot networking if u-boot is\n'
-    confstr += '\tselected and will be used as eth0 in Linux.\n'
-    confstr += '\tIf your preferred primary ethernet is not on the list, please select"\n'
-    confstr += '\t\'manual\'.\n'
-    serialconfstr = ''
-    for slave in IpsToAdd + ['manual']:
-        confstr += '\nconfig %s_%s_SELECT\n' % (eth_Kconf, slave.upper())
-        confstr += '\tbool "%s"\n' % slave
-        if slave == 'manual':
-            continue
-        serialconfstr += '\nconfig %s_%s_MAC_AUTO\n' % (
-            eth_Kconf, slave.upper())
-        serialconfstr += '\tbool "Randomise MAC address"\n'
-        serialconfstr += '\tdefault y if SUBSYSTEM_ARCH_MICROBLAZE\n'
-        serialconfstr += '\tdefault n\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && SUBSYSTEM_DISTRO_PETALINUX\n' % (
-            eth_Kconf, slave.upper())
-        serialconfstr += '\thelp\n'
-        serialconfstr += '\trandomise MAC address for the primary ethernet.\n'
-
-        serialconfstr += '\nconfig %s_%s_MAC_PATTERN\n' % (
-            eth_Kconf, slave.upper())
-        serialconfstr += '\tstring "Template for randomised MAC address"\n'
-        serialconfstr += '\tdefault "00:0a:35:00:??:??"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && %s_%s_MAC_AUTO && SUBSYSTEM_DISTRO_PETALINUX\n' % (
-            eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
-        serialconfstr += '\thelp\n'
-        serialconfstr += '\tPattern for generating random MAC addresses - question mark\n'
-        serialconfstr += '\tcharacters will be replaced by random hex digits\n'
-
-        serialconfstr += '\nconfig %s_%s_MAC\n' % (eth_Kconf, slave.upper())
-        serialconfstr += '\tstring "Ethernet MAC address"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_MAC_AUTO && SUBSYSTEM_DISTRO_PETALINUX\n' % (
-            eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
-        serialconfstr += '\thelp\n'
-        serialconfstr += '\tDefault mac address will set from eeprom fru data\n'
-        serialconfstr += '\tif you want change with desired value you can change, example: 00:0a:35:00:22:01 or ff:ff:ff:ff:ff:ff\n'
-
-        serialconfstr += '\nconfig %s_%s_USE_DHCP\n' % (
-            eth_Kconf, slave.upper())
-        serialconfstr += '\tbool "Obtain IP address automatically"\n'
-        serialconfstr += '\tdefault y\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && SUBSYSTEM_DISTRO_PETALINUX\n' % (
-            eth_Kconf, slave.upper())
-        serialconfstr += '\thelp\n'
-        serialconfstr += '\tSet this option if you would like your SUBSYSTEM to use DHCP for\n'
-        serialconfstr += '\tobtaining an IP address.\n'
-
-        serialconfstr += '\nconfig %s_%s_IP_ADDRESS\n' % (
-            eth_Kconf, slave.upper())
-        serialconfstr += '\tstring "Static IP address"\n'
-        serialconfstr += '\tdefault "192.168.0.10"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP && SUBSYSTEM_DISTRO_PETALINUX\n' % (
-            eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
-        serialconfstr += '\thelp\n'
-        serialconfstr += '\tThe IP address of your main network interface when static network\n'
-        serialconfstr += '\taddress assignment is used.\n'
-
-        serialconfstr += '\nconfig %s_%s_IP_NETMASK\n' % (
-            eth_Kconf, slave.upper())
-        serialconfstr += '\tstring "Static IP netmask"\n'
-        serialconfstr += '\tdefault "255.255.255.0"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP && SUBSYSTEM_DISTRO_PETALINUX\n' % (
-            eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
-        serialconfstr += '\thelp\n'
-        serialconfstr += '\tDefault netmask when static network address assignment is used.\n'
-        serialconfstr += '\tIn case of systemd please specify netmask value like CIDR notation Eg: 24 instead of 255.255.255.0\n'
-        serialconfstr += '\tIn case of sysvinit please specify netmask value like dot-decimal notation Eg: 255.255.255.0 instead of 24\n'
-
-        serialconfstr += '\nconfig %s_%s_IP_GATEWAY\n' % (
-            eth_Kconf, slave.upper())
-        serialconfstr += '\tstring "Static IP gateway"\n'
-        serialconfstr += '\tdefault "192.168.0.1"\n'
-        serialconfstr += '\tdepends on %s_%s_SELECT && !%s_%s_USE_DHCP && SUBSYSTEM_DISTRO_PETALINUX\n' % (
-            eth_Kconf, slave.upper(), eth_Kconf, slave.upper())
-        serialconfstr += '\thelp\n'
-        serialconfstr += '\tDefault gateway when static network address assignment is used.\n'
-
-    confstr += '\nendchoice\n'
-    confstr += serialconfstr
-    confstr += '\nendmenu\n'
-    return confstr
-
-
 def GenConf_flash(IpsToAdd, slavesdict, proc_ipname, arch):
     ''' Generate Flash Info as Kconfig'''
     flash_Kconf = 'SUBSYSTEM_FLASH'
     flashpart_dict = {'aarch64': {'boot': '0x100000', 'kernel': '0x1600000', 'bootenv': '0x40000'},
                       'arm': {'boot': '0x500000', 'kernel': '0xA80000', 'bootenv': '0x20000'},
-                      'microblaze': {'fpga': '0xB00000', 'boot': '0x40000', 'bootenv': '0x20000', 'kernel': '0xC00000'}
+                      'microblaze-v': {'fpga': '0xB00000', 'boot': '0x40000', 'bootenv': '0x20000', 'kernel': '0xC00000'}
                       }
     confstr = '\nmenu "Flash Settings"\n'
     confstr += '\nchoice\n'
@@ -404,13 +294,11 @@ def GenConf_flash(IpsToAdd, slavesdict, proc_ipname, arch):
             continue
         ip_name = slavesdict.get(slave)['ip_name']
         global ipinfodata
-        try:
-            flash_prefix = '%s' % (
-                ipinfodata[ip_name]['device_type']['flash'].get('flash_prefix', ''))
-            if flash_prefix:
-                flash_prefix = flash_prefix + '-'
-        except KeyError:
-            flash_prefix = ''
+        flash_prefix = ''
+        if ip_name in ipinfodata and ipinfodata[ip_name].get('device_type') == 'flash':
+            flash_prefix = ipinfodata[ip_name].get('flash_prefix', '')
+        if flash_prefix:
+            flash_prefix = flash_prefix + '-'
         flashconfstr += '\nconfig %s__ADVANCED_AUTOCONFIG\n' % flash_Kconf
         flashconfstr += '\tbool "Advanced Flash Auto Configuration"\n'
         flashconfstr += '\tdefault n\n'
@@ -536,7 +424,7 @@ def GenConf_bootmodes(proc):
     default_bootmode = bootmode_info.get('def_bootmode', '')
     if not bootmodes:
         return ''
-    confstr = '\nif !SUBSYSTEM_DISTRO_PETALINUX && SUBSYSTEM_SDT_FLOW\n'
+    confstr = '\nif SUBSYSTEM_SDT_FLOW\n'
     confstr += '\nmenu "Boot Mode Settings"\n'
     confstr += '\nchoice\n'
     confstr += '\tprompt "Primary Boot Mode"\n'
@@ -567,7 +455,7 @@ def GenConf_bootmodes(proc):
 # Supported Device Types to create Kconfig file
 devicetypes = {
     'memory': {'exclude': ['psu_ocm']},
-    'serial': {}, 'ethernet': {}, 'flash': {}, 'sd': {}
+    'serial': {}, 'flash': {}, 'sd': {}
 }
 
 

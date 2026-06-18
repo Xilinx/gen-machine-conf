@@ -22,17 +22,17 @@ logger = logging.getLogger('Gen-Machineconf')
 
 
 start_menu = '''
-mainmenu "{0}System Configuration"
+mainmenu "System Configuration"
 config SUBSYSTEM_TYPE_LINUX
         bool
         default y
-        select SYSTEM_{1}
+        select SYSTEM_{0}
 
-config SYSTEM_{1}
-        bool "{1} Configuration"
+config SYSTEM_{0}
+        bool "{0} Configuration"
         help
-          {1} Configuration for the project.
-          All these config options will be in {2}/config
+          {0} Configuration for the project.
+          All these config options will be in {1}/config
 '''
 
 socvariant_menu = '''
@@ -44,13 +44,6 @@ config SUBSYSTEM_VARIANT_{0}{1}
 
 Kconfig_sdt = '''
 config SUBSYSTEM_SDT_FLOW
-        bool
-        default y
-        help
-'''
-
-Kconfig_plnx = '''
-config SUBSYSTEM_DISTRO_PETALINUX
         bool
         default y
         help
@@ -106,8 +99,6 @@ def DetectSocFamily(proc_type):
         return 'zynq'
     elif re.search('microblaze_riscv', proc_type):
         return 'microblaze-v'
-    elif re.search('microblaze', proc_type):
-        return 'microblaze'
     return proc_type
 
 
@@ -164,22 +155,17 @@ def GenKconfigProj(args, system_conffile, hw_info, MCObject=None):
     project_cfgdir = os.path.join(args.output, 'configs')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
-    template_cfgfile = os.path.join(
-        genmachine_scripts, 'configs/config_%s' % args.soc_family)
     Kconfig_files = glob.glob(os.path.join(
                         genmachine_scripts, 'configs', 'Kconfig.*'))
 
     if not os.path.isfile(Kconfig_syshw):
         raise Exception('%s is not found in tool' % Kconfig_syshw)
 
-    if not os.path.isfile(system_conffile):
-        common_utils.CopyFile(template_cfgfile, system_conffile)
-
     if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file):
-        # When multiple xsa/sdt files configured with same memory ip with different
+        # When multiple SDT files configured with same memory ip with different
         # size offsets mconf/conf will use the old configs instead of new
         # to fix that removing old MEMORY related configs from sysconfig
-        # for the first time with every new XSA configured.
+        # for the first time with every new SDT configured.
         common_utils.RemoveConfigs('CONFIG_SUBSYSTEM_MEMORY_', system_conffile)
 
     if not MCObject and 'cpu_info_dict' in hw_info:
@@ -216,16 +202,13 @@ def GenKconfigProj(args, system_conffile, hw_info, MCObject=None):
                     '@@multiconfigmenustr@@', Kconfig_BBMCTargets)
 
     Kconfig_soc_family = args.soc_family.upper()
-    Kconfig_str = start_menu.format('PetaLinux ' if args.petalinux else '',
-                                    Kconfig_soc_family, args.output)
+    Kconfig_str = start_menu.format(Kconfig_soc_family, args.output)
     if args.soc_variant:
         Kconfig_soc_variant = args.soc_variant.upper()
         Kconfig_str += socvariant_menu.format(
             Kconfig_soc_family, Kconfig_soc_variant)
     if Kconfig_BBMCTargets:
         Kconfig_str += Kconfig_sdt
-    if args.petalinux:
-        Kconfig_str += Kconfig_plnx
     Kconfig_str += '\nsource %s/Kconfig.main\n' % project_cfgdir
 
     with open(Kconfig, 'w') as kconfig_f:
@@ -259,7 +242,7 @@ def PreProcessSysConf(args, system_conffile, hw_info):
         common_utils.UpdateConfigValue('CONFIG_YOCTO_ADD_OVERRIDES',
                                        '"%s"' % args.machine_overrides, system_conffile)
     if hasattr(args, 'dts_path') and args.dts_path:
-        common_utils.UpdateConfigValue('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',
+        common_utils.UpdateConfigValue('CONFIG_SUBSYSTEM_DT_WORKSPACE',
                                        '"%s"' % args.dts_path, system_conffile)
 
     # Read the args.gen_pl_overlay and update sysconfig
@@ -355,21 +338,9 @@ def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, MCObj
         if MCObject:
             MultiConfDict = MCObject.GenerateMultiConfigs()
 
-    if args.petalinux:
-        # Layers should be added before generating machine conf files
-        update_buildconf.AddUserLayers(args)
-
     machine_conf_file = yocto_machine.GenerateYoctoMachine(
         args, system_conffile, plnx_syshw_file, MultiConfDict)
 
-    if args.petalinux:
-        import plnx_machine
-
-        plnx_conf_file = plnx_machine.GeneratePlnxConfig(
-            args, machine_conf_file)
-        update_buildconf.UpdateLocalConf(
-            args, plnx_conf_file, machine_conf_file)
-
     update_buildconf.GenLocalConf(args.localconf,
                                   machine_conf_file,
-                                  system_conffile, args.petalinux)
+                                  system_conffile)

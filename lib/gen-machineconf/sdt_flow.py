@@ -18,7 +18,6 @@ import common_utils
 import yaml_utils
 import project_config
 import post_process_config
-import rootfs_config
 import multiconfigs
 import kconfig_syshw
 import lopper_utils
@@ -235,6 +234,25 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             'Generating cortex-r52 FreeRTOS configuration for core %s [ %s ]' % (self.core, self.domain))
         self.GenLibxilFeatures('lop-r52-imux.dts')
 
+    def CortexR5Zephyr(self):
+        logger.info(
+            'Generating cortex-r5 Zephyr configuration for core %s [ %s ]' % (self.core, self.domain))
+        # Generate Domain specific dts file
+        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
+        ZephyrImuxDTS = os.path.join(self.args.output, '%s-imux.dts' % mc_filename)
+        domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, 'lop-r5-imux.dts')
+
+        # Generate zephyr dt
+        ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
+        lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+                                 ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, ZephyrBoardDTS, self.system_conffile)
+        # Update multiconfig with dt file
+        conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
+        conf_file = os.path.join(self.args.config_dir,
+                                 'multiconfig', '%s.conf' % mc_filename)
+        common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
+
     def CortexR52Zephyr(self):
         logger.info(
             'Generating cortex-r52 Zephyr configuration for core %s [ %s ]' % (self.core, self.domain))
@@ -242,6 +260,25 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         mc_filename = "%s-%s" % (self.args.machine, self.mcname)
         ZephyrImuxDTS = os.path.join(self.args.output, '%s-imux.dts' % mc_filename)
         domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, 'lop-r52-imux.dts')
+
+        # Generate zephyr dt
+        ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
+        lopper_utils.RunLopperUsingDomainFile([], self.args.output, self.args.dts_path,
+                                 ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+        lopper_utils.IncludeCustomDtsi(self.args.output, self.mcname, ZephyrBoardDTS, self.system_conffile)
+        # Update multiconfig with dt file
+        conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
+        conf_file = os.path.join(self.args.config_dir,
+                                 'multiconfig', '%s.conf' % mc_filename)
+        common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
+
+    def CortexA72Zephyr(self):
+        logger.info(
+            'Generating cortex-a72 Zephyr configuration for core %s [ %s ]' % (self.core, self.domain))
+        # Generate Domain specific dts file
+        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
+        ZephyrImuxDTS = os.path.join(self.args.output, '%s-imux.dts' % mc_filename)
+        domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, 'lop-a72-imux.dts')
 
         # Generate zephyr dt
         ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
@@ -693,6 +730,8 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             self.CortexA72Baremetal()
         elif self.os_hint.startswith('freertos'):
             self.CortexA72FreeRtos()
+        elif self.os_hint.startswith('zephyr'):
+            self.CortexA72Zephyr()
         else:
             logger.warning('cortex-a72 for unknown OS (%s), \
                         parsing Baremetal. %s' % (self.os_hint, self.domain))
@@ -720,6 +759,8 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             self.CortexR5Baremetal()
         elif self.os_hint.startswith('freertos'):
             self.CortexR5FreeRtos()
+        elif self.os_hint.startswith('zephyr'):
+            self.CortexR5Zephyr()
         else:
             self.CortexR5Baremetal()
 
@@ -826,8 +867,7 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
     logger.info('Generating Kconfig for the project')
     sdtipinfo_schema = os.path.join(
         genmachine_scripts, 'data', 'sdt_ipinfo.yaml')
-    ipinfo_schema = os.path.join(
-        genmachine_scripts, 'data', 'ipinfo.yaml')
+    ipinfo_schema = sdtipinfo_schema
     plnx_syshw_file = os.path.join(output, 'petalinux_config.yaml')
 
     lopper_utils.RunLopperSubcommand(output, output, hw_file,
@@ -840,9 +880,6 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
 
 
 def ParseSDT(args):
-    if args.hw_flow == 'xsct':
-        raise Exception('Invalid HW source Specified for System-Device-Tree.')
-
     '''Check if vitis environment set and show the warning'''
     if 'XILINX_VITIS' in os.environ.keys():
         logger.warning('Vitis environment(XILINX_VITIS) found, '
@@ -894,12 +931,6 @@ def ParseSDT(args):
             GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw,
                                hw_info['proc_type'], args.hw_file, args.output)
 
-        template_cfgfile = os.path.join(
-            genmachine_scripts, 'configs', 'config_%s' % hw_info['soc_family'])
-
-        if not os.path.isfile(template_cfgfile):
-            raise Exception('Unsupported soc_family: %s' % hw_info['soc_family'])
-
         return hw_info
 
 
@@ -912,7 +943,6 @@ def ParseSDT(args):
 
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
-    ipinfo_file = os.path.join(genmachine_scripts, 'data', 'ipinfo.yaml')
     plnx_syshw_file = os.path.join(args.output, 'petalinux_config.yaml')
     system_conffile = os.path.join(args.output, 'config')
 
@@ -953,12 +983,12 @@ def ParseSDT(args):
     # to reflect in menuconfig/config
     project_config.PreProcessSysConf(args, system_conffile, hw_info)
     common_utils.RunMenuconfig(Kconfig, system_conffile,
-                               True if args.menuconfig == 'project' else False,
+                               args.menuconfig,
                                args.output, 'project')
 
     #### Process the configuration:
     post_process_config.PostProcessSysConf(
-        args, system_conffile, ipinfo_file, plnx_syshw_file)
+        args, system_conffile, plnx_syshw_file)
 
     # In case machine name updated in config
     cfg_machine = common_utils.GetConfigValue('CONFIG_YOCTO_MACHINE_NAME',
@@ -975,7 +1005,7 @@ def ParseSDT(args):
         args.domain_file += _file + ' '
 
     # In case dts_path updated in config
-    cfg_dtspath = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_XSCT_WORKSPACE',
+    cfg_dtspath = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_WORKSPACE',
                                                      system_conffile)
     if cfg_dtspath:
         args.dts_path = os.path.expandvars(cfg_dtspath)
@@ -987,9 +1017,6 @@ def ParseSDT(args):
     else:
         args.dts_path = os.path.realpath(args.dts_path)
 
-    if args.petalinux:
-        rootfs_config.GenRootfsConfig(args, system_conffile)
-
     #### Generate the configuration:
     MCObject = sdtGenerateMultiConfigFiles(args, hw_info['multiconfigs'], system_conffile=system_conffile)
 
@@ -1000,7 +1027,7 @@ def ParseSDT(args):
 
 def register_commands(subparsers):
     parser_sdt = subparsers.add_parser('parse-sdt',
-                                       help='Parse System device-tree file and generate Yocto/PetaLinux configurations.',
+                                       help='Parse System device-tree file and generate Yocto configurations.',
                                        usage='%(prog)s [--hw-description'
                                        ' <PATH_TO_SDTDIR>] [other options]'
                                        )

@@ -48,7 +48,9 @@ class ParseMultiConfigFiles():
 
             # Iterate over the non-Linux OSes
             NonLinuxOS = [ 'baremetal', 'freertos' ]
-            if self.cpu in ['arm,cortex-r52', 'arm,cortex-a78']:
+            if self.cpu in ['arm,cortex-r52', 'arm,cortex-a72', 'arm,cortex-a78']:
+                NonLinuxOS.append('zephyr')
+            elif self.cpu == 'arm,cortex-r5' and self.args.soc_family in ['versal']:
                 NonLinuxOS.append('zephyr')
             for os_hint in NonLinuxOS:
                 mc_name = '%s-%s%s-%s' % (cpu, self.core, domain_suffix, os_hint)
@@ -119,7 +121,8 @@ class ParseMultiConfigFiles():
 class GenerateMultiConfigFiles():
     def ZephyrConfigurations(self, mc_target):
         ZephyrDict = {
-            'microblaze' : { 'board' : 'mbv32' },
+            'microblaze-v' : { 'board' : 'mbv32' },
+            'versal' : { 'board' : 'versal_rpu'},
             'versal-net' : { 'board' : 'versalnet_rpu'},
             'versal-2ve-2vm' : { 'board' : 'versal2_rpu'}
             }
@@ -207,10 +210,13 @@ class GenerateMultiConfigFiles():
                         mc_target = self.args.soc_family
                         if self.args.soc_family == 'versal' and self.args.soc_variant == 'net':
                             mc_target += '-net'
+                        if cpu == 'arm,cortex-a72':
+                            # Keep A72 board unpinned by default; user can override ZEPHYR_BOARD.
+                            mc_target = ''
                         if cpu.startswith('xlnx,microblaze-riscv'):
                             McExtraVars += '#Risc-V Tune features\n'
                             McExtraVars += 'require conf/machine/include/riscv/tune-riscv.inc\n'
-                            mc_target = 'microblaze'
+                            mc_target = 'microblaze-v'
                         distro, ExtraVars = self.ZephyrConfigurations(mc_target)
                         McExtraVars += ExtraVars
 

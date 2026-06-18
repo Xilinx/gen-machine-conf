@@ -1,4 +1,4 @@
-.. Copyright (C) 2022-2025, Advanced Micro Devices, Inc. All rights reserved.
+.. Copyright (C) 2022-2026, Advanced Micro Devices, Inc. All rights reserved.
 
 .. SPDX-License-Identifier: MIT
 
@@ -11,7 +11,7 @@ This section provides a comprehensive overview of the Gen-Machine-Conf tool opti
 It explains each available argument, configuration setting, and environment variable
 in detail, along with usage examples.
 
---hw-description <XSA/SDT PATH>
+--hw-description <SDT PATH>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The --hw-description option specifies the hardware description input for the tool.
@@ -24,15 +24,13 @@ and adapts its behavior depending on whether the workflow is for
 PetaLinux (which does not use BitBake) or Yocto (which may use BitBake to fetch and unpack URIs).
 
 The tool also ensures that only supported file types are processed.
-It distinguishes between .xsa files and System Device-tree directories,
-and can auto-select the appropriate flow if both are present. It also prevents ambiguous situations,
-such as multiple .xsa or system-top.dts files in the same directory.
+It validates that a System Device-tree directory is provided with a system-top.dts file,
+and prevents ambiguous situations such as multiple system-top.dts files in the same directory.
 
 **Usage Example**
 
 .. code-block:: console
 
-    $ gen-machine-conf --hw-description ./design.xsa
     $ gen-machine-conf --hw-description ./sdt_output/
     $ gen-machine-conf --hw-description https://edf.amd.com/bsp.tar.gz
     $ gen-machine-conf --hw-description ./bsp.tar.gz
@@ -282,7 +280,6 @@ This name is used to organize output files and directories, and it becomes the i
 for your hardware platform in the Yocto build system.
 
 If not provided on the command line:
- - XSA flow: Uses the generic file name combined with the device ID extracted from the XSA file.
  - SDT flow: Uses the compatible string extracted from the System-Device-Tree (SDT) file.
 
 **Usage Example**
@@ -295,8 +292,6 @@ If not provided on the command line:
 ~~~~~~~~~~~~~~~~~~~~~
 
 Specifies the SoC family (microblaze, microblaze-v, zynq, zynqmp, versal, versal-2ve-2vm).
-``microblaze-v`` is supported only in the system device tree (SDT) flow and
-is not supported in the XSA/XSCT flow.
 If not provided on the command line gen-machine-conf will be extracted from the System-Device-Tree (SDT) file
 based on the Processor name.
 
@@ -700,49 +695,3 @@ the generated Device Tree Source (DTS) files will be placed.
 .. code-block:: console
 
     $ gen-machine-conf --hw-description ./sdt_output/ --dts-path /path/to/dts
-
-
-parse-xsa subcommand: (deprecated)
-----------------------------------
-
-The parse-xsa subcommand is used to process a XSA file contains the hardware description exported
-from Xilinx/AMD tools (like Vivado).
-
-When you use parse-xsa, the tool:
- - Reads the XSA file and extracts hardware details needed for generating device trees, configuration files, and build settings.
- - Validates that the directory contains exactly one .xsa file (errors if none or multiple are found).
- - Uses the xsct flow to generate machine configuration files tailored for device-tree-based hardware descriptions.
-
-**Usage Example**
-
-.. code-block:: console
-
-    $ gen-machine-conf --hw-description ./design.xsa parse-xsa
-
---xsct-tool [XSCT_TOOL_PATH]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The --xsct-tool option is used to specify the path to the XSCT (Xilinx Software Command-line Tool) executable.
-XSCT is a scripting tool provided by Xilinx for automating hardware/software workflows,
-such as exporting hardware, generating device trees, and running TCL scripts.
-By default, the tool may try to auto-detect XSCT, but with --xsct-tool <path>,
-you can explicitly set the location of the XSCT binary to use.
-This is useful if you have multiple Xilinx installations or need to use a specific version of XSCT for compatibility.
-
-**Usage Example**
-
-.. code-block:: console
-
-    $ gen-machine-conf --hw-description ./design.xsa --xsct-tool /opt/Xilinx/Vitis/2023.1/bin/xsct
-
---multiconfigenable
-~~~~~~~~~~~~~~~~~~~
-
-The --multiconfigenable option is used to enable the generation and use of multiple configuration
-files (multiconfigs) in your Yocto/PetaLinux project with XSA flow.
-When you specify --multiconfigenable, the tool will activate support for building multiple configurations
-
-**Usage Example**
-
-.. code-block:: console
-
-    $ gen-machine-conf --hw-description ./design.xsa --multiconfigenable

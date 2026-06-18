@@ -1,4 +1,4 @@
-.. Copyright (C) 2022-2025, Advanced Micro Devices, Inc. All rights reserved.
+.. Copyright (C) 2022-2026, Advanced Micro Devices, Inc. All rights reserved.
 
 .. SPDX-License-Identifier: MIT
 
@@ -11,8 +11,8 @@ specifically targeting PetaLinux and Yocto build environments. Developed
 to streamline the hardware-to-software integration process.
 
 gen-machine-conf simplifies the conversion of hardware descriptions,
-such as Xilinx System Architecture (.xsa) files or System Device-tree
-directories into ready-to-use machine configuration files.
+such as System Device-tree directories into ready-to-use machine
+configuration files.
 These files are essential for customizing and building Linux images
 tailored to specific hardware platforms.
 
@@ -70,28 +70,16 @@ Required Software
 - If not in your PATH, Yocto will automatically fetch lopper from sources
 - See official documentation: https://github.com/devicetree-org/lopper
 
-**XSCT (Xilinx Software Command-Line Tool):**
-
-- Part of Vivado or Vitis installation
-- Required only for legacy XSA-based workflows (deprecated)
-- Specify path with ``--xsct-tool`` option if not in PATH
-
 Hardware Description Files
 ---------------------------
 
 Prepare one of the following hardware description formats:
 
-**System Device Tree (SDT) - Recommended:**
+**System Device Tree (SDT):**
 
 - Directory containing system-top.dts and related device tree files
 - Generated from Vivado flow
 - Includes hardware configuration and IP block information
-
-**XSA File - Deprecated:**
-
-- Xilinx System Archive (.xsa) file exported from Vivado
-- Contains hardware design, bitstream, and metadata
-- Will be removed in future releases; migrate to SDT flow
 
 
 Lopper Integration
@@ -195,7 +183,7 @@ Getting Started
 
 If gen-machine-conf is right for your project, here's how to get started:
 
-1. **Prepare your hardware description**: XSA file or System Device Tree directory
+1. **Prepare your hardware description**: System Device Tree directory
 2. **Review examples**: See `gen-machine-conf Examples <examples.rst>`_ for common use cases
 3. **Understand options**: Check `Gen Machine Conf: Detailed Options and Usage <options.rst>`_ for all available configurations
 4. **Create configuration**: Use template YAML or command-line options
