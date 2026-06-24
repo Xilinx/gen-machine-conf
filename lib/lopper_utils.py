@@ -100,18 +100,21 @@ def GenSerialChosenDtsi(outdir, dts_path, mcname, system_conffile, syshw_file,
         'choice', '=y') or '115200'
     earlycon, tty_prefix = _GetSerialConsoleInfo(ip_name, ipinfo_file)
     serial_alias = 'serial%s' % serial_index
+    # Single console definition reused by stdout-path and bootargs so every
+    # chosen property stays in sync with the selected UART.
+    console = 'console=%s%s,%s' % (tty_prefix, serial_index, baudrate)
 
     chosen_lines = ['/ {', '\tchosen {',
                     '\t\tstdout-path = "%s:%sn8";' % (serial_alias, baudrate)]
-    if is_linux:
-        bootargs = 'earlycon=%s,%s ' % (earlycon, baseaddr) \
-            if earlycon and baseaddr else ''
-        bootargs += 'console=%s%s,%s' % (tty_prefix, serial_index, baudrate)
-        chosen_lines.append('\t\tbootargs = "%s";' % bootargs)
-    else:
-        # Non-Linux domains don't use a kernel command line; clear the
-        # bootargs inherited from the SDT /chosen node to avoid confusion.
-        chosen_lines.append('\t\tbootargs = "";')
+    # Replace the SDT-inherited bootargs with one that matches the selected
+    # console. earlycon is a Linux-only kernel parameter; non-Linux domains
+    # get just the console= so their /chosen node stays consistent instead of
+    # carrying the stale SDT bootargs.
+    bootargs = ''
+    if is_linux and earlycon and baseaddr:
+        bootargs = 'earlycon=%s,%s ' % (earlycon, baseaddr)
+    bootargs += console
+    chosen_lines.append('\t\tbootargs = "%s";' % bootargs)
     if is_zephyr:
         chosen_lines.append('\t\tzephyr,console = "%s";' % serial_alias)
         chosen_lines.append('\t\tzephyr,shell-uart = "%s";' % serial_alias)
