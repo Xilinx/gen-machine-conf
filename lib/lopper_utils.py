@@ -9,9 +9,44 @@
 
 import logging
 import os
+import re
 import common_utils
+import yaml_utils
 
 logger = logging.getLogger('Gen-Machineconf')
+
+
+def _GetSerialConsoleInfo(ip_name, ipinfo_file):
+    ''' Return (earlycon, tty_prefix) for a serial IP from sdt_ipinfo.yaml.
+    A serial IP may report a SoC-specific ip_name (e.g. a versal-net
+    psx_sbsauart node maps to the canonical sbsauart entry); such variants
+    are declared explicitly via the 'ip_name_aliases' list in the canonical
+    entry. Defaults to ('', 'ttyPS') when the IP is unknown. '''
+    ipinfo = yaml_utils.ReadYaml(ipinfo_file) if ipinfo_file else {}
+    entry = ipinfo.get(ip_name) if ip_name else None
+    if not entry and ip_name:
+        for val in ipinfo.values():
+            if not isinstance(val, dict) or val.get('device_type') != 'serial':
+                continue
+            if ip_name in (val.get('ip_name_aliases') or []):
+                entry = val
+                break
+    if not isinstance(entry, dict):
+        return ('', 'ttyPS')
+    return (entry.get('earlycon', ''), entry.get('console_prefix', 'ttyPS'))
+
+
+def _GetSerialSelection(mcname, system_conffile):
+    ''' Return the serial choice value selected for the given domain.
+    Linux/U-Boot uses the legacy 'CONFIG_SUBSYSTEM_SERIAL_' names; every other
+    multiconfig domain uses 'CONFIG_SUBSYSTEM_<MC>_SERIAL_'. The returned value
+    is the choice token (e.g. 'SERIAL0', 'PSV_SBSAUART_0', 'FROM_SDT'). '''
+    if mcname in ('', 'linux'):
+        prefix = 'CONFIG_SUBSYSTEM_SERIAL_'
+    else:
+        prefix = 'CONFIG_SUBSYSTEM_%s_SERIAL_' % mcname.upper().replace('-', '_')
+    return common_utils.GetConfigValue(prefix, system_conffile, 'choice',
+                                       '_SELECT=y')
 
 
 def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
