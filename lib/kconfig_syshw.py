@@ -355,96 +355,6 @@ def GenSerialDomainsKconfig(syshw_file, proc_type, bbmctargets):
     return confstr
 
 
-def GenConf_serial(IpsToAdd, slavesdict, proc_ipname, arch):
-    ''' Generate Serial Info as Kconfig'''
-    confstr = '\nmenu "Serial Settings"\n'
-    serialconfstr = ''
-    serial_Kconf = 'SUBSYSTEM_SERIAL'
-    serialdict = {'microblaze_riscv': ['DTG'],
-                  'ps7_cortexa9': ['FSBL', 'DTG'],
-                  'psu_cortexa53': ['PMUFW', 'FSBL', 'TF-A', 'DTG'],
-                  'psv_cortexa72': ['PLM', 'TF-A', 'DTG'],
-                  'psx_cortexa78': ['PLM', 'TF-A', 'DTG'],
-                  'cortexa78': ['PLM', 'ASU', 'TF-A', 'OP-TEE', 'DTG']
-                  }
-    def_baudrates = ['600', '9600', '28800',
-                     '115200', '230400', '460800', '921600']
-    for comp in serialdict.get(proc_ipname, ''):
-        confstr += '\nchoice\n'
-        confstr += '\tprompt "%s Serial stdin/stdout"\n' % (
-                'U-boot/Linux' if comp == 'DTG' else comp)
-        confstr += '\thelp\n'
-        confstr += '\tSelect a serial as the %s\'s stdin,stdout.\n' % (
-            'U-boot and Linux' if comp == 'DTG' else comp)
-        confstr += '\tIf you select \'manual\', you will need to add this variable\n'
-        if comp == 'TF-A':
-            confstr += '\tTFA_CONSOLE:forcevariable = "<serial_ipname>" in local.conf\n'
-        elif comp == 'OP-TEE':
-            confstr += '\tOPTEE_CONSOLE:forcevariable = "<serial_number>" in local.conf\n'
-        if comp == 'DTG':
-            serialconfstr += '\nconfig %s_IP_NAME\n' % (
-                serial_Kconf)
-        else:
-            serialconfstr += '\nconfig %s_%s_IP_NAME\n' % (
-                serial_Kconf, comp.upper())
-        serialconfstr += '\tstring\n'
-        for slave in IpsToAdd + ['manual']:
-            if comp in ['PLM', 'PMUFW'] and re.search(
-                    r'.*coresight.*', slave.replace('_', '')):
-                # coresight ip is not supported for plm and pmufw
-                # so skipping in displaying menuconfig
-                continue
-            confstr += '\nconfig SUBSYSTEM_%sSERIAL_%s_SELECT\n' % (
-                '%s_' % comp if comp != 'DTG' else '', slave.upper())
-            confstr += '\tbool "%s"\n' % slave
-            if slave == 'manual':
-                continue
-            serialconsole = slave
-            if comp in ['TF-A', 'OP-TEE']:
-                ip_name = slavesdict[slave].get('ip_name')
-                if ip_name == 'psu_uart':
-                    if re.search(r'.*uart0.*', slave.replace('_', '')) or \
-                            re.search(r'.*serial0.*', slave.replace('_', '')):
-                        serialconsole = 'cadence' if comp == 'TF-A' else '0'
-                    elif re.search(r'.*uart1.*', slave.replace('_', '')) or \
-                            re.search(r'.*serial1.*', slave.replace('_', '')):
-                        serialconsole = 'cadence1' if comp == 'TF-A' else '1'
-                elif ip_name in ['sbsauart', 'psv_sbsauart', 'psx_sbsauart']:
-                    if re.search(r'.*uart0.*', slave.replace('_', '')) or \
-                            re.search(r'.*serial0.*', slave.replace('_', '')):
-                        serialconsole = 'pl011' if comp == 'TF-A' else '0'
-                    elif re.search(r'.*uart1.*', slave.replace('_', '')) or \
-                            re.search(r'.*serial1.*', slave.replace('_', '')):
-                        serialconsole = 'pl011_1' if comp == 'TF-A' else '1'
-                else:
-                    serialconsole = 'dcc'
-            serialconfstr += '\tdefault %s if SUBSYSTEM_%sSERIAL_%s_SELECT\n' % (
-                serialconsole, '%s_' % comp if comp != 'DTG' else '', slave.upper())
-
-        confstr += '\nendchoice\n'
-
-    # Baudrate settings
-    for slave in IpsToAdd:
-        confstr += '\nchoice\n'
-        confstr += '\tprompt "System stdin/stdout baudrate for %s"\n' % slave
-        confstr += '\tdefault %s_%s_BAUDRATE_115200\n' % (
-            serial_Kconf, slave.upper())
-        confstr += '\thelp\n'
-        confstr += '\tBaudrate settings for serial Ip %s\n' % slave
-        confstr += '\tThe Baudrate setting applies only for U-boot/Linux serial Ip\n'
-        for baudrate in def_baudrates:
-            confstr += '\nconfig %s_%s_BAUDRATE_%s\n' % (
-                serial_Kconf, slave.upper(), baudrate)
-            confstr += '\tbool "%s"\n' % baudrate
-
-        confstr += '\nendchoice\n'
-
-    confstr += serialconfstr
-    confstr += '\nendmenu\n'
-
-    return confstr
-
-
 def GenConf_flash(IpsToAdd, slavesdict, proc_ipname, arch):
     ''' Generate Flash Info as Kconfig'''
     flash_Kconf = 'SUBSYSTEM_FLASH'
@@ -631,7 +541,7 @@ def GenConf_bootmodes(proc):
 # Supported Device Types to create Kconfig file
 devicetypes = {
     'memory': {'exclude': ['psu_ocm']},
-    'serial': {}, 'flash': {}, 'sd': {}
+    'flash': {}, 'sd': {}
 }
 
 
@@ -664,5 +574,8 @@ def GenKconfigSysHW(hwyamlinfile, ipinfofile, outfile):
                                     proc_ipname, arch)' % (devtype))
         KconfStr += GenConf_bootmodes(proc)
         KconfStr += '\nendif\n'
+    # Placeholder for the per-domain Serial Settings menu. It is filled in by
+    # project_config.GenKconfigProj where the multiconfig target list is known.
+    KconfStr += '\n@@serialmenustr@@\n'
     KconfStr += '\nendmenu\n'
     common_utils.AddStrToFile(outfile, KconfStr)
