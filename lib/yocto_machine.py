@@ -421,7 +421,7 @@ def GetSerialConsoleFromDts(config_dtfile):
     return '', ''
 
 
-def SerialConsoleSettings(system_conffile, sdt=False, config_dtfile=''):
+def SerialConsoleSettings(system_conffile, sdt=False, config_dtfile='', soc_family=''):
     serialname = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_', system_conffile,
                                              'choice', '_SELECT=y')
     serial_console = ''
@@ -430,9 +430,20 @@ def SerialConsoleSettings(system_conffile, sdt=False, config_dtfile=''):
         # Console is defined by the SDT, derive it from the generated Linux DTS
         serial_console, baudrate = GetSerialConsoleFromDts(config_dtfile)
         if not serial_console:
+            # The DTS carried no console= (e.g. stdout-path only). Fall back to
+            # serial0 with the SoC-default tty so the image still gets a login
+            # console instead of none. The tty prefix is SoC-determined.
+            soc_tty = {'zynq': 'ttyPS0', 'zynqmp': 'ttyPS0',
+                       'versal': 'ttyAMA0', 'versal-net': 'ttyAMA0',
+                       'versal-2ve-2vm': 'ttyAMA0',
+                       'microblaze-v': 'ttyUL0'}
+            tty = soc_tty.get(soc_family, 'ttyPS0')
+            baudrate = '115200'
+            serial_console = '%s;%s' % (baudrate, tty)
             logger.warning('Serial set to "From SDT" but no console could be '
                            'derived from the generated Linux DTS (%s); '
-                           'SERIAL_CONSOLES will not be set.' % config_dtfile)
+                           'defaulting to serial0 (%s).'
+                           % (config_dtfile, tty))
         return serial_console, baudrate
     if serialname and serialname != 'MANUAL':
         serialipname = GetIPProperty(serialname, system_conffile)
@@ -493,7 +504,8 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
     machine_override_string += '\nDTB_FILE_PATH ?= "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
 
     serial_console, baudrate = SerialConsoleSettings(system_conffile, sdt=True,
-                                                     config_dtfile=config_dtfile)
+                                                     config_dtfile=config_dtfile,
+                                                     soc_family=args.soc_family)
     if serial_console:
         machine_override_string += '\n# Serial Console Settings\n'
         machine_override_string += 'SERIAL_CONSOLES ?= "%s"\n' % serial_console
