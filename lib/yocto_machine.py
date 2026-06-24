@@ -614,7 +614,7 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
 YoctoGenericMachines = ('microblaze-v-generic', 'zynq-generic',
                         'zynqmp-generic','versal-generic', 'versal-net-generic', 'versal-2ve-2vm-generic')
 
-def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict=''):
+def GenerateYoctoMachine(args, system_conffile, syshw_file, MultiConfDict=''):
     genmachine_scripts = project_config.GenMachineScriptsPath()
     if not os.path.isfile(system_conffile):
         raise Exception('Failed to generate .conf file, Unable to find config'
@@ -626,14 +626,14 @@ def GenerateYoctoMachine(args, system_conffile, plnx_syshw_file, MultiConfDict='
     YamlMachineConfs = yaml_utils.TemplateYamlData.get('machine', {}) or {}
     soc_family = args.soc_family
     import yaml
-    global plnx_syshw_data
-    with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
-        plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
+    global syshw_data
+    with open(syshw_file, 'r') as syshw_file_f:
+        syshw_data = yaml.safe_load(syshw_file_f)
 
-    # Get the device_id from plnx_syshw_data
+    # Get the device_id from syshw_data
     args.device_id = '999'
-    if 'device_id' in plnx_syshw_data.keys():
-        args.device_id = plnx_syshw_data['device_id']
+    if 'device_id' in syshw_data.keys():
+        args.device_id = syshw_data['device_id']
 
     # Include user given machine if INCLUDE_MACHINE_NAME set
     req_conf_file = common_utils.GetConfigValue('CONFIG_YOCTO_INCLUDE_MACHINE_NAME',

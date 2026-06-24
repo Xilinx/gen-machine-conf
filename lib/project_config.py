@@ -304,7 +304,7 @@ def PrintSystemConfiguration(args, model, device_id, cpu_info_dict=None):
                 cpu, _cpu.replace(',', ' '),
                 cpu_info_dict[cpu].get('core')))
 
-def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, MCObject=None):
+def GenerateConfiguration(args, hw_info, system_conffile, syshw_file, MCObject=None):
     import yocto_machine
     import update_buildconf
 
@@ -315,7 +315,7 @@ def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, MCObj
     # Dont re-trigger the multiconfigs if no changes in project file
     if common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False) and \
             common_utils.ValidateHashFile(args.output, 'SYSTEM_CONF', system_conffile, update=False) and \
-            os.path.exists(plnx_syshw_file) and \
+            os.path.exists(syshw_file) and \
             (hasattr(args, 'dts_path') and os.path.exists(args.dts_path)):
         GenMultiConf = False
 
@@ -339,7 +339,7 @@ def GenerateConfiguration(args, hw_info, system_conffile, plnx_syshw_file, MCObj
             MultiConfDict = MCObject.GenerateMultiConfigs()
 
     machine_conf_file = yocto_machine.GenerateYoctoMachine(
-        args, system_conffile, plnx_syshw_file, MultiConfDict)
+        args, system_conffile, syshw_file, MultiConfDict)
 
     update_buildconf.GenLocalConf(args.localconf,
                                   machine_conf_file,

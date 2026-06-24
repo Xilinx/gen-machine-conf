@@ -460,7 +460,7 @@ devicetypes = {
 
 
 def GenKconfigSysHW(hwyamlinfile, ipinfofile, outfile):
-    ''' Read Input Yaml(plnx sys HW data) and convert into
+    ''' Read Input Yaml(sys HW data) and convert into
     Kconfig for described device types'''
     global hwyamldata, ipinfodata
     hwyamldata = yaml_utils.ReadYaml(hwyamlinfile)

@@ -20,8 +20,7 @@ machine configuration will be generated.
 
 The tool handles the process of validating, copying or unpacking the hardware
 description file or directory. It ensures the provided path is absolute and exists,
-and adapts its behavior depending on whether the workflow is for
-PetaLinux (which does not use BitBake) or Yocto (which may use BitBake to fetch and unpack URIs).
+and may use BitBake to fetch and unpack URIs.
 
 The tool also ensures that only supported file types are processed.
 It validates that a System Device-tree directory is provided with a system-top.dts file,
@@ -291,7 +290,7 @@ If not provided on the command line:
 --soc-family <family>
 ~~~~~~~~~~~~~~~~~~~~~
 
-Specifies the SoC family (microblaze, microblaze-v, zynq, zynqmp, versal, versal-2ve-2vm).
+Specifies the SoC family (microblaze-v, zynq, zynqmp, versal, versal-2ve-2vm).
 If not provided on the command line gen-machine-conf will be extracted from the System-Device-Tree (SDT) file
 based on the Processor name.
 
@@ -463,26 +462,19 @@ build environment, avoiding compatibility issues.
 
     $ gen-machine-conf --hw-description ./system-top.dts --native-sysroot /opt/sysroots/x86_64
 
---menuconfig [project|rootfs]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--menuconfig
+~~~~~~~~~~~~
 
 This option enables an interactive menu-based configuration interface for your project.
-It allows you to update configuration settings using a graphical or text-based UI,
-similar to the classic Linux kernel menuconfig tool.
-
-The option accepts either project or rootfs as its value.
- - project: Launches menuconfig for system-level configuration (hardware, kernel, boot settings, etc.).
- - rootfs: Launches menuconfig for root filesystem configuration (packages, utilities, etc.).
-
-If you use --menuconfig without a value, it defaults to project.
+It allows you to update system-level configuration settings (hardware, kernel, boot
+settings, etc.) using a graphical or text-based UI, similar to the classic Linux kernel
+menuconfig tool.
 
 **Usage Example**
 
 .. code-block:: console
 
     $ gen-machine-conf --hw-description ./system-top.dts --menuconfig
-    $ gen-machine-conf --hw-description ./system-top.dts --menuconfig project
-    $ gen-machine-conf --hw-description ./system-top.dts --menuconfig rootfs
 
 --add-config <macro_or_file>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -504,19 +496,6 @@ the build without modifying the base template.
 
     $ gen-machine-conf --hw-description ./system-top.dts --add-config CONFIG_FEATURE_X=y --add-config CONFIG_FEATURE_Y=y
     $ gen-machine-conf --hw-description ./system-top.dts --add-config ./extra_config.txt
-
---add-rootfsconfig <file>
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This option allows you to specify a file containing a list of package names to be added to
-the root filesystem configuration. This helps you customize which software packages are included
-in the generated rootfs image.
-
-**Usage Example**
-
-.. code-block:: console
-
-    $ gen-machine-conf --hw-description ./system-top.dts --add-rootfsconfig CONFIG_PACKAGE_X=y
 
 
 parse-sdt subcommand
@@ -675,7 +654,7 @@ parameters that need to be reflected in the Yocto build environment.
 ~~~~~~~~~~~~~~~~~
 
 The --multiconfigfull option in the parse-sdt command enables the generation of a full set of
-multiconfig .conf and .dts files for your Yocto/PetaLinux project.
+multiconfig .conf and .dts files for your Yocto project.
 By default, only a minimal set of multiconfig files is generated.
 
 **Usage Example**

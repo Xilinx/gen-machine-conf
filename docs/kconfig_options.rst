@@ -33,14 +33,14 @@ SUBSYSTEM_ARCH_ARM
     Choose this option to specify ARM (32-bit) as the subsystem architecture.
     Used for Cortex-A9 and other 32-bit ARM processors.
 
-SUBSYSTEM_ARCH_MICROBLAZE
---------------------------
+SUBSYSTEM_ARCH_MICROBLAZE-V
+----------------------------
 
 :Type: bool
 :Default: Depends on system configuration
 :Description:
-    Choose this option to specify MicroBlaze as the subsystem architecture.
-    Used for soft-core MicroBlaze processors in FPGA designs.
+    Choose this option to specify MicroBlaze-V (RISC-V) as the subsystem architecture.
+    Used for soft-core MicroBlaze-V processors in FPGA designs.
 
 Boot Component Selection
 =========================
@@ -296,9 +296,9 @@ SUBSYSTEM_FLASH__ADVANCED_AUTOCONFIG:
 :Dependencies: SUBSYSTEM_PROCESSOR && SUBSYSTEM_FLASH
 :Description:
 
-     This config enables advanced flash auto-configuration for the Flash subsystem (usually QSPI/OSPI) in PetaLinux.
+     This config enables advanced flash auto-configuration for the Flash subsystem (usually QSPI/OSPI).
 
-     When this option is enabled, PetaLinux will automatically detect and generate the flash partitions, offsets, and sizes.
+     When this option is enabled, the tool will automatically detect and generate the flash partitions, offsets, and sizes.
 
 Boot Mode Settings
 ------------------
@@ -372,7 +372,7 @@ SUBSYSTEM_FPGA_MANAGER
 ----------------------
 
 :Type: bool
-:Dependencies: !SUBSYSTEM_ARCH_MICROBLAZE
+:Dependencies: !SUBSYSTEM_ARCH_MICROBLAZE-V
 :Description:
 
     This config Provides an interface to Linux for configuring the programmable logic (PL).
@@ -578,7 +578,7 @@ YOCTO_MACHINE_NAME
     - ``versal-2ve-2vm-generic`` (for Versal 2VE/2VM)
     - ``zynqmp-generic`` (for ZynqMP)
     - ``zynq-generic`` (for Zynq-7000)
-    - ``microblaze-generic`` (for MicroBlaze)
+    - ``microblaze-v-generic`` (for MicroBlaze-V)
 
 :Description:
 
@@ -817,9 +817,9 @@ Architecture-Specific Defaults
      - AARCH64
      - versal-2ve-2vm-generic
      - Image
-   * - MicroBlaze
-     - MICROBLAZE
-     - microblaze-generic
+   * - MicroBlaze-V
+     - MICROBLAZE-V
+     - microblaze-v-generic
      - linux.bin.ub
 
 Boot Components by Platform
@@ -859,7 +859,7 @@ Boot Components by Platform
      - ✗
      - ✓
      - ✗
-   * - MicroBlaze
+   * - MicroBlaze-V
      - ✗
      - ✗
      - ✗

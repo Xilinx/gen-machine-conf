@@ -8,7 +8,7 @@ Gen Machine Conf Usage Introduction
 -----------------------------------
 
 gen-machine-conf uses the parse-sdt sub command to parse System Device-tree
-and generate Yocto/PetaLinux configurations.
+and generate Yocto configurations.
 
 gen-machine-conf is capable of auto-detecting the subcommand based on
 the file/URI specified with --hw-description.
@@ -21,14 +21,14 @@ gen-machine-conf usage
 
   $ gen-machine-conf -h
   usage: gen-machine-conf [--template Template yaml file] [--hw-description <PATH_TO_SDTDIR>]
-                          [--soc-family {microblaze,microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}]
+                          [--soc-family {microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}]
                           [--soc-variant SOC_VARIANT] [--machine-name MACHINE]
                           [-c <config_dir>] [-r REQUIRE_MACHINE] [-O MACHINE_OVERRIDES] [--output OUTPUT] [--native-sysroot NATIVE_SYSROOT]
-                          [--menuconfig [{project,rootfs}]] [--petalinux] [--add-config [CONFIG_<macro>=y]] [--add-rootfsconfig ADD_ROOTFSCONFIG] [-D]
+                          [--menuconfig] [--add-config [CONFIG_<macro>=y]] [-D]
                           [-h] [-v]
                           <subcommand> ...
 
-  PetaLinux/Yocto Machine Configuration File generation tool
+  Yocto Machine Configuration File generation tool
 
   required arguments:
     --hw-description <PATH_TO_SDTDIR>
@@ -37,7 +37,7 @@ gen-machine-conf usage
   options:
     --template Template yaml file
                           Yaml template file
-    --soc-family {microblaze,microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}
+    --soc-family {microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}
                           SOC family type from choice list (usually auto detected).
     --soc-variant SOC_VARIANT
                           SOC Variant: Ex: cg, dr, eg, ev, ai-prime, premium (usually auto detected).
@@ -52,22 +52,16 @@ gen-machine-conf usage
     --output OUTPUT       Output directory name
     --native-sysroot NATIVE_SYSROOT
                           Native sysroot path to use the mconf/conf or lopper commands.
-    --menuconfig [{project,rootfs}]
-                          UI menuconfig option to update configuration(default is project).
-                          project - To update System Level configurations
-                          rootfs  - To update Rootfs configurations
-    --petalinux           Generate Rootfs and PetaLinux Tool conf files and update the build/local.conf file with generated .conf files.
+    --menuconfig          Launch menuconfig UI to update system level configurations.
     --add-config [CONFIG_<macro>=y]
                           Specify config macro or file containing config macros to be added on top of default configs
-    --add-rootfsconfig ADD_ROOTFSCONFIG
-                          Specify a file with list of package names to add into rootfs menu entry
     -D, --debug           Enable debug output
     -h, --help            show this help message and exit
     -v, --version         show version information and exit
 
   subcommands:
     <subcommand>
-      parse-sdt           Parse System device-tree file and generate Yocto/PetaLinux configurations.
+      parse-sdt           Parse System device-tree file and generate Yocto configurations.
 
   Use gen-machine-conf <subcommand> --help to get help on a specific command
 

@@ -7,7 +7,7 @@ Introduction
 
 The gen-machine-conf tool is a comprehensive automation tool designed
 for generating machine configuration files for embedded Linux platforms,
-specifically targeting PetaLinux and Yocto build environments. Developed
+specifically targeting Yocto build environments. Developed
 to streamline the hardware-to-software integration process.
 
 gen-machine-conf simplifies the conversion of hardware descriptions,
@@ -18,8 +18,8 @@ tailored to specific hardware platforms.
 
 The tool features robust command-line argument parsing, template-driven
 configuration, and dynamic output directory management. It integrates
-seamlessly with Bitbake for Yocto workflows and offers a dedicated mode
-for PetaLinux, ensuring compatibility and flexibility across different
+seamlessly with Bitbake for Yocto workflows, ensuring compatibility and
+flexibility across different
 development scenarios. Its plugin architecture allows for easy extension,
 enabling users to add custom subcommands and processing logic as needed.
 
@@ -41,7 +41,7 @@ System Requirements
 
 **Disk Space:**
 
-- Minimum 100 GB free disk space for Yocto/PetaLinux builds
+- Minimum 100 GB free disk space for Yocto builds
 - Additional space for hardware description files and generated configurations
 
 Required Software
@@ -189,6 +189,6 @@ If gen-machine-conf is right for your project, here's how to get started:
 4. **Create configuration**: Use template YAML or command-line options
 5. **Generate files**: Run gen-machine-conf to create your machine configuration
 6. **Package PL overlays when needed**: Use `Firmware Recipe Generation <firmware_recipes.rst>`_ to turn SDT PL overlay outputs into Yocto firmware recipes
-7. **Build**: Use the generated files with Yocto/PetaLinux
+7. **Build**: Use the generated files with Yocto
 
 For detailed usage examples, see `gen-machine-conf Examples <examples.rst>`_.

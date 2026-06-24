@@ -8,14 +8,14 @@ High-Level Architecture
 =========================
 
 This represents the complete flow from hardware description input to final
-Yocto/PetaLinux build configuration output, including all major components,
+Yocto build configuration output, including all major components,
 their interactions, and the data transformations that occur at each stage.
 
 .. code-block:: text
 
    ┌─────────────────────────────────────────────────────────────────────────────┐
    │                         GEN-MACHINE-CONF TOOL                               │
-   │                  Yocto/PetaLinux Machine Configuration Generator            │
+   │                  Yocto Machine Configuration Generator                     │
    └─────────────────────────────────────────────────────────────────────────────┘
                                        |
                                        ▼
@@ -48,14 +48,13 @@ their interactions, and the data transformations that occur at each stage.
    │  └─ Setup Logging                                                         │
    └───────────────────────────────────────────────────────────────────────────┘
                                        │
-                       │
-                       ▼
-       ┌──────────────────────────────────────────────┐
-       │   PARSE-SDT FLOW                             │
-       │   (sdt_flow.py)                              │
-       └──────────────────────────────────────────────┘
-                       │
-                       ▼
+                                       ▼
+                            ┌────────────────────────┐
+                            │     PARSE-SDT FLOW     │
+                            │     (sdt_flow.py)      │
+                            └────────────────────────┘
+                                       │
+                                       ▼
    ┌───────────────────────────────────────────────────────────────────────────┐
    │                    HARDWARE INFORMATION GATHERING                         │
    ├───────────────────────────────────────────────────────────────────────────┤
@@ -63,7 +62,7 @@ their interactions, and the data transformations that occur at each stage.
    │  ├─ Extract Platform Information:                                         │
    │  │   ├─ Machine Name                                                      │
    │  │   ├─ Device ID                                                         │
-   │  │   ├─ SoC Family (microblaze/zynq/zynqmp/versal/versal-2ve-2vm)         │
+   │  │   ├─ SoC Family (microblaze-v/zynq/zynqmp/versal/versal-2ve-2vm)       │
    │  │   ├─ SoC Variant (cg/dr/eg/ev/ai-prime/premium/net/hbm)                │
    │  │   └─ Model/Board Name                                                  │
    │  │                                                                        │
@@ -106,8 +105,7 @@ their interactions, and the data transformations that occur at each stage.
    │  ├─ PreProcess System Config (PreProcessSysConf)                          │
    │  │                                                                        │
    │  └─ Optional: Run Menuconfig UI                                           │
-   │      ├─ Project configuration                                             │
-   │      └─ Rootfs configuration                                              │
+   │      └─ Project configuration                                             │
    └───────────────────────────────────────────────────────────────────────────┘
                                        │
                                        ▼
@@ -118,7 +116,7 @@ their interactions, and the data transformations that occur at each stage.
    │  ├─ Validate Configuration Consistency                                    │
    │  ├─ Resolve Dependencies                                                  │
    │  ├─ Update Hardware-Specific Settings                                     │
-   │  └─ Generate petalinux_config.yaml                                        │
+   │  └─ Generate sys_hw_data.yaml                                             │
    └───────────────────────────────────────────────────────────────────────────┘
                                        │
                                        ▼
@@ -227,33 +225,12 @@ their interactions, and the data transformations that occur at each stage.
                                        │
                                        ▼
    ┌───────────────────────────────────────────────────────────────────────────┐
-   │                  PETALINUX CONFIGURATION (Optional)                       │
-   ├───────────────────────────────────────────────────────────────────────────┤
-   │  [rootfs_config.py]                                                        │
-   │  ├─ Generate plnxtool.conf:                                               │
-   │  │   ├─ PETALINUX_PRODUCT                                                 │
-   │  │   ├─ Platform-specific variables                                       │
-   │  │   └─ Tool configurations                                               │
-   │  │                                                                        │
-   │  ├─ Generate Rootfs Configuration:                                        │
-   │  │   ├─ Parse rootfsconfig_<soc_family>                                   │
-   │  │   ├─ Generate Kconfig for rootfs packages                              │
-   │  │   ├─ Apply --add-rootfsconfig                                          │
-   │  │   └─ Optional: Run rootfs menuconfig                                   │
-   │  │                                                                        │
-   │  └─ Update User Layers (update_buildconf.py):                             │
-   │      └─ Add/Remove layers from bblayers.conf                              │
-   └───────────────────────────────────────────────────────────────────────────┘
-                                       │
-                                       ▼
-   ┌───────────────────────────────────────────────────────────────────────────┐
    │                    BUILD CONFIGURATION UPDATE                             │
    ├───────────────────────────────────────────────────────────────────────────┤
    │  [update_buildconf.py]                                                    │
    │  ├─ Update local.conf (if --localconf specified):                         │
    │  │   ├─ MACHINE setting                                                   │
-   │  │   ├─ Include generated .conf files                                     │
-   │  │   └─ PETALINUX specific settings                                       │
+   │  │   └─ Include generated .conf files                                     │
    │  │                                                                        │
    │  ├─ Generate auto.conf (optional):                                        │
    │  │   └─ Kconfig-derived configuration                                     │
@@ -271,7 +248,7 @@ their interactions, and the data transformations that occur at each stage.
    │  ├─ config                        # System configuration                  │
    │  ├─ gen-machineconf.log          # Tool log                               │
    │  ├─ memory.qemuboot.conf         # QEMU HW DDR map for qemuboot/runqemu  │
-   │  ├─ petalinux_config.yaml        # Hardware info YAML                     │
+   │  ├─ sys_hw_data.yaml             # Hardware info YAML                     │
    │  ├─ configs/                     # Kconfig files                          │
    │  │   ├─ Kconfig                                                           │
    │  │   ├─ Kconfig.syshw                                                     │
@@ -297,8 +274,5 @@ their interactions, and the data transformations that occur at each stage.
    │  │   │   └─ pl-overlay-{full|dfx}/pl.dtsi                                 │
    │  │   └─ system-conf.dtsi                                                  │
    │  │                                                                        │
-   │  ├─ plnxtool.conf               # PetaLinux tool conf (if --petalinux)    │
-   │  ├─ local.conf                  # Updated local.conf (if --localconf)     │
-   │  └─ rootfs_config/              # Rootfs configs (if --petalinux)         │
-   │      └─ ...                                                               │
+   │  └─ local.conf                  # Updated local.conf (if --localconf)     │
    └───────────────────────────────────────────────────────────────────────────┘
