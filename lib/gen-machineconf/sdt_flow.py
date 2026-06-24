@@ -54,7 +54,22 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         Returns:
             str: The path to the generated or selected DTS file.
         """
-        dts_file = self.args.hw_file
+        # Generate the per-domain serial chosen dtsi for the user-selected UART
+        # and merge it into the SDT. This runs for every device-tree multiconfig
+        # and returns the base DTS (the SDT with the chosen console applied, or
+        # the original SDT when no override is needed).
+        syshw_file = os.path.join(self.args.output, 'sys_hw_data.yaml')
+        ipinfo_file = os.path.join(project_config.GenMachineScriptsPath(),
+                                   'data', 'sdt_ipinfo.yaml')
+        hw_file = lopper_utils.GenSerialChosenDtsi(
+                                         self.args.output, self.args.dts_path,
+                                         self.mcname, self.system_conffile,
+                                         syshw_file, ipinfo_file,
+                                         self.args.hw_file,
+                                         is_linux=self.os_hint.startswith('linux'),
+                                         is_zephyr=self.os_hint.startswith('zephyr'))
+
+        dts_file = hw_file
         domain_name = ''
         for _file in self.args.domain_file.split():
             # The second value from GetDomainName is intentionally ignored
@@ -66,7 +81,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
             # Sanitize domain_name to avoid invalid filename characters
             sanitized_domain_name = re.sub(r'[^A-Za-z0-9_\-]', '_', domain_name.lower())
             sanitized_dts_file = os.path.join(self.args.output, '%s.dts' % sanitized_domain_name)
-            dts_file = lopper_utils.RunLopperGenDomainDTS(self.args.output, self.args.dts_path, self.args.hw_file,
+            dts_file = lopper_utils.RunLopperGenDomainDTS(self.args.output, self.args.dts_path, hw_file,
                                   sanitized_dts_file, '/domains/%s' % domain_name,
                                   self.args.domain_file.split(), self.system_conffile)
         else:
