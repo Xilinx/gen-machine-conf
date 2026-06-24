@@ -85,6 +85,12 @@ def GenSerialChosenDtsi(outdir, dts_path, mcname, system_conffile, syshw_file,
 
     ip_name = serial_data.get('ip_name', '')
     baseaddr = serial_data.get('baseaddr', '')
+    # earlycon expects a hex address; normalize int/decimal-string values.
+    if baseaddr != '':
+        try:
+            baseaddr = hex(int(str(baseaddr), 0))
+        except (ValueError, TypeError):
+            pass
     # Serial index used for the 'serialN' alias and the 'ttyXXN' device.
     serial_digits = re.findall('[0-9]+', serial_slave)
     serial_index = serial_digits[-1] if serial_digits else '0'
