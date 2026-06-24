@@ -49,6 +49,82 @@ def _GetSerialSelection(mcname, system_conffile):
                                        '_SELECT=y')
 
 
+def GenSerialChosenDtsi(outdir, dts_path, mcname, system_conffile, syshw_file,
+                        ipinfo_file, hw_file, is_linux=False, is_zephyr=False):
+    ''' Generate a per-domain '<mcname>-serial-chosen.dtsi' overlay that sets
+    the /chosen serial console for the user-selected UART, merge it into the
+    SDT using lopper and return the path to the resulting base DTS.
+
+    When no override is needed (selection is 'From SDT'/'manual'/unset, or the
+    slave can not be resolved) the original hw_file is returned unchanged. '''
+    if not mcname:
+        mcname = 'linux'
+    selection = _GetSerialSelection(mcname, system_conffile)
+    # 'From SDT'/'manual'/unset -> leave the SDT chosen node untouched.
+    if not selection or selection in ('FROM_SDT', 'MANUAL'):
+        return hw_file
+
+    # Resolve the selected serial slave from the syshw data, stopping at the
+    # first match instead of building a full slave map.
+    serial_slave = selection.lower()
+    serial_data = None
+    hwdata = yaml_utils.ReadYaml(syshw_file)
+    for proc_data in hwdata.get('processor', {}).values():
+        for slave_name, slave_data in proc_data.get('slaves', {}).items():
+            if slave_data.get('device_type') == 'serial' and \
+                    re.sub('_bankless$', '', slave_name) == serial_slave:
+                serial_data = slave_data
+                break
+        if serial_data:
+            break
+
+    if not serial_data:
+        logger.warning('No serial slave %s in %s; skipping chosen dtsi for %s'
+                       % (serial_slave, syshw_file, mcname))
+        return hw_file
+
+    ip_name = serial_data.get('ip_name', '')
+    baseaddr = serial_data.get('baseaddr', '')
+    # Serial index used for the 'serialN' alias and the 'ttyXXN' device.
+    serial_digits = re.findall('[0-9]+', serial_slave)
+    serial_index = serial_digits[-1] if serial_digits else '0'
+    # Only the Linux/U-Boot domain carries a baudrate choice; default 115200.
+    baudrate = common_utils.GetConfigValue(
+        'CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_' % selection, system_conffile,
+        'choice', '=y') or '115200'
+    earlycon, tty_prefix = _GetSerialConsoleInfo(ip_name, ipinfo_file)
+    serial_alias = 'serial%s' % serial_index
+
+    chosen_lines = ['/ {', '\tchosen {',
+                    '\t\tstdout-path = "%s:%sn8";' % (serial_alias, baudrate)]
+    if is_linux:
+        bootargs = 'earlycon=%s,%s ' % (earlycon, baseaddr) \
+            if earlycon and baseaddr else ''
+        bootargs += 'console=%s%s,%s' % (tty_prefix, serial_index, baudrate)
+        chosen_lines.append('\t\tbootargs = "%s";' % bootargs)
+    else:
+        # Non-Linux domains don't use a kernel command line; clear the
+        # bootargs inherited from the SDT /chosen node to avoid confusion.
+        chosen_lines.append('\t\tbootargs = "";')
+    if is_zephyr:
+        chosen_lines.append('\t\tzephyr,console = "%s";' % serial_alias)
+        chosen_lines.append('\t\tzephyr,shell-uart = "%s";' % serial_alias)
+    chosen_lines += ['\t};', '};', '']
+    chosen = '\n'.join(chosen_lines)
+
+    dtsi_path = os.path.join(outdir, '%s-serial-chosen.dtsi' % mcname)
+    common_utils.AddStrToFile(dtsi_path, chosen, mode='w')
+    logger.debug('Generated serial chosen dtsi %s for %s' % (dtsi_path, mcname))
+
+    # Merge the chosen dtsi into the SDT using lopper and return the new base.
+    serial_dts_file = os.path.join(outdir, '%s-serial.dts' % mcname)
+    logger.debug('Generating DTS %s with serial chosen dtsi %s'
+                 % (serial_dts_file, dtsi_path))
+    RunLopperUsingDomainFile([dtsi_path], outdir, dts_path, hw_file,
+                             serial_dts_file)
+    return serial_dts_file
+
+
 def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
     """
     Includes custom DTSI files into a final DTS file based on configuration.
