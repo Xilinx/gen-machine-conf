@@ -187,7 +187,7 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
     """
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     domain_yamls_str = ' -i '.join(domain_yamls)
-    domain_args = "-x '*.yaml'"
+    domain_args = '--auto'
     # Append all the yaml files to SDT
     yaml_dts_file = dts_file.replace('.dts', '-yaml.dts')
     logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {domain_yamls}')
