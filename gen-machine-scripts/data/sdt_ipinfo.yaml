@@ -57,7 +57,7 @@ psu_ddr:
 axi_emc:
     device_type: memory
 
-psv_sbsauart:
+sbsauart:
     properties:
       compatible:
         OneOf:
@@ -67,6 +67,14 @@ psv_sbsauart:
               - arm,sbsa-uart
     device_type: serial
     baudrate_editable: y
+    earlycon: pl011,mmio32
+    console_prefix: ttyAMA
+    ip_name_aliases:
+        - psv_sbsauart
+        - psx_sbsauart
+    firmware_console_alias:
+        '0': pl011
+        '1': pl011_1
 
 psu_uart:
     properties:
@@ -81,6 +89,11 @@ psu_uart:
               - xlnx,xuartps
     device_type: serial
     baudrate_editable: y
+    earlycon: cdns,mmio32
+    console_prefix: ttyPS
+    firmware_console_alias:
+        '0': cadence
+        '1': cadence1
 
 axi_uartlite:
     properties:
@@ -91,7 +104,17 @@ axi_uartlite:
               - xlnx,axi-uartlite-2.0
               - xlnx,xps-uartlite-1.00.a
     device_type: serial
+    earlycon: uartlite,mmio32
+    console_prefix: ttyUL
     linux_console_file_name: ttyUL0
+
+axi_uart16550:
+    device_type: serial
+    console_prefix: ttyS
+
+mdm:
+    device_type: serial
+    console_prefix: ttyUL
 
 psu_ethernet:
     properties:

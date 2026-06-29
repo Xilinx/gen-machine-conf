@@ -338,6 +338,212 @@ SUBSYSTEM_BOOTMODE_<value>
     **Reference:** Zynq (UG585 "Flash-Devices-Master-Mode-Boot"), ZynqMP (UG1085 "Boot Modes"),
     Versal Gen1 (AM011 "Boot Modes and Interfaces"), Versal Gen2 (AM026 "Boot Mode and Interfaces").
 
+Serial Settings
+---------------
+
+The Serial Settings menu provides one serial console selection per software
+domain. A separate "stdin/stdout" choice is generated for each of the
+following domains, when present in the design:
+
+- **Linux/U-Boot** (always present)
+- **TF-A** (AArch64 processors only, depends on ``SUBSYSTEM_ARCH_AARCH64``)
+- **OP-TEE** (Cortex-A78 / Versal 2VE/2VM only)
+- **One choice per enabled multiconfig target**, gated on its
+  ``YOCTO_BBMC_<MC>`` enable symbol
+
+The list of selectable serial IPs is detected automatically from the System
+Device Tree (SDT). Each domain selects its console independently, so different
+domains may use different UARTs.
+
+Serial Console Resolution Flow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The console for a device-tree domain (Linux/U-Boot and each multiconfig
+target) is resolved from several sources. They are applied in the order below,
+so each later stage overrides the previous one (**last one wins**):
+
+.. code-block:: text
+
+   serial IPs detected from SDT ─┐
+                                 ▼
+   ┌───────────────────────────────────────────────────────────────────────┐
+   │  Kconfig: SUBSYSTEM_<domain>_SERIAL_<IP>_SELECT   (per domain)         │
+   │  domains: Linux/U-Boot · TF-A · OP-TEE · each multiconfig target       │
+   └───────────────────────────────────────────────────────────────────────┘
+                                 │
+              ┌──────────────────┴───────────────────┐
+              ▼                                       ▼
+       "From SDT" / "manual"                   a specific UART (<IP>)
+              │                                       │
+              │                                       ▼
+              │                     sdt_ipinfo.yaml lookup:
+              │                       console_prefix · earlycon
+              │                       firmware_console_alias · ip_name_aliases
+              │                                       │
+              │                                       ▼
+              │                     GenSerialChosenDtsi() builds
+              │                       <domain>-serial-chosen.dtsi  and
+              │                       merges it into the SDT via lopper
+              ▼                                       │
+   ┌───────────────────────────────────────────────────────────────────────┐
+   │  Priority 1: SDT /chosen node      Priority 2: serial-chosen overlay   │
+   │  (baseline, untouched)             (stdout-path / bootargs / console=) │
+   └───────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼  (overlay merged into base DTS)
+   ┌───────────────────────────────────────────────────────────────────────┐
+   │  Priority 3 (highest): Custom DTSI                                     │
+   │  CONFIG_YOCTO_BBMC_<MC>_DTSI  #include-d last via IncludeCustomDtsi()  │
+   │  a /chosen here overrides both the SDT and the Kconfig selection       │
+   └───────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼  final per-domain DTS
+   ┌───────────────────────────────────────────────────────────────────────┐
+   │  yocto_machine.SerialConsoleSettings()                                 │
+   │  • From SDT  → parse console= back from the DTS /chosen                │
+   │               (fallback: serial0 + SoC-default tty if none)           │
+   │  • explicit  → tty from IP type + selected baudrate → SERIAL_CONSOLES  │
+   │  • TF-A/OP-TEE → TFA_CONSOLE / OPTEE_CONSOLE (not SERIAL_CONSOLES)     │
+   └───────────────────────────────────────────────────────────────────────┘
+
+1. **SDT** ``/chosen`` **node** *(baseline)*
+   The console that ships in the System Device Tree. This is what is used when
+   the Kconfig selection is ``From SDT`` (the default).
+
+2. **Kconfig per-domain selection** ``SUBSYSTEM_<domain>_SERIAL_<IP>_SELECT``
+   When a specific UART is selected (i.e. not ``From SDT``/``manual``),
+   ``lopper_utils.GenSerialChosenDtsi`` generates a
+   ``<domain>-serial-chosen.dtsi`` overlay and merges it into the SDT with
+   lopper. The overlay rewrites the ``/chosen`` node for that domain:
+
+   - ``stdout-path`` → ``serial<N>:<baud>n8``
+   - ``bootargs`` → ``console=<tty><N>,<baud>`` (plus ``earlycon=...`` for
+     Linux only, when an earlycon and base address are known)
+   - for Zephyr, also ``zephyr,console`` / ``zephyr,shell-uart``
+
+   The tty prefix, earlycon, and TF-A/OP-TEE console tokens are looked up in
+   ``gen-machine-scripts/data/sdt_ipinfo.yaml`` (see the
+   `Serial metadata in sdt_ipinfo.yaml`_ section below). ``From SDT``/``manual``/unset
+   generate **no** overlay, leaving stage 1 in place.
+
+3. **Custom DTSI** ``CONFIG_YOCTO_BBMC_<MC>_DTSI`` *(highest priority)*
+   Any DTSI files listed for the domain are ``#include``-d into the final DTS
+   **after** the serial overlay (``lopper_utils.IncludeCustomDtsi``), so a
+   ``/chosen`` console set in a custom DTSI overrides both the SDT and the
+   Kconfig selection. The custom DTSI must be a regular include file, not an
+   overlay (``/plugin/;`` is rejected).
+
+Machine-configuration side (``yocto_machine.SerialConsoleSettings``):
+
+- For ``From SDT``, the console is parsed back out of the generated Linux DTS
+  ``/chosen`` node to populate ``SERIAL_CONSOLES``. If the DTS carries no
+  ``console=`` (e.g. ``stdout-path`` only), it falls back to ``serial0`` with
+  the SoC-default tty (``ttyPS0`` for Zynq/ZynqMP, ``ttyAMA0`` for Versal
+  family, ``ttyUL0`` for MicroBlaze-V) so the image always gets a login console.
+- For an explicit UART selection, the tty is derived from the IP type
+  (``axi_uartlite``/``mdm`` → ``ttyUL``, ``axi_uart16550`` → ``ttyS``,
+  ``sbsauart`` → ``ttyAMA``, otherwise ``ttyPS``) and the selected baudrate.
+- TF-A and OP-TEE consoles are written to the firmware recipe variables
+  (``TFA_CONSOLE`` / ``OPTEE_CONSOLE``) instead of ``SERIAL_CONSOLES``.
+
+Serial metadata in sdt_ipinfo.yaml
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The per-IP serial metadata used by the resolution flow lives in
+``gen-machine-scripts/data/sdt_ipinfo.yaml``. Each serial IP entry may define:
+
+- ``console_prefix`` — the Linux tty name (e.g. ``ttyPS``, ``ttyAMA``,
+  ``ttyUL``, ``ttyS``) used for ``console=`` bootargs and ``SERIAL_CONSOLES``.
+- ``earlycon`` — the kernel ``earlycon`` driver token (e.g. ``cdns,mmio32``,
+  ``pl011,mmio32``) added to the Linux bootargs.
+- ``firmware_console_alias`` — per-port (``0``/``1``) console token for TF-A
+  (e.g. ``cadence``, ``pl011``).
+- ``ip_name_aliases`` — SoC-specific node names that map to a canonical entry
+  (e.g. ``psv_sbsauart``/``psx_sbsauart`` → ``sbsauart``).
+
+SUBSYSTEM_SERIAL_<IP>_SELECT
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: bool (choice)
+:Default: ``SUBSYSTEM_SERIAL_FROM_SDT_SELECT``
+:Dependencies: ``SUBSYSTEM_PROCESSOR``
+:Description:
+    Selects the serial device used as the **Linux/U-Boot** stdin/stdout.
+    The choice lists one option per serial IP detected in the SDT, plus a
+    ``From SDT`` option.
+
+    - **From SDT** (default): use the console already defined in the SDT
+      ``/chosen`` node as-is. No console override is generated.
+    - **<serial IP>**: override the console to the selected UART. The
+      matching ``console=`` bootarg and ``SERIAL_CONSOLES`` entry are
+      generated from the IP's ``console_prefix`` in ``sdt_ipinfo.yaml``.
+
+SUBSYSTEM_SERIAL_IP_NAME
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: string (hidden)
+:Description:
+    Internal string holding the selected Linux/U-Boot serial IP name. It is
+    set from the active ``SUBSYSTEM_SERIAL_<IP>_SELECT`` option and consumed
+    by the machine configuration generators. ``From SDT`` produces no value
+    (no override).
+
+SUBSYSTEM_SERIAL_<IP>_BAUDRATE_<rate>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: bool (choice)
+:Default: ``SUBSYSTEM_SERIAL_<IP>_BAUDRATE_115200``
+:Dependencies: ``SUBSYSTEM_PROCESSOR``
+:Description:
+    Baudrate for the Linux/U-Boot serial console. One choice is generated per
+    detected serial IP. Supported rates are ``600``, ``9600``, ``28800``,
+    ``115200`` (default), ``230400``, ``460800`` and ``921600``. This setting
+    applies only to the U-Boot/Linux serial console.
+
+SUBSYSTEM_TF-A_SERIAL_<IP>_SELECT
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: bool (choice)
+:Default: First detected serial console
+:Dependencies: ``SUBSYSTEM_ARCH_AARCH64``
+:Description:
+    Selects the serial device used as the **TF-A** console. The choice lists
+    one option per serial IP detected in the SDT, plus a ``manual`` fallback.
+    Unlike the device-tree domains, TF-A has no ``/chosen`` node, so it
+    defaults to the first detected console.
+
+    - **<serial IP>**: use the selected UART. The TF-A console token
+      (e.g. ``cadence``, ``pl011``, ``dcc``) is resolved from the IP's
+      ``firmware_console_alias`` in ``sdt_ipinfo.yaml``.
+    - **manual**: do not override the console; use the TF-A recipe's own
+      default (settable via ``TFA_CONSOLE`` in ``local.conf``).
+
+SUBSYSTEM_OP-TEE_SERIAL_<IP>_SELECT
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: bool (choice)
+:Default: First detected serial console
+:Dependencies: ``SUBSYSTEM_ARCH_AARCH64`` (Cortex-A78 / Versal 2VE/2VM only)
+:Description:
+    Selects the serial device used as the **OP-TEE** console. Behaves like the
+    TF-A choice, but the console token is the serial port number (``0`` or
+    ``1``). Select ``manual`` to use the OP-TEE recipe's own default
+    (settable via ``OPTEE_CONSOLE`` in ``local.conf``).
+
+SUBSYSTEM_<MC>_SERIAL_<IP>_SELECT
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: bool (choice)
+:Default: ``SUBSYSTEM_<MC>_SERIAL_FROM_SDT_SELECT``
+:Dependencies: ``YOCTO_BBMC_<MC>``
+:Description:
+    Per-multiconfig-target serial console selection. One choice is generated
+    for each enabled multiconfig target, using a target-specific symbol infix
+    (``SUBSYSTEM_<MC>_SERIAL_...``) so it does not collide with the Linux
+    selection. Options and defaults match the Linux/U-Boot choice: ``From SDT``
+    (default) plus each detected serial IP. The selected IP name is exposed
+    via the hidden ``SUBSYSTEM_SERIAL_<MC>_IP_NAME`` string.
+
 Device Tree Settings
 ====================
 

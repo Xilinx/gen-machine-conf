@@ -192,6 +192,19 @@ def GenKconfigProj(args, system_conffile, hw_info, MCObject=None):
         Kconfig_BBMCTargets = ConvertMCTargetsToKconfig(
             bbmctargets, multiconfig_min)
 
+    # Generate the per-domain Serial Settings menu. This needs the multiconfig
+    # target list (known here) and the SDT serial IPs (from sys_hw_data.yaml).
+    # The menu is injected into the Subsystem Hardware Settings menu of
+    # Kconfig.syshw via the @@serialmenustr@@ placeholder.
+    import kconfig_syshw
+    Kconfig_SerialMenu = ''
+    syshw_file = os.path.join(args.output, 'sys_hw_data.yaml')
+    if os.path.exists(syshw_file) and 'proc_type' in hw_info:
+        Kconfig_SerialMenu = kconfig_syshw.GenSerialDomainsKconfig(
+            syshw_file, hw_info['proc_type'], bbmctargets)
+    common_utils.ReplaceStrFromFile(
+                Kconfig_syshw, '@@serialmenustr@@', Kconfig_SerialMenu)
+
     for Kconfig_file in Kconfig_files:
         common_utils.CopyFile(Kconfig_file, project_cfgdir)
         common_utils.ReplaceStrFromFile(

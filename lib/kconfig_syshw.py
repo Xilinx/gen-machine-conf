@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: MIT
 
 import sys
+import os
 import re
 import logging
 import common_utils
@@ -179,91 +180,176 @@ def GenConf_memory(IpsToAdd, slavesdict, proc_ipname, arch):
     return confstr
 
 
-def GenConf_serial(IpsToAdd, slavesdict, proc_ipname, arch):
-    ''' Generate Serial Info as Kconfig'''
-    confstr = '\nmenu "Serial Settings"\n'
-    serialconfstr = ''
-    serial_Kconf = 'SUBSYSTEM_SERIAL'
-    serialdict = {'microblaze_riscv': ['DTG'],
-                  'ps7_cortexa9': ['FSBL', 'DTG'],
-                  'psu_cortexa53': ['PMUFW', 'FSBL', 'TF-A', 'DTG'],
-                  'psv_cortexa72': ['PLM', 'TF-A', 'DTG'],
-                  'psx_cortexa78': ['PLM', 'TF-A', 'DTG'],
-                  'cortexa78': ['PLM', 'ASU', 'TF-A', 'OP-TEE', 'DTG']
-                  }
+def _SerialPortNum(slave):
+    ''' Return the port index ('0' or '1') encoded in the serial name. '''
+    nslave = slave.replace('_', '')
+    if re.search(r'(uart|serial)0', nslave):
+        return '0'
+    if re.search(r'(uart|serial)1', nslave):
+        return '1'
+    return ''
+
+
+def _GetSerialConsoleToken(domain_kind, slave, ip_name):
+    ''' Derive the console token for a serial slave.
+    For TF-A/OP-TEE the firmware expects an ip alias (cadence/pl011/dcc or
+    serial number); for the device-tree (Linux/baremetal) domains the token
+    is the serial slave name itself. The TF-A console aliases are read from
+    sdt_ipinfo.yaml ('firmware_console_alias' per serial IP). A serial IP may
+    report a SoC-specific ip_name (e.g. a versal-net psx_sbsauart node maps to
+    the psv_sbsauart entry); such variants are declared explicitly via the
+    'ip_name_aliases' list in the canonical sdt_ipinfo.yaml entry. '''
+    if domain_kind not in ('tfa', 'optee'):
+        return slave
+    entry = ipinfodata.get(ip_name) if ip_name else None
+    if not entry and ip_name:
+        for val in ipinfodata.values():
+            if not isinstance(val, dict) or val.get('device_type') != 'serial':
+                continue
+            if ip_name in (val.get('ip_name_aliases') or []):
+                entry = val
+                break
+    aliases = entry.get('firmware_console_alias') or {} if isinstance(entry, dict) else {}
+    if not aliases:
+        return 'dcc'
+    port = _SerialPortNum(slave)
+    if not port:
+        return slave
+    return port if domain_kind == 'optee' else aliases.get(port, slave)
+
+
+def _GenSerialChoice(label, depends, domain_kind, serial_ips, slaves_dict,
+                     select_sym_fmt, ipname_sym):
+    ''' Generate a single per-domain serial choice plus the hidden
+    <ipname_sym> string used by the machine conf generators.
+    select_sym_fmt is a '%s' template taking the upper-cased slave name so
+    that the legacy config symbol naming can be preserved per domain.
+    The default option depends on the domain kind:
+      - device-tree domains (Linux/baremetal) default to 'From SDT', meaning
+        the console defined in the SDT chosen node is used as-is;
+      - TF-A/OP-TEE have no chosen-node console, so they default to the first
+        detected serial console. A 'manual' option is still offered to fall
+        back to the firmware recipe's own default console.
+    'From SDT' and 'manual' emit no <ipname_sym> default (no override). '''
+    # (symbol token, display label) for each option in menu order, and the
+    # token that should be the choice default.
+    if domain_kind in ('tfa', 'optee'):
+        # Real serial IPs first, then a 'manual' fallback. Default to the
+        # first detected console.
+        serial_options = [(slave.upper(), slave) for slave in serial_ips]
+        serial_options.append(('MANUAL', 'manual'))
+        default_option = serial_ips[0].upper() if serial_ips else 'MANUAL'
+        extra_help = ('\tSelect \'manual\' to use the %s recipe\'s default '
+                      'console.\n' % label)
+    else:
+        # 'From SDT' first (default), then the real serial IPs.
+        serial_options = [('FROM_SDT', 'From SDT')]
+        serial_options += [(slave.upper(), slave) for slave in serial_ips]
+        default_option = 'FROM_SDT'
+        extra_help = ('\tSelect \'From SDT\' to use the console defined in '
+                      'the SDT chosen node.\n')
+
+    # Options that represent "no IP override" (use SDT / recipe default).
+    no_override_options = ('FROM_SDT', 'MANUAL')
+
+    confstr = '\nchoice\n'
+    confstr += '\tprompt "%s Serial stdin/stdout"\n' % label
+    if depends:
+        confstr += '\tdepends on %s\n' % depends
+    confstr += '\tdefault %s\n' % (select_sym_fmt % default_option)
+    confstr += '\thelp\n'
+    confstr += '\tSelect a serial device as the %s stdin/stdout.\n' % label
+    confstr += extra_help
+
+    ipname_str = '\nconfig %s\n\tstring\n' % ipname_sym
+    for option_key, option_label in serial_options:
+        select_sym = select_sym_fmt % option_key
+        confstr += '\nconfig %s\n\tbool "%s"\n' % (select_sym, option_label)
+        if option_key in no_override_options:
+            continue
+        console_token = _GetSerialConsoleToken(
+            domain_kind, option_label,
+            slaves_dict.get(option_label, {}).get('ip_name'))
+        ipname_str += '\tdefault %s if %s\n' % (console_token, select_sym)
+    confstr += '\nendchoice\n'
+    confstr += ipname_str
+    return confstr
+
+
+def _GenBaudrateChoice(slave, def_baudrates):
+    ''' Generate the baudrate choice for a single (Linux) serial IP. '''
+    confstr = '\nchoice\n'
+    confstr += '\tprompt "System stdin/stdout baudrate for %s"\n' % slave
+    confstr += '\tdefault SUBSYSTEM_SERIAL_%s_BAUDRATE_115200\n' % slave.upper()
+    confstr += '\thelp\n'
+    confstr += '\tBaudrate settings for serial Ip %s\n' % slave
+    confstr += '\tThe Baudrate setting applies only for U-boot/Linux serial Ip\n'
+    for brate in def_baudrates:
+        confstr += '\nconfig SUBSYSTEM_SERIAL_%s_BAUDRATE_%s\n' % (
+            slave.upper(), brate)
+        confstr += '\tbool "%s"\n' % brate
+    confstr += '\nendchoice\n'
+    return confstr
+
+
+def GenSerialDomainsKconfig(syshw_file, proc_type, bbmctargets):
+    ''' Generate the per-domain Serial Settings menu.
+    One serial choice dropdown is created for each domain (Linux, TF-A,
+    OP-TEE and every enabled multiconfig target). The default for each
+    domain is derived from the SDT serial IPs; the visibility of each
+    multiconfig domain is gated on its YOCTO_BBMC_<MC> enable symbol.
+    The Linux/TF-A/OP-TEE domains reuse the legacy config symbol names so
+    that existing consumer scripts keep working unchanged. '''
+    global ipinfodata
+    if 'ipinfodata' not in globals():
+        ipinfo_file = os.path.join(
+            project_config.GenMachineScriptsPath(), 'data', 'sdt_ipinfo.yaml')
+        ipinfodata = yaml_utils.ReadYaml(ipinfo_file)
+    hwyamldata = yaml_utils.ReadYaml(syshw_file)
+    procdata = hwyamldata.get('processor', {})
+    if proc_type not in procdata:
+        return ''
+    arch = procdata[proc_type].get('arch')
+    proc_ipname = procdata[proc_type].get('ip_name')
+    slaves_dict = procdata[proc_type].get('slaves', {})
+    serial_ips = [re.sub('_bankless$', '', slave) for slave in slaves_dict
+                  if slaves_dict[slave].get('device_type') == 'serial']
+    if not serial_ips:
+        return ''
+
     def_baudrates = ['600', '9600', '28800',
                      '115200', '230400', '460800', '921600']
-    for comp in serialdict.get(proc_ipname, ''):
-        confstr += '\nchoice\n'
-        confstr += '\tprompt "%s Serial stdin/stdout"\n' % (
-                'U-boot/Linux' if comp == 'DTG' else comp)
-        confstr += '\thelp\n'
-        confstr += '\tSelect a serial as the %s\'s stdin,stdout.\n' % (
-            'U-boot and Linux' if comp == 'DTG' else comp)
-        confstr += '\tIf you select \'manual\', you will need to add this variable\n'
-        if comp == 'TF-A':
-            confstr += '\tTFA_CONSOLE:forcevariable = "<serial_ipname>" in local.conf\n'
-        elif comp == 'OP-TEE':
-            confstr += '\tOPTEE_CONSOLE:forcevariable = "<serial_number>" in local.conf\n'
-        if comp == 'DTG':
-            serialconfstr += '\nconfig %s_IP_NAME\n' % (
-                serial_Kconf)
+
+    # Domains as (label, depends, domain_kind, config_infix). config_infix is
+    # the config symbol infix: '' keeps the legacy Linux 'SUBSYSTEM_SERIAL_'
+    # names; others use 'SUBSYSTEM_<config_infix>_SERIAL_' so they don't
+    # collide with the Linux read.
+    domains = [('Linux/U-Boot', '', 'dtg', '')]
+    if arch == 'aarch64':
+        domains.append(('TF-A', 'SUBSYSTEM_ARCH_AARCH64', 'tfa', 'TF-A'))
+    if proc_ipname == 'cortexa78':
+        domains.append(('OP-TEE', 'SUBSYSTEM_ARCH_AARCH64', 'optee', 'OP-TEE'))
+    for target in bbmctargets:
+        config_infix = target.upper().replace('-', '_')
+        domains.append((target, 'YOCTO_BBMC_%s' % config_infix, 'dtg',
+                        config_infix))
+
+    confstr = '\nmenu "Serial Settings"\n'
+    # Emit all per-domain serial console dropdowns first so they stay
+    # grouped together in the menu.
+    for label, depends, domain_kind, config_infix in domains:
+        if config_infix:
+            select_sym_fmt = 'SUBSYSTEM_%s_SERIAL_%%s_SELECT' % config_infix
+            ipname_sym = 'SUBSYSTEM_SERIAL_%s_IP_NAME' % config_infix
         else:
-            serialconfstr += '\nconfig %s_%s_IP_NAME\n' % (
-                serial_Kconf, comp.upper())
-        serialconfstr += '\tstring\n'
-        for slave in IpsToAdd + ['manual']:
-            if comp in ['PLM', 'PMUFW'] and re.search(
-                    r'.*coresight.*', slave.replace('_', '')):
-                # coresight ip is not supported for plm and pmufw
-                # so skipping in displaying menuconfig
-                continue
-            confstr += '\nconfig SUBSYSTEM_%sSERIAL_%s_SELECT\n' % (
-                '%s_' % comp if comp != 'DTG' else '', slave.upper())
-            confstr += '\tbool "%s"\n' % slave
-            if slave == 'manual':
-                continue
-            serialconsole = slave
-            if comp in ['TF-A', 'OP-TEE']:
-                ip_name = slavesdict[slave].get('ip_name')
-                if ip_name == 'psu_uart':
-                    if re.search(r'.*uart0.*', slave.replace('_', '')) or \
-                            re.search(r'.*serial0.*', slave.replace('_', '')):
-                        serialconsole = 'cadence' if comp == 'TF-A' else '0'
-                    elif re.search(r'.*uart1.*', slave.replace('_', '')) or \
-                            re.search(r'.*serial1.*', slave.replace('_', '')):
-                        serialconsole = 'cadence1' if comp == 'TF-A' else '1'
-                elif ip_name in ['sbsauart', 'psv_sbsauart', 'psx_sbsauart']:
-                    if re.search(r'.*uart0.*', slave.replace('_', '')) or \
-                            re.search(r'.*serial0.*', slave.replace('_', '')):
-                        serialconsole = 'pl011' if comp == 'TF-A' else '0'
-                    elif re.search(r'.*uart1.*', slave.replace('_', '')) or \
-                            re.search(r'.*serial1.*', slave.replace('_', '')):
-                        serialconsole = 'pl011_1' if comp == 'TF-A' else '1'
-                else:
-                    serialconsole = 'dcc'
-            serialconfstr += '\tdefault %s if SUBSYSTEM_%sSERIAL_%s_SELECT\n' % (
-                serialconsole, '%s_' % comp if comp != 'DTG' else '', slave.upper())
-
-        confstr += '\nendchoice\n'
-
-    # Baudrate settings
-    for slave in IpsToAdd:
-        confstr += '\nchoice\n'
-        confstr += '\tprompt "System stdin/stdout baudrate for %s"\n' % slave
-        confstr += '\tdefault %s_%s_BAUDRATE_115200\n' % (
-            serial_Kconf, slave.upper())
-        confstr += '\thelp\n'
-        confstr += '\tBaudrate settings for serial Ip %s\n' % slave
-        confstr += '\tThe Baudrate setting applies only for U-boot/Linux serial Ip\n'
-        for baudrate in def_baudrates:
-            confstr += '\nconfig %s_%s_BAUDRATE_%s\n' % (
-                serial_Kconf, slave.upper(), baudrate)
-            confstr += '\tbool "%s"\n' % baudrate
-
-        confstr += '\nendchoice\n'
-
-    confstr += serialconfstr
+            select_sym_fmt = 'SUBSYSTEM_SERIAL_%s_SELECT'
+            ipname_sym = 'SUBSYSTEM_SERIAL_IP_NAME'
+        confstr += _GenSerialChoice(label, depends, domain_kind, serial_ips,
+                                    slaves_dict, select_sym_fmt, ipname_sym)
+    # Baudrate applies only to the Linux/U-Boot serial console; place it
+    # after all the serial dropdowns.
+    for slave in serial_ips:
+        confstr += _GenBaudrateChoice(slave, def_baudrates)
     confstr += '\nendmenu\n'
 
     return confstr
@@ -455,7 +541,7 @@ def GenConf_bootmodes(proc):
 # Supported Device Types to create Kconfig file
 devicetypes = {
     'memory': {'exclude': ['psu_ocm']},
-    'serial': {}, 'flash': {}, 'sd': {}
+    'flash': {}, 'sd': {}
 }
 
 
@@ -488,5 +574,8 @@ def GenKconfigSysHW(hwyamlinfile, ipinfofile, outfile):
                                     proc_ipname, arch)' % (devtype))
         KconfStr += GenConf_bootmodes(proc)
         KconfStr += '\nendif\n'
+    # Placeholder for the per-domain Serial Settings menu. It is filled in by
+    # project_config.GenKconfigProj where the multiconfig target list is known.
+    KconfStr += '\n@@serialmenustr@@\n'
     KconfStr += '\nendmenu\n'
     common_utils.AddStrToFile(outfile, KconfStr)

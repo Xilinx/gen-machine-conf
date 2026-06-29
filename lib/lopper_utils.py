@@ -9,9 +9,129 @@
 
 import logging
 import os
+import re
 import common_utils
+import yaml_utils
 
 logger = logging.getLogger('Gen-Machineconf')
+
+
+def _GetSerialConsoleInfo(ip_name, ipinfo_file):
+    ''' Return (earlycon, tty_prefix) for a serial IP from sdt_ipinfo.yaml.
+    A serial IP may report a SoC-specific ip_name (e.g. a versal-net
+    psx_sbsauart node maps to the canonical sbsauart entry); such variants
+    are declared explicitly via the 'ip_name_aliases' list in the canonical
+    entry. Defaults to ('', 'ttyPS') when the IP is unknown. '''
+    ipinfo = yaml_utils.ReadYaml(ipinfo_file) if ipinfo_file else {}
+    entry = ipinfo.get(ip_name) if ip_name else None
+    if not entry and ip_name:
+        for val in ipinfo.values():
+            if not isinstance(val, dict) or val.get('device_type') != 'serial':
+                continue
+            if ip_name in (val.get('ip_name_aliases') or []):
+                entry = val
+                break
+    if not isinstance(entry, dict):
+        return ('', 'ttyPS')
+    return (entry.get('earlycon', ''), entry.get('console_prefix', 'ttyPS'))
+
+
+def _GetSerialSelection(mcname, system_conffile):
+    ''' Return the serial choice value selected for the given domain.
+    Linux/U-Boot uses the legacy 'CONFIG_SUBSYSTEM_SERIAL_' names; every other
+    multiconfig domain uses 'CONFIG_SUBSYSTEM_<MC>_SERIAL_'. The returned value
+    is the choice token (e.g. 'SERIAL0', 'PSV_SBSAUART_0', 'FROM_SDT'). '''
+    if mcname in ('', 'linux'):
+        prefix = 'CONFIG_SUBSYSTEM_SERIAL_'
+    else:
+        prefix = 'CONFIG_SUBSYSTEM_%s_SERIAL_' % mcname.upper().replace('-', '_')
+    return common_utils.GetConfigValue(prefix, system_conffile, 'choice',
+                                       '_SELECT=y')
+
+
+def GenSerialChosenDtsi(outdir, dts_path, mcname, system_conffile, syshw_file,
+                        ipinfo_file, hw_file, is_linux=False, is_zephyr=False):
+    ''' Generate a per-domain '<mcname>-serial-chosen.dtsi' overlay that sets
+    the /chosen serial console for the user-selected UART, merge it into the
+    SDT using lopper and return the path to the resulting base DTS.
+
+    When no override is needed (selection is 'From SDT'/'manual'/unset, or the
+    slave can not be resolved) the original hw_file is returned unchanged. '''
+    if not mcname:
+        mcname = 'linux'
+    selection = _GetSerialSelection(mcname, system_conffile)
+    # 'From SDT'/'manual'/unset -> leave the SDT chosen node untouched.
+    if not selection or selection in ('FROM_SDT', 'MANUAL'):
+        return hw_file
+
+    # Resolve the selected serial slave from the syshw data, stopping at the
+    # first match instead of building a full slave map.
+    serial_slave = selection.lower()
+    serial_data = None
+    hwdata = yaml_utils.ReadYaml(syshw_file)
+    for proc_data in hwdata.get('processor', {}).values():
+        for slave_name, slave_data in proc_data.get('slaves', {}).items():
+            if slave_data.get('device_type') == 'serial' and \
+                    re.sub('_bankless$', '', slave_name) == serial_slave:
+                serial_data = slave_data
+                break
+        if serial_data:
+            break
+
+    if not serial_data:
+        logger.warning('No serial slave %s in %s; skipping chosen dtsi for %s'
+                       % (serial_slave, syshw_file, mcname))
+        return hw_file
+
+    ip_name = serial_data.get('ip_name', '')
+    baseaddr = serial_data.get('baseaddr', '')
+    # earlycon expects a hex address; normalize int/decimal-string values.
+    if baseaddr != '':
+        try:
+            baseaddr = hex(int(str(baseaddr), 0))
+        except (ValueError, TypeError):
+            pass
+    # Serial index used for the 'serialN' alias and the 'ttyXXN' device.
+    serial_digits = re.findall('[0-9]+', serial_slave)
+    serial_index = serial_digits[-1] if serial_digits else '0'
+    # Only the Linux/U-Boot domain carries a baudrate choice; default 115200.
+    baudrate = common_utils.GetConfigValue(
+        'CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_' % selection, system_conffile,
+        'choice', '=y') or '115200'
+    earlycon, tty_prefix = _GetSerialConsoleInfo(ip_name, ipinfo_file)
+    serial_alias = 'serial%s' % serial_index
+    # Single console definition reused by stdout-path and bootargs so every
+    # chosen property stays in sync with the selected UART.
+    console = 'console=%s%s,%s' % (tty_prefix, serial_index, baudrate)
+
+    chosen_lines = ['/ {', '\tchosen {',
+                    '\t\tstdout-path = "%s:%sn8";' % (serial_alias, baudrate)]
+    # Replace the SDT-inherited bootargs with one that matches the selected
+    # console. earlycon is a Linux-only kernel parameter; non-Linux domains
+    # get just the console= so their /chosen node stays consistent instead of
+    # carrying the stale SDT bootargs.
+    bootargs = ''
+    if is_linux and earlycon and baseaddr:
+        bootargs = 'earlycon=%s,%s ' % (earlycon, baseaddr)
+    bootargs += console
+    chosen_lines.append('\t\tbootargs = "%s";' % bootargs)
+    if is_zephyr:
+        chosen_lines.append('\t\tzephyr,console = "%s";' % serial_alias)
+        chosen_lines.append('\t\tzephyr,shell-uart = "%s";' % serial_alias)
+    chosen_lines += ['\t};', '};', '']
+    chosen = '\n'.join(chosen_lines)
+
+    dtsi_path = os.path.join(outdir, '%s-serial-chosen.dtsi' % mcname)
+    common_utils.AddStrToFile(dtsi_path, chosen, mode='w')
+    logger.debug('Generated serial chosen dtsi %s for %s' % (dtsi_path, mcname))
+
+    # Merge the chosen dtsi into the SDT using lopper and return the new base.
+    serial_dts_file = os.path.join(outdir, '%s-serial.dts' % mcname)
+    logger.debug('Generating DTS %s with serial chosen dtsi %s'
+                 % (serial_dts_file, dtsi_path))
+    RunLopperUsingDomainFile([dtsi_path], outdir, dts_path, hw_file,
+                             serial_dts_file)
+    return serial_dts_file
 
 
 def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
@@ -67,7 +187,7 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
     """
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     domain_yamls_str = ' -i '.join(domain_yamls)
-    domain_args = "-x '*.yaml'"
+    domain_args = '--auto'
     # Append all the yaml files to SDT
     yaml_dts_file = dts_file.replace('.dts', '-yaml.dts')
     logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {domain_yamls}')

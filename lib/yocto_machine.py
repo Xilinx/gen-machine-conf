@@ -393,11 +393,58 @@ def YoctoMCFimwareConfigs(args, arch, system_conffile, req_conf_file, MultiConfD
 
     return machine_override_string
 
-def SerialConsoleSettings(system_conffile, sdt=False):
+def GetSerialConsoleFromDts(config_dtfile):
+    ''' Parse the console (tty device and baudrate) from the /chosen node of a
+    lopper generated Linux DTS. Used for the 'From SDT' serial selection where
+    the console is defined by the SDT itself instead of a user selection.
+    Returns (serial_console, baudrate) where serial_console is '<baud>;<tty><n>'
+    or ('', '') when it cannot be determined. '''
+    if not config_dtfile or not os.path.isfile(config_dtfile):
+        return '', ''
+    try:
+        with open(config_dtfile, 'r') as dts_data:
+            dts_content = dts_data.read()
+    except OSError:
+        return '', ''
+    # Restrict the search to the /chosen node so a stray 'console=' elsewhere
+    # in the DTS can not produce a false match.
+    chosen_match = re.search(r'chosen\s*\{(.*?)\}', dts_content, re.DOTALL)
+    chosen_text = chosen_match.group(1) if chosen_match else ''
+    # bootargs carries the resolved tty device name and baudrate
+    # Ex: bootargs = "... console=ttyAMA0,115200 ...";
+    # The baudrate may be omitted (Ex: console=ttyAMA0); default to 115200.
+    console_match = re.search(r'console=(tty\w+?)(\d+)(?:,(\d+))?', chosen_text)
+    if console_match:
+        tty, serial_no, baudrate = console_match.groups()
+        baudrate = baudrate or '115200'
+        return '%s;%s%s' % (baudrate, tty, serial_no), baudrate
+    return '', ''
+
+
+def SerialConsoleSettings(system_conffile, sdt=False, config_dtfile='', soc_family=''):
     serialname = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_', system_conffile,
                                              'choice', '_SELECT=y')
     serial_console = ''
     baudrate = ''
+    if serialname == 'FROM_SDT':
+        # Console is defined by the SDT, derive it from the generated Linux DTS
+        serial_console, baudrate = GetSerialConsoleFromDts(config_dtfile)
+        if not serial_console:
+            # The DTS carried no console= (e.g. stdout-path only). Fall back to
+            # serial0 with the SoC-default tty so the image still gets a login
+            # console instead of none. The tty prefix is SoC-determined.
+            soc_tty = {'zynq': 'ttyPS0', 'zynqmp': 'ttyPS0',
+                       'versal': 'ttyAMA0', 'versal-net': 'ttyAMA0',
+                       'versal-2ve-2vm': 'ttyAMA0',
+                       'microblaze-v': 'ttyUL0'}
+            tty = soc_tty.get(soc_family, 'ttyPS0')
+            baudrate = '115200'
+            serial_console = '%s;%s' % (baudrate, tty)
+            logger.warning('Serial set to "From SDT" but no console could be '
+                           'derived from the generated Linux DTS (%s); '
+                           'defaulting to serial0 (%s).'
+                           % (config_dtfile, tty))
+        return serial_console, baudrate
     if serialname and serialname != 'MANUAL':
         serialipname = GetIPProperty(serialname, system_conffile)
         baudrate = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_'
@@ -456,7 +503,9 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
 
     machine_override_string += '\nDTB_FILE_PATH ?= "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
 
-    serial_console, baudrate = SerialConsoleSettings(system_conffile, sdt=True)
+    serial_console, baudrate = SerialConsoleSettings(system_conffile, sdt=True,
+                                                     config_dtfile=config_dtfile,
+                                                     soc_family=args.soc_family)
     if serial_console:
         machine_override_string += '\n# Serial Console Settings\n'
         machine_override_string += 'SERIAL_CONSOLES ?= "%s"\n' % serial_console
