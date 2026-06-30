@@ -6,7 +6,8 @@
 gen-machine-conf
 ----------------
 
-This repo provides support to generate machine conf files for the given HW file.
+This repo provides support to generate machine conf files for the given HW
+file.
 
 gen-machine-conf is a tool for creating [Yocto project](https://www.yoctoproject.org/)
 [machine configurations](https://docs.yoctoproject.org/ref-manual/variables.html#term-MACHINE)
@@ -31,6 +32,198 @@ See firmware recipe automation in [Firmware Recipe Generation](docs/firmware_rec
 See functional architecture diagram in [Gen-Machine-Conf Functional Diagram](docs/functional_diagram.rst)
 
 See detailed workflow flowcharts in [Gen-Machine-Conf Flowcharts](docs/flowcharts.rst)
+
+Gen-Machine-Conf Scope
+----------------------
+
+### What gen-machine-conf Does
+
+#### SDT-Based Configuration Generation
+
+Parses System Device Tree (SDT) input, typically a directory containing
+`system-top.dts`, and generates Yocto-compatible machine configuration under
+the configured build `conf` directory, for example:
+
+```text
+conf/machine/<machine>.conf
+```
+
+#### Lopper-Based Transformation Engine
+
+Uses Lopper and LOP assist files to process SDT input and transform hardware
+description data into Yocto configuration data. The transformation is
+rule-driven and uses Lopper for CPU/domain discovery, device tree generation,
+PL overlay handling, and selected hardware queries.
+
+#### Hardware Mapping
+
+Extracts hardware information such as CPU topology, memory, selected
+peripherals, buses, interrupt configuration, and platform identifiers from the
+hardware description. This information is mapped into generated Kconfig,
+machine configuration, multiconfig, and device-tree outputs.
+
+#### Platform-Specific Configuration Generation
+
+Generates platform-dependent Yocto variables and settings such as:
+
+- `MACHINE`
+- `SOC_FAMILY` and `SOC_VARIANT`
+- `MACHINEOVERRIDES`
+- `DEFAULTTUNE`
+- boot firmware dependencies for supported platforms
+- architecture, device-tree, QEMU, serial console, and image-related settings
+
+#### Yocto Build Integration
+
+Creates configuration files that are intended to integrate with Yocto
+workflows. Depending on the selected options, this includes machine
+configuration, multiconfig files, machine include files, and build
+configuration updates.
+
+#### Default Configuration Provisioning
+
+Provides baseline Kconfig and machine configuration defaults for supported
+platforms. These defaults reduce the amount of manual setup needed for common
+AMD SoC and FPGA workflows.
+
+#### Generated Device Tree Output
+
+For SDT-based flows, generates domain-specific DTS/DTSI outputs derived from
+the SDT. These outputs can include Linux device trees, bare-metal or RTOS
+domain device trees, Zephyr board device trees, and PL overlay device-tree
+fragments when overlay generation is requested.
+
+#### Layer and Recipe Compatibility
+
+Emits configuration intended to work with supported Yocto layers and existing
+recipes, especially the meta-xilinx layer stack documented by this repository.
+This compatibility is configuration generation only; it is not a replacement
+for a successful BitBake build or runtime validation.
+
+#### Repeatable Generated Outputs
+
+Regenerates its managed outputs from the current hardware description,
+templates, command-line options, and Kconfig selections. Generated machine and
+DTS outputs should be treated as tool-owned files.
+
+The tool does not perform a clean-tree reconciliation. If the same output
+directory is reused, project configuration can be reused and files from older
+runs can remain if they are no longer referenced by the current configuration.
+
+### What gen-machine-conf Does Not Do
+
+#### No Persistence of Manual Changes in Generated Files
+
+Manual edits to generated files are not a supported customization mechanism.
+Re-running the tool can overwrite tool-owned files such as:
+
+- `conf/machine/<machine>.conf`
+- generated DTS/DTSI files under `conf/dts`
+- generated multiconfig files
+- generated machine include files
+
+Keep custom changes outside generated files.
+
+#### No Automatic Merge of User Customizations
+
+The tool does not automatically merge manual edits back into regenerated
+outputs. Use supported extension points instead, such as:
+
+- `system-user.dtsi` or other custom DTSI files selected through Kconfig or
+  template YAML
+- Yocto `.bbappend` files
+- machine overrides supplied through template YAML
+- command-line `--add-config` and related options
+
+#### No General Recipe or Layer Generation
+
+The `gen-machine-conf` command does not create arbitrary Yocto recipes, layers,
+applications, packages, or image recipes.
+
+This repository also provides a separate `create-fw-recipe` helper for
+packaging generated PL overlay artifacts into Yocto firmware recipe content.
+That helper is intentionally separate from the main machine-configuration
+generation flow.
+
+#### No Full SDT Semantic Validation
+
+The tool performs basic input handling, such as checking that the hardware
+description path exists and identifying supported input types. It does not
+prove that the SDT is complete, semantically correct, or suitable for the
+intended board, operating system, or runtime use case.
+
+#### No Build or Runtime Validation
+
+The tool does not verify:
+
+- BitBake build success
+- generated image bootability
+- kernel boot
+- driver probing or functionality
+- firmware behavior
+- runtime peripheral behavior
+
+These checks must be handled by the user's build, boot, and validation process.
+
+#### No Guarantee for Unsupported or Non-Standard Platforms
+
+Support depends on the platform family, processor type, Lopper support,
+available assist files, and Yocto layer support. Custom or unsupported hardware
+configurations can require additional templates, Kconfig settings, custom DTSI
+files, Yocto metadata, or code changes.
+
+#### No Incremental Update Mechanism
+
+Always regenerates full outputs. It does not perform selective updates or
+merge manual edits back into generated files.
+
+#### No Full Platform Enablement
+
+Does not handle complete board bring-up work such as:
+
+- U-Boot, TF-A, PLM, PSM, FSBL, or other firmware validation
+- image packaging policy
+- secure boot policy
+- board-level runtime testing
+
+#### No Dependency or Image Composition Management
+
+The main command does not manage complete image composition. It does not own:
+
+- package selection policy
+- image recipe design
+- `IMAGE_FEATURES` policy
+- application dependency resolution
+- product-specific package manifests
+
+#### No Awareness of External or Previous Manual Changes
+
+The tool does not track external edits, previous generated content, or manual
+changes made outside its supported input mechanisms. Treat generated outputs as
+replaceable and keep persistent customizations in source-controlled templates,
+custom DTSI files, recipes, `.bbappend` files, or layer metadata.
+
+### Re-Run Behavior Summary
+
+#### Overwritten Files
+
+These files are generated and can be overwritten on later runs:
+
+- `conf/machine/<machine>.conf`
+- auto-generated `.dts` and `.dtsi` files under `conf/dts`
+- generated multiconfig files
+- generated machine include files
+
+#### Persistent Customization Locations
+
+Keep persistent user changes in supported inputs or external metadata:
+
+- template YAML files
+- `system-user.dtsi` or other custom DTSI files referenced through Kconfig or
+  template YAML
+- Yocto `.bbappend` files
+- user layer recipes and classes
+- command-line or template-provided machine overrides
 
 Maintainers, Patches/Submissions, Community
 -------------------------------------------
