@@ -125,6 +125,18 @@ def ReadYaml(yamlfile):
             raise Exception(exc)
 
 
+def WriteYaml(yamlfile, data):
+    '''Write the given data as YAML to yamlfile. Key insertion order is
+    preserved (sort_keys=False) so round-tripped data such as the CPU info
+    dictionary keeps its original SDT ordering.'''
+    with open(yamlfile, 'w') as yaml_fd:
+        try:
+            yaml.safe_dump(data, yaml_fd, default_flow_style=False,
+                           sort_keys=False)
+        except yaml.YAMLError as exc:
+            raise Exception(exc)
+
+
 def CleanupEscapes(obj):
     '''Recursively removes backslash escape sequences followed by any
     whitespace, tab, or newline characters from strings within the given object.
