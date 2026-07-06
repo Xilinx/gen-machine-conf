@@ -124,7 +124,10 @@ class GenerateMultiConfigFiles():
             'microblaze-v' : { 'board' : 'mbv32' },
             'versal' : { 'board' : 'versal_rpu'},
             'versal-net' : { 'board' : 'versalnet_rpu'},
-            'versal-2ve-2vm' : { 'board' : 'versal2_rpu'}
+            'versal-2ve-2vm' : { 'board' : 'versal2_rpu'},
+            'versal-apu' : { 'board' : 'versal_apu'},
+            'versal-net-apu' : { 'board' : 'versalnet_apu'},
+            'versal-2ve-2vm-apu' : { 'board' : 'versal2_apu'}
             }
         distro = 'amd-zephyr'
         ZephyrVars = '# Zephyr RTOS settings.\n'
@@ -207,16 +210,17 @@ class GenerateMultiConfigFiles():
                     elif distro.startswith('freertos'):
                         distro = 'xilinx-freertos'
                     elif distro.startswith('zephyr'):
-                        mc_target = self.args.soc_family
-                        if self.args.soc_family == 'versal' and self.args.soc_variant == 'net':
-                            mc_target += '-net'
-                        if cpu == 'arm,cortex-a72':
-                            # Keep A72 board unpinned by default; user can override ZEPHYR_BOARD.
-                            mc_target = ''
                         if cpu.startswith('xlnx,microblaze-riscv'):
                             McExtraVars += '#Risc-V Tune features\n'
                             McExtraVars += 'require conf/machine/include/riscv/tune-riscv.inc\n'
                             mc_target = 'microblaze-v'
+                        else:
+                            mc_target = self.args.soc_family
+                            if self.args.soc_family == 'versal' and self.args.soc_variant == 'net':
+                                mc_target += '-net'
+                            if cpu in ['arm,cortex-a72', 'arm,cortex-a78']:
+                                # Cortex-A APU uses the aarch64 *_apu Zephyr board.
+                                mc_target += '-apu'
                         distro, ExtraVars = self.ZephyrConfigurations(mc_target)
                         McExtraVars += ExtraVars
 

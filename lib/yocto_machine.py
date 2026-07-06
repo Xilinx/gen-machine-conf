@@ -523,7 +523,7 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
         req_conf_file
 
     # Add QEMU memory configuration if applicable
-    qemu_memory = GetQemuMemCfg(args.output, args.dts_path, args.hw_file)
+    qemu_memory = GetQemuMemCfg(args.work, args.dts_path, args.hw_file)
     if qemu_memory:
         machine_override_string += '\n# QEMU Memory Configuration\n'
         machine_override_string += qemu_memory
