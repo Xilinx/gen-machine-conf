@@ -24,7 +24,7 @@ gen-machine-conf usage
                           [--soc-family {microblaze-v,zynq,zynqmp,versal,versal-2ve-2vm}]
                           [--soc-variant SOC_VARIANT] [--machine-name MACHINE]
                           [-c <config_dir>] [-r REQUIRE_MACHINE] [-O MACHINE_OVERRIDES] [--output OUTPUT] [--native-sysroot NATIVE_SYSROOT]
-                          [--menuconfig] [--add-config [CONFIG_<macro>=y]] [-D]
+                          [--menuconfig] [--add-config [CONFIG_<macro>=y]] [-D] [--force]
                           [-h] [-v]
                           <subcommand> ...
 
@@ -56,6 +56,7 @@ gen-machine-conf usage
     --add-config [CONFIG_<macro>=y]
                           Specify config macro or file containing config macros to be added on top of default configs
     -D, --debug           Enable debug output
+    --force               Force regenerate all configuration files, ignoring the cached change-detection hashes
     -h, --help            show this help message and exit
     -v, --version         show version information and exit
 
@@ -112,3 +113,47 @@ configuration used by ``runqemu``.
   When using gen-machine-conf in Yocto the SDT builds
   --soc-family arguments is not mandatory as the needed information
   is provided by the system device tree.
+
+Output Directory Layout
+-----------------------
+
+Persistent, user-facing state is kept at the root of the output directory,
+while transient scratch is contained in a dedicated ``work/`` subdirectory:
+
+- Persistent (output root): the generated project ``config``,
+  ``configs/Kconfig*``, ``sys_hw_data.yaml``, the generated device trees under
+  ``dts_path``, the cached hardware-derived platform info (``hw_info.yaml``)
+  and the change-detection hashes (``.statistics``).
+- Scratch (``<output>/work``): lopper byproducts and transient DTS/DTSI/conf
+  files generated while parsing the System Device Tree. These are throwaway
+  and safe to delete between runs.
+
+Re-Run and Change Detection
+---------------------------
+
+When the same output directory is reused, gen-machine-conf skips regenerating
+the configuration when none of its tracked inputs have changed. It records a
+content hash of each tracked input under ``<output>/.statistics`` and compares
+against it on the next run. The tracked inputs are:
+
+- the hardware description (system device-tree)
+- the generated project ``config``
+- the template YAML
+- domain files (``CONFIG_YOCTO_MC_DOMAIN_FILEPATH``)
+- custom DTSI files referenced through Kconfig
+
+When nothing changed, the tool logs that it is skipping regeneration and
+reuses the cached hardware-derived platform info (``<output>/hw_info.yaml``) to
+avoid re-running the expensive lopper queries. PDI/bitstream, ELF and psu_init
+inputs are not content-tracked because only their paths, not their content, are
+embedded into the generated output.
+
+Use ``--force`` to ignore the cached hashes and regenerate all configuration
+files from scratch.
+
+.. note::
+
+  These files are generated and can be overwritten on later runs:
+  ``conf/machine/<machine>.conf``, the auto-generated ``.dts`` and ``.dtsi``
+  files under ``conf/dts``, the generated multiconfig files and the generated
+  machine include files.
