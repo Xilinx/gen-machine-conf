@@ -161,7 +161,8 @@ def GenKconfigProj(args, system_conffile, hw_info, MCObject=None):
     if not os.path.isfile(Kconfig_syshw):
         raise Exception('%s is not found in tool' % Kconfig_syshw)
 
-    if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file):
+    if common_utils.FileChanged(args.output, 'HW_FILE', args.hw_file):
+        common_utils.CommitFileHash(args.output, 'HW_FILE', args.hw_file)
         # When multiple SDT files configured with same memory ip with different
         # size offsets mconf/conf will use the old configs instead of new
         # to fix that removing old MEMORY related configs from sysconfig
@@ -317,6 +318,44 @@ def PrintSystemConfiguration(args, model, device_id, cpu_info_dict=None):
                 cpu, _cpu.replace(',', ' '),
                 cpu_info_dict[cpu].get('core')))
 
+def GetFilesToTrack(args, system_conffile):
+    '''Single source of truth for every input whose *content* affects the
+    generated output. Returns a mapping of .statistics macro -> list of paths,
+    used both for change detection (AnyFileChanged) and for recording hashes
+    (CommitHashes):
+      - HW_FILE:     the system device-tree (hardware description).
+      - SYSTEM_CONF: the generated project config file.
+      - INPUT_FILES: template YAML, domain files (from
+                     CONFIG_YOCTO_MC_DOMAIN_FILEPATH) and custom DTSI files.
+    PDI/bitstream, ELF and psu_init inputs are intentionally excluded because
+    only their paths (not their content) are embedded into the generated
+    machine configuration, so their content cannot change the output.'''
+    input_files = []
+    if getattr(args, 'template', None):
+        input_files.append(args.template)
+    # Domain files may come from menuconfig as well as the CLI, so read them
+    # from the project config (the source of truth) rather than args.
+    domain_file_cfg = common_utils.GetConfigValue(
+        'CONFIG_YOCTO_MC_DOMAIN_FILEPATH', system_conffile)
+    for _file in domain_file_cfg.split():
+        input_files.append(common_utils.ExpandFilePath(_file))
+    # Custom DTSI files are baked into the generated DTS, so their content
+    # matters. Their paths live in the project config as CONFIG_*_DTSI values.
+    if os.path.exists(system_conffile):
+        with open(system_conffile) as conf_f:
+            for line in conf_f:
+                match = re.match(
+                    r'^(CONFIG_YOCTO_BBMC_\w+_DTSI)="?(.*?)"?$', line.strip())
+                if match:
+                    for dtsi in match.group(2).split():
+                        input_files.append(common_utils.ExpandFilePath(dtsi))
+    return {
+        'HW_FILE': [args.hw_file],
+        'SYSTEM_CONF': [system_conffile],
+        'INPUT_FILES': input_files,
+    }
+
+
 def GenerateConfiguration(args, hw_info, system_conffile, syshw_file, MCObject=None):
     import yocto_machine
     import update_buildconf
@@ -325,12 +364,16 @@ def GenerateConfiguration(args, hw_info, system_conffile, syshw_file, MCObject=N
 
     MultiConfDict = {}
     GenMultiConf = True
-    # Dont re-trigger the multiconfigs if no changes in project file
-    if common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False) and \
-            common_utils.ValidateHashFile(args.output, 'SYSTEM_CONF', system_conffile, update=False) and \
+    files_to_track = GetFilesToTrack(args, system_conffile)
+    files_changed = common_utils.AnyFileChanged(args.output, files_to_track)
+    # Dont re-trigger the multiconfigs if no changes in any tracked input file
+    if not files_changed and \
             os.path.exists(syshw_file) and \
             (hasattr(args, 'dts_path') and os.path.exists(args.dts_path)):
         GenMultiConf = False
+        logger.info('No changes detected in tracked input files, '
+                    'skipping configuration regeneration '
+                    '(use --force to regenerate all configurations)')
 
     if GenMultiConf and 'cpu_info_dict' in hw_info:
         if hasattr(args, 'dts_path') and args.dts_path:
@@ -357,3 +400,9 @@ def GenerateConfiguration(args, hw_info, system_conffile, syshw_file, MCObject=N
     update_buildconf.GenLocalConf(args.localconf,
                                   machine_conf_file,
                                   system_conffile)
+
+    # Record hashes only when something changed; on an unchanged run the stored
+    # hashes already match, so re-committing would just re-hash every input and
+    # rewrite .statistics for no reason.
+    if files_changed:
+        common_utils.CommitHashes(args.output, files_to_track)
