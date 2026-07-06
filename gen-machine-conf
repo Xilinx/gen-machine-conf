@@ -240,6 +240,10 @@ def main():
     optional_args.add_argument(
         '-D', '--debug', help='Enable debug output', action='store_true',
         default=yaml_utils.AddYamlDefaultValues(['-D', '--debug']))
+    optional_args.add_argument(
+        '--force', help='Force regenerate all configuration files, ignoring '
+        'the cached change-detection hashes', action='store_true',
+        default=yaml_utils.AddYamlDefaultValues('--force', False))
 
     parser._action_groups.append(optional_args)
     global_args, unparsed_args = parser.parse_known_args()

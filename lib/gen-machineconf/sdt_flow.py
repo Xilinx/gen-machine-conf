@@ -984,6 +984,13 @@ def ParseSDT(args):
 
     config_dtsdir = os.path.join(args.config_dir, 'dts')
 
+    # When --force is set, drop the cached change-detection hashes so every
+    # tracked input is treated as changed and all configuration files are
+    # regenerated from scratch.
+    if getattr(args, 'force', False):
+        logger.info('Force regeneration requested, ignoring cached hashes')
+        common_utils.RemoveFile(os.path.join(args.output, '.statistics'))
+
 
     if not args.psu_init_path:
         args.psu_init_path = os.path.dirname(args.hw_file)
