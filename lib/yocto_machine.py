@@ -714,8 +714,8 @@ def GenerateYoctoMachine(args, system_conffile, syshw_file, MultiConfDict=''):
     machine_override = machine_conf_file
 
     # Generate the yocto machine if config file changed.
-    if common_utils.ValidateHashFile(args.output, 'SYSTEM_CONF',
-                                     system_conffile, update=False) and \
+    if not common_utils.FileChanged(args.output, 'SYSTEM_CONF',
+                                    system_conffile) and \
             os.path.exists(machine_conf_path):
         return machine_conf_file
 

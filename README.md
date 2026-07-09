@@ -110,6 +110,9 @@ The tool does not perform a clean-tree reconciliation. If the same output
 directory is reused, project configuration can be reused and files from older
 runs can remain if they are no longer referenced by the current configuration.
 
+For the output directory layout and the change-detection behavior on re-run
+(including the ``--force`` option), see the Usage documentation.
+
 ### What gen-machine-conf Does Not Do
 
 #### No Persistence of Manual Changes in Generated Files

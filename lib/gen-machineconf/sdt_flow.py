@@ -900,46 +900,65 @@ def ParseSDT(args):
     def gatherHWInfo():
         hw_info = {}
 
-        logger.info('Getting Platform info from HW file')
+        hw_info_cache = os.path.join(args.output, 'hw_info.yaml')
+        # The lopper queries below are expensive and produce identical results
+        # for an unchanged HW file, so reuse the previously gathered platform
+        # info when the HW file has not changed.
+        hw_file_changed = common_utils.FileChanged(
+            args.output, 'HW_FILE', args.hw_file)
+        if not hw_file_changed and os.path.exists(hw_info_cache):
+            hw_info = yaml_utils.ReadYaml(hw_info_cache) or {}
 
+        if not hw_info:
+            logger.info('Getting Platform info from HW file')
+
+            # Get machinefile name, device-id and model
+            machine_info = lopper_utils.RunLopperUsingDomainFile(['lop-machine-name.dts'],
+                                                                 args.work, args.output,
+                                                                 args.hw_file, '')[0]
+            local_machine_conf, hw_info['device_id'], hw_info['model'] = \
+                machine_info.strip().split(' ', 2)
+            hw_info['local_machine_conf'] = local_machine_conf
+
+            # Generate CPU list
+            cpu_info = lopper_utils.RunLopperUsingDomainFile(['lop-xilinx-id-cpus.dts'],
+                                                             args.work, args.output,
+                                                             args.hw_file, '')[0]
+            hw_info['cpu_info_dict'] = CpuInfoToDict(cpu_info)
+
+            # Get proc name
+            hw_info['proc_type'] = GetProcNameFromCpuInfo(hw_info['cpu_info_dict'])
+
+            # Cache the HW-derived info so an unchanged HW file can skip the
+            # expensive lopper queries on subsequent runs.
+            yaml_utils.WriteYaml(hw_info_cache, hw_info)
+
+        # Apply user/CLI overrides on top of the HW-derived info. These are
+        # cheap to (re)compute and may change independently of the HW file, so
+        # they are intentionally not part of the cached data.
         if args.machine:
             logger.debug('Using the machine specified by user:%s' % args.machine)
             hw_info['machine'] = args.machine
+        elif 'machine' not in hw_info:
+            hw_info['machine'] = hw_info['local_machine_conf']
 
         if args.soc_family:
             logger.debug('Using the soc_family specified by user:%s' % args.soc_family)
             hw_info['soc_family'] = args.soc_family
+        elif 'soc_family' not in hw_info:
+            hw_info['soc_family'] = project_config.DetectSocFamily(hw_info['proc_type'])
 
         if args.soc_variant:
             logger.debug('Using the soc_variant specified by user:%s' % args.soc_variant)
             hw_info['soc_variant'] = args.soc_variant
-
-        # Get machinefile name, device-id and model
-        machine_info = lopper_utils.RunLopperUsingDomainFile(['lop-machine-name.dts'],
-                                                             args.work, args.output,
-                                                             args.hw_file, '')[0]
-        local_machine_conf, hw_info['device_id'], hw_info['model'] = machine_info.strip().split(' ', 2)
-
-        if 'machine' not in hw_info:
-            hw_info['machine'] = local_machine_conf
-
-        # Generate CPU list
-        cpu_info = lopper_utils.RunLopperUsingDomainFile(['lop-xilinx-id-cpus.dts'],
-                                                         args.work, args.output,
-                                                         args.hw_file, '')[0]
-        hw_info['cpu_info_dict'] = CpuInfoToDict(cpu_info)
-
-        # Get proc name
-        if 'proc_type' not in hw_info:
-            hw_info['proc_type'] = GetProcNameFromCpuInfo(hw_info['cpu_info_dict'])
-        if 'soc_family' not in hw_info:
-            hw_info['soc_family'] = project_config.DetectSocFamily(hw_info['proc_type'])
-        if 'soc_variant' not in hw_info:
+        elif 'soc_variant' not in hw_info:
             hw_info['soc_variant'] = project_config.DetectSocVariant(hw_info['device_id'])
 
-        # Generate Kconfig.syshw only when hw_file changes
-        if not common_utils.ValidateHashFile(args.output, 'HW_FILE', args.hw_file, update=False) or \
-                not os.path.exists(Kconfig_syshw):
+        # Generate Kconfig.syshw only when hw_file changes. GenSdtSystemHwFile
+        # produces both Kconfig.syshw and sys_hw_data.yaml, so regenerate if
+        # either output is missing (e.g. accidentally deleted by the user).
+        if hw_file_changed or not os.path.exists(Kconfig_syshw) or \
+                not os.path.exists(syshw_file):
             GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw,
                                hw_info['proc_type'], args.hw_file, args.output)
 
@@ -964,6 +983,13 @@ def ParseSDT(args):
     system_conffile = os.path.join(args.output, 'config')
 
     config_dtsdir = os.path.join(args.config_dir, 'dts')
+
+    # When --force is set, drop the cached change-detection hashes so every
+    # tracked input is treated as changed and all configuration files are
+    # regenerated from scratch.
+    if getattr(args, 'force', False):
+        logger.info('Force regeneration requested, ignoring cached hashes')
+        common_utils.RemoveFile(os.path.join(args.output, '.statistics'))
 
 
     if not args.psu_init_path:

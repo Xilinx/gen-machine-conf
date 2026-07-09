@@ -310,15 +310,94 @@ def GetFileHashValue(filename):
     return method.hexdigest()
 
 
-def ValidateHashFile(output, macro, infile, update=True):
+def FileChanged(output, macro, infile):
+    '''Return True if infile's content hash differs from the value previously
+    recorded for macro in <output>/.statistics. A missing infile or a missing
+    record is treated as changed. Pure query with no side effects; call
+    CommitFileHash() to persist the new hash once the file is processed.
+    Thin wrapper over FilesChanged() so single- and multi-file tracking share
+    one consistent digest format.'''
+    return FilesChanged(output, macro, [infile])
+
+
+def CommitFileHash(output, macro, infile):
+    '''Record infile's current content hash for macro in <output>/.statistics
+    so subsequent FileChanged() calls can detect edits.'''
+    CommitFilesHash(output, macro, [infile])
+
+
+def GetFilesHashValue(filenames):
+    '''Return a combined content hash for one or more files. Accepts a list or
+    a space-separated string of paths. The path names are folded into the
+    digest so that adding, removing or reordering files is detected, and a
+    missing file is recorded as such rather than raising.'''
+    import hashlib
+    if isinstance(filenames, str):
+        filenames = filenames.split()
+    method = hashlib.sha256()
+    for filename in filenames:
+        method.update(filename.encode('utf-8'))
+        if os.path.isfile(filename):
+            method.update(GetFileHashValue(filename).encode('utf-8'))
+        else:
+            method.update(b'<missing>')
+    return method.hexdigest()
+
+
+def GetConfigHashValue(conffile):
+    '''Order-independent hash of a Kconfig config file. conf/mconf and
+    UpdateConfigValue reorder the same CONFIG_* lines between runs, so the
+    (non-blank) lines are sorted before hashing to avoid reporting a change
+    when only the line order differs. Accepts a single path, or a list or
+    space-separated string of paths (the first entry is used).'''
+    import hashlib
+    if isinstance(conffile, (list, tuple)):
+        conffile = conffile[0] if conffile else ''
+    elif isinstance(conffile, str) and ' ' in conffile:
+        conffile = conffile.split()[0]
+    lines = []
+    if os.path.isfile(conffile):
+        with open(conffile) as conf_f:
+            lines = [line for line in conf_f if line.strip()]
+    method = hashlib.sha256()
+    for line in sorted(lines):
+        method.update(line.encode('utf-8'))
+    return method.hexdigest()
+
+
+def FilesChanged(output, macro, infiles):
+    '''Return True if the combined content hash of infiles differs from the
+    value previously recorded for macro in <output>/.statistics. Accepts a
+    list or space-separated string. Pure query with no side effects; call
+    CommitFilesHash() to persist the new hash once the files are processed.'''
     statistics_file = os.path.join(output, '.statistics')
     old_hashvalue = GetConfigValue(macro, statistics_file)
-    new_hashvalue = GetFileHashValue(infile)
-    if old_hashvalue != new_hashvalue:
-        if update:
-            UpdateConfigValue(macro, new_hashvalue, statistics_file)
-        return False
-    return True
+    new_hashvalue = GetConfigHashValue(infiles) \
+        if macro == 'SYSTEM_CONF' else GetFilesHashValue(infiles)
+    return old_hashvalue != new_hashvalue
+
+
+def CommitFilesHash(output, macro, infiles):
+    '''Record the combined content hash of infiles for macro in
+    <output>/.statistics so subsequent FilesChanged() calls can detect edits.'''
+    statistics_file = os.path.join(output, '.statistics')
+    new_hashvalue = GetConfigHashValue(infiles) \
+        if macro == 'SYSTEM_CONF' else GetFilesHashValue(infiles)
+    UpdateConfigValue(macro, new_hashvalue, statistics_file)
+
+
+def AnyFileChanged(output, files_map):
+    '''Return True if any tracked entry changed. files_map maps a .statistics
+    macro to a file path or list of paths (as returned by GetFilesToTrack()).'''
+    return any(FilesChanged(output, macro, infiles)
+               for macro, infiles in files_map.items())
+
+
+def CommitHashes(output, files_map):
+    '''Persist the content hash for every macro/file(s) entry in files_map so
+    subsequent AnyFileChanged() calls can detect edits.'''
+    for macro, infiles in files_map.items():
+        CommitFilesHash(output, macro, infiles)
 
 
 def check_tool(tool, recipe=None, failed_msg=None, skip_path=False):
