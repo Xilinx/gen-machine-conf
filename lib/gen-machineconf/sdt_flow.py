@@ -828,7 +828,7 @@ def GenSdtSystemHwFile(genmachine_scripts, Kconfig_syshw, proc_type, hw_file, ou
         genmachine_scripts, 'data', 'sdt_ipinfo.yaml')
     ipinfo_schema = os.path.join(
         genmachine_scripts, 'data', 'ipinfo.yaml')
-    plnx_syshw_file = os.path.join(output, 'petalinux_config.yaml')
+    plnx_syshw_file = os.path.join(output, 'sys_hw_data.yaml')
 
     lopper_utils.RunLopperSubcommand(output, output, hw_file,
                                      'petalinuxconfig_xlnx %s %s' % (proc_type,
@@ -913,7 +913,7 @@ def ParseSDT(args):
     Kconfig_syshw = os.path.join(project_cfgdir, 'Kconfig.syshw')
     Kconfig = os.path.join(project_cfgdir, 'Kconfig')
     ipinfo_file = os.path.join(genmachine_scripts, 'data', 'ipinfo.yaml')
-    plnx_syshw_file = os.path.join(args.output, 'petalinux_config.yaml')
+    plnx_syshw_file = os.path.join(args.output, 'sys_hw_data.yaml')
     system_conffile = os.path.join(args.output, 'config')
 
     config_dtsdir = os.path.join(args.config_dir, 'dts')

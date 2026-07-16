@@ -123,7 +123,7 @@ their interactions, and the data transformations that occur at each stage.
    │  ├─ Validate Configuration Consistency                                    │
    │  ├─ Resolve Dependencies                                                  │
    │  ├─ Update Hardware-Specific Settings                                     │
-   │  └─ Generate petalinux_config.yaml                                        │
+   │  └─ Generate sys_hw_data.yaml                                        │
    └───────────────────────────────────────────────────────────────────────────┘
                                        │
                                        ▼
@@ -279,7 +279,7 @@ their interactions, and the data transformations that occur at each stage.
    │  ├─ config                        # System configuration                  │
    │  ├─ gen-machineconf.log          # Tool log                               │
    │  ├─ memory.qemuboot.conf         # QEMU HW DDR map for qemuboot/runqemu  │
-   │  ├─ petalinux_config.yaml        # Hardware info YAML                     │
+   │  ├─ sys_hw_data.yaml             # Hardware info YAML                     │
    │  ├─ configs/                     # Kconfig files                          │
    │  │   ├─ Kconfig                                                           │
    │  │   ├─ Kconfig.syshw                                                     │

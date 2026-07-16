@@ -267,7 +267,7 @@ def GeneratePlnxConfig(args, machine_conf_file):
     if hw_flow == 'xsct':
         plnx_syshw_file = os.path.join(args.output, 'plnx_syshw_data')
     else:
-        plnx_syshw_file = os.path.join(args.output, 'petalinux_config.yaml')
+        plnx_syshw_file = os.path.join(args.output, 'sys_hw_data.yaml')
     with open(plnx_syshw_file, 'r') as plnx_syshw_file_f:
         plnx_syshw_data = yaml.safe_load(plnx_syshw_file_f)
     plnx_syshw_file_f.close()
