@@ -187,8 +187,8 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
         atf_mem_size = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_TF-A_MEM_SIZE',
                                                    system_conffile)
         if atf_mem_settings:
-            machine_override_string += 'ATF_MEM_BASE ?= "%s"\n' % atf_mem_base
-            machine_override_string += 'ATF_MEM_SIZE ?= "%s"\n' % atf_mem_size
+            machine_override_string += 'TFA_MEM_BASE ?= "%s"\n' % atf_mem_base
+            machine_override_string += 'TFA_MEM_SIZE ?= "%s"\n' % atf_mem_size
 
         atf_extra_settings = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_TF-A_EXTRA_COMPILER_FLAGS',
                                                          system_conffile)
