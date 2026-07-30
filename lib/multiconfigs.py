@@ -48,9 +48,9 @@ class ParseMultiConfigFiles():
 
             # Iterate over the non-Linux OSes
             NonLinuxOS = [ 'baremetal', 'freertos' ]
-            if self.cpu in ['arm,cortex-r52', 'arm,cortex-a72', 'arm,cortex-a78']:
+            if self.cpu in ['arm,cortex-r52', 'arm,cortex-a53', 'arm,cortex-a72', 'arm,cortex-a78']:
                 NonLinuxOS.append('zephyr')
-            elif self.cpu == 'arm,cortex-r5' and self.args.soc_family in ['versal']:
+            elif self.cpu == 'arm,cortex-r5' and self.args.soc_family in ['versal', 'zynqmp']:
                 NonLinuxOS.append('zephyr')
             for os_hint in NonLinuxOS:
                 mc_name = '%s-%s%s-%s' % (cpu, self.core, domain_suffix, os_hint)
@@ -122,9 +122,11 @@ class GenerateMultiConfigFiles():
     def ZephyrConfigurations(self, mc_target):
         ZephyrDict = {
             'microblaze-v' : { 'board' : 'mbv32' },
+            'zynqmp' : { 'board' : 'zynqmp_rpu'},
             'versal' : { 'board' : 'versal_rpu'},
             'versal-net' : { 'board' : 'versalnet_rpu'},
             'versal-2ve-2vm' : { 'board' : 'versal2_rpu'},
+            'zynqmp-apu' : { 'board' : 'zynqmp_apu'},
             'versal-apu' : { 'board' : 'versal_apu'},
             'versal-net-apu' : { 'board' : 'versalnet_apu'},
             'versal-2ve-2vm-apu' : { 'board' : 'versal2_apu'}
@@ -218,7 +220,7 @@ class GenerateMultiConfigFiles():
                             mc_target = self.args.soc_family
                             if self.args.soc_family == 'versal' and self.args.soc_variant == 'net':
                                 mc_target += '-net'
-                            if cpu in ['arm,cortex-a72', 'arm,cortex-a78']:
+                            if cpu in ['arm,cortex-a53', 'arm,cortex-a72', 'arm,cortex-a78']:
                                 # Cortex-A APU uses the aarch64 *_apu Zephyr board.
                                 mc_target += '-apu'
                         distro, ExtraVars = self.ZephyrConfigurations(mc_target)
