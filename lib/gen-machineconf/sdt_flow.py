@@ -554,16 +554,14 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         lopper_utils.RunLopperUsingDomainFile(['lop-mbv-zephyr-intc.dts'], self.args.work, self.args.dts_path,
                                  BoardDTS, Mbv32Dts)
         lopper_utils.IncludeCustomDtsi(self.args.work, self.mcname, Mbv32Dts, self.system_conffile)
-        SocKconfigFile_S = os.path.join(self.args.work, 'Kconfig')
-        SocKconfigFile_D = os.path.join(self.args.dts_path, '%s-Kconfig' % mc_filename)
-        SocKconfigDefconfigFile_S = os.path.join(self.args.work, 'Kconfig.defconfig')
-        SocKconfigDefconfigFile_D = os.path.join(self.args.dts_path, '%s-Kconfig.defconfig' % mc_filename)
-        common_utils.CopyFile(SocKconfigFile_S, SocKconfigFile_D)
-        common_utils.CopyFile(SocKconfigDefconfigFile_S, SocKconfigDefconfigFile_D)
+        # Lopper generates a single board_Kconfig.defconfig file, copy it next
+        # to the dts and point the multiconfig at it via the board variable.
+        BoardKconfigDefconfig_S = os.path.join(self.args.work, 'board_Kconfig.defconfig')
+        BoardKconfigDefconfig_D = os.path.join(self.args.dts_path, '%s-board_Kconfig.defconfig' % mc_filename)
+        common_utils.CopyFile(BoardKconfigDefconfig_S, BoardKconfigDefconfig_D)
         if conf_file:
             conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(Mbv32Dts)
-            conf_file_str += 'ZEPHYR_SDT_SOC_KCONFIG  = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(SocKconfigFile_D)
-            conf_file_str += 'ZEPHYR_SDT_SOC_KCONFIG_DEFCONFIG  = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(SocKconfigDefconfigFile_D)
+            conf_file_str += 'ZEPHYR_SDT_BOARD_KCONFIG_DEFCONFIG  = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(BoardKconfigDefconfig_D)
             common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
 
     def MBTuneFeatures(self):
