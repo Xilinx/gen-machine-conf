@@ -9,7 +9,6 @@
 # SPDX-License-Identifier: MIT
 
 
-import yaml
 import common_utils
 
 
@@ -64,5 +63,4 @@ def GetIPProperty(device_name, system_conffile, prop='ip_name'):
 
 def PostProcessSysConf(args, system_conffile, syshw_file):
     global syshw_data
-    with open(syshw_file, 'r') as syshw_file_f:
-        syshw_data = yaml.safe_load(syshw_file_f)
+    syshw_data = common_utils.GetSyshwData(syshw_file)

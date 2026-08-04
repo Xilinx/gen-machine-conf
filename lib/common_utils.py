@@ -64,6 +64,29 @@ class AppendArgWithSpace(argparse.Action):
             setattr(namespace, self.dest, values)
 
 
+_SyshwData = None
+
+
+def GetSyshwData(syshw_file):
+    '''Single entry point to read the sys_hw_data.yaml. The parsed data is
+    cached so the file is parsed only once across the run and shared by every
+    caller (a run has a single sys_hw_data.yaml).'''
+    global _SyshwData
+    if _SyshwData is None:
+        _SyshwData = yaml_utils.ReadYaml(syshw_file)
+    return _SyshwData
+
+
+def IterSyshwSlaves(hwdata, device_type=None):
+    '''Yield (slave_name, slave_data) for every slave across all processors in
+    the given syshw data. When device_type is given, only slaves whose
+    'device_type' matches are yielded.'''
+    for proc_data in hwdata.get('processor', {}).values():
+        for slave_name, slave_data in proc_data.get('slaves', {}).items():
+            if device_type is None or slave_data.get('device_type') == device_type:
+                yield slave_name, slave_data
+
+
 def CreateDir(dirpath):
     '''Creates Directory'''
     if not os.path.exists(dirpath):
