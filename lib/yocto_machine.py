@@ -16,7 +16,6 @@ import yaml_utils
 import project_config
 import lopper_utils
 import glob
-from post_process_config import CheckIP, GetIPProperty, CheckDeviceCount
 import logging
 
 
@@ -393,46 +392,45 @@ def YoctoMCFimwareConfigs(args, arch, system_conffile, req_conf_file, MultiConfD
 
     return machine_override_string
 
-def GetSerialConsoleFromDts(config_dtfile):
-    ''' Parse the console (tty device and baudrate) from the /chosen node of a
-    lopper generated Linux DTS. Used for the 'From SDT' serial selection where
-    the console is defined by the SDT itself instead of a user selection.
-    Returns (serial_console, baudrate) where serial_console is '<baud>;<tty><n>'
-    or ('', '') when it cannot be determined. '''
-    if not config_dtfile or not os.path.isfile(config_dtfile):
+def GetSerialConsoleFromSyshw():
+    ''' Derive the 'From SDT' console from the syshw /chosen stdout-path
+    (e.g. 'serial1:115200n8'): resolve the 'serialN' alias to its 'tty_device'.
+    Returns ('<baud>;<tty>', baudrate) or ('', '') if undetermined. '''
+    global syshw_data
+    chosen = syshw_data.get('chosen', {}) or {}
+    stdout_path = str(chosen.get('stdout-path', '') or '')
+    if not stdout_path:
         return '', ''
-    try:
-        with open(config_dtfile, 'r') as dts_data:
-            dts_content = dts_data.read()
-    except OSError:
+    # stdout-path form: '<alias-or-path>:<baud>n8' (the ':<options>' part is
+    # optional). Split off the reference and pull the baudrate from the options.
+    ref, _, options = stdout_path.partition(':')
+    baud_match = re.search(r'[0-9]+', options)
+    baudrate = baud_match.group(0) if baud_match else '115200'
+    # Resolve the referenced serial node to its tty device name. The reference
+    # is normally a 'serialN' alias; fall back to matching the DT node path.
+    tty_device = ''
+    for _, slave_data in common_utils.IterSyshwSlaves(syshw_data, 'serial'):
+        if ref in (slave_data.get('aliases', []) or []) or \
+                ref == slave_data.get('dt_node'):
+            tty_device = str(slave_data.get('tty_device', '') or '')
+            break
+    if not tty_device:
         return '', ''
-    # Restrict the search to the /chosen node so a stray 'console=' elsewhere
-    # in the DTS can not produce a false match.
-    chosen_match = re.search(r'chosen\s*\{(.*?)\}', dts_content, re.DOTALL)
-    chosen_text = chosen_match.group(1) if chosen_match else ''
-    # bootargs carries the resolved tty device name and baudrate
-    # Ex: bootargs = "... console=ttyAMA0,115200 ...";
-    # The baudrate may be omitted (Ex: console=ttyAMA0); default to 115200.
-    console_match = re.search(r'console=(tty\w+?)(\d+)(?:,(\d+))?', chosen_text)
-    if console_match:
-        tty, serial_no, baudrate = console_match.groups()
-        baudrate = baudrate or '115200'
-        return '%s;%s%s' % (baudrate, tty, serial_no), baudrate
-    return '', ''
+    return '%s;%s' % (baudrate, tty_device), baudrate
 
 
-def SerialConsoleSettings(system_conffile, sdt=False, config_dtfile='', soc_family=''):
+def SerialConsoleSettings(system_conffile, soc_family=''):
     serialname = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_', system_conffile,
                                              'choice', '_SELECT=y')
     serial_console = ''
     baudrate = ''
     if serialname == 'FROM_SDT':
-        # Console is defined by the SDT, derive it from the generated Linux DTS
-        serial_console, baudrate = GetSerialConsoleFromDts(config_dtfile)
+        # Console is defined by the SDT, derive it from the syshw chosen node
+        serial_console, baudrate = GetSerialConsoleFromSyshw()
         if not serial_console:
-            # The DTS carried no console= (e.g. stdout-path only). Fall back to
-            # serial0 with the SoC-default tty so the image still gets a login
-            # console instead of none. The tty prefix is SoC-determined.
+            # The syshw chosen node carried no resolvable stdout-path. Fall back
+            # to serial0 with the SoC-default tty so the image still gets a
+            # login console instead of none. The tty prefix is SoC-determined.
             soc_tty = {'zynq': 'ttyPS0', 'zynqmp': 'ttyPS0',
                        'versal': 'ttyAMA0', 'versal-net': 'ttyAMA0',
                        'versal-2ve-2vm': 'ttyAMA0',
@@ -441,47 +439,21 @@ def SerialConsoleSettings(system_conffile, sdt=False, config_dtfile='', soc_fami
             baudrate = '115200'
             serial_console = '%s;%s' % (baudrate, tty)
             logger.warning('Serial set to "From SDT" but no console could be '
-                           'derived from the generated Linux DTS (%s); '
-                           'defaulting to serial0 (%s).'
-                           % (config_dtfile, tty))
+                           'derived from the syshw chosen node; '
+                           'defaulting to serial0 (%s).' % tty)
         return serial_console, baudrate
     if serialname and serialname != 'MANUAL':
-        serialipname = GetIPProperty(serialname, system_conffile)
         baudrate = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_'
                                                % serialname, system_conffile, 'choice', '=y')
-        if serialipname == 'axi_uartlite' or serialipname == 'mdm':
-            serial_console = '%s;ttyUL0' % baudrate
-        elif serialipname == 'axi_uart16550':
-            serial_console = '%s;ttyS0' % baudrate
-        elif 'sbsauart' in serialipname:
-            serial_console = '%s;ttyAMA0' % baudrate
-        else:
-            serial_console = '%s;ttyPS0' % baudrate
-
-        # parse the selected serial IP if no_alias/sdt flow selected to get the serial no.
-        # serial no. will be suffix to the serial ip name Ex:psu_uart_1 -> serial no. is 1.
-        no_alias = common_utils.GetConfigValue(
-            'CONFIG_SUBSYSTEM_ENABLE_NO_ALIAS', system_conffile)
-        serial_no = ''
-        if no_alias == 'y' or sdt:
-            serial_ips = CheckDeviceCount('serial', system_conffile)
-            if len(serial_ips) < 2:
-                # Set serial no as 0 if only one serial ip is enabled
-                serial_no = '0'
-            elif "_" in serialname:
-                try:
-                    serial_no = serialname.lower().split(serialipname + '_')[1]
-                except IndexError:
-                    tmp = re.findall('[0-9]+', serialname)
-                    if tmp:
-                        serial_no = tmp[0]
-            else:
-                tmp = re.findall('[0-9]+', serialname)
-                if tmp:
-                    serial_no = tmp[0]
-            if serial_no:
-                serial_console = serial_console[:-1]
-                serial_console = serial_console + serial_no
+        # Resolve the selected UART's tty device from the syshw data. The
+        # selection token matches the (bankless) serial slave name.
+        serial_slave = serialname.lower()
+        for slave_name, slave_data in common_utils.IterSyshwSlaves(syshw_data, 'serial'):
+            if re.sub('_bankless$', '', slave_name) == serial_slave:
+                tty_device = str(slave_data.get('tty_device', '') or '')
+                if tty_device:
+                    serial_console = '%s;%s' % (baudrate, tty_device)
+                break
     return serial_console, baudrate
 
 
@@ -503,8 +475,7 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
 
     machine_override_string += '\nDTB_FILE_PATH ?= "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
 
-    serial_console, baudrate = SerialConsoleSettings(system_conffile, sdt=True,
-                                                     config_dtfile=config_dtfile,
+    serial_console, baudrate = SerialConsoleSettings(system_conffile,
                                                      soc_family=args.soc_family)
     if serial_console:
         machine_override_string += '\n# Serial Console Settings\n'
@@ -674,10 +645,8 @@ def GenerateYoctoMachine(args, system_conffile, syshw_file, MultiConfDict=''):
     global YamlMachineConfs
     YamlMachineConfs = yaml_utils.TemplateYamlData.get('machine', {}) or {}
     soc_family = args.soc_family
-    import yaml
     global syshw_data
-    with open(syshw_file, 'r') as syshw_file_f:
-        syshw_data = yaml.safe_load(syshw_file_f)
+    syshw_data = common_utils.GetSyshwData(syshw_file)
 
     # Get the device_id from syshw_data
     args.device_id = '999'
