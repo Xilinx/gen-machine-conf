@@ -68,14 +68,10 @@ def GenSerialChosenDtsi(outdir, dts_path, mcname, system_conffile, syshw_file,
     # first match instead of building a full slave map.
     serial_slave = selection.lower()
     serial_data = None
-    hwdata = yaml_utils.ReadYaml(syshw_file)
-    for proc_data in hwdata.get('processor', {}).values():
-        for slave_name, slave_data in proc_data.get('slaves', {}).items():
-            if slave_data.get('device_type') == 'serial' and \
-                    re.sub('_bankless$', '', slave_name) == serial_slave:
-                serial_data = slave_data
-                break
-        if serial_data:
+    hwdata = common_utils.GetSyshwData(syshw_file)
+    for slave_name, slave_data in common_utils.IterSyshwSlaves(hwdata, 'serial'):
+        if re.sub('_bankless$', '', slave_name) == serial_slave:
+            serial_data = slave_data
             break
 
     if not serial_data:
@@ -91,18 +87,31 @@ def GenSerialChosenDtsi(outdir, dts_path, mcname, system_conffile, syshw_file,
             baseaddr = hex(int(str(baseaddr), 0))
         except (ValueError, TypeError):
             pass
-    # Serial index used for the 'serialN' alias and the 'ttyXXN' device.
-    serial_digits = re.findall('[0-9]+', serial_slave)
-    serial_index = serial_digits[-1] if serial_digits else '0'
+    # Use the syshw 'serialN' alias for the /chosen stdout-path (take the
+    # first if several); fall back to a 'serialN' built from the slave suffix.
+    aliases = serial_data.get('aliases', []) or []
+    if aliases:
+        serial_alias = str(aliases[0])
+    else:
+        serial_digits = re.findall('[0-9]+', serial_slave)
+        serial_alias = 'serial%s' % (serial_digits[-1] if serial_digits else '0')
     # Only the Linux/U-Boot domain carries a baudrate choice; default 115200.
     baudrate = common_utils.GetConfigValue(
         'CONFIG_SUBSYSTEM_SERIAL_%s_BAUDRATE_' % selection, system_conffile,
         'choice', '=y') or '115200'
     earlycon, tty_prefix = _GetSerialConsoleInfo(ip_name, ipinfo_file)
-    serial_alias = 'serial%s' % serial_index
+    # Prefer the full 'tty_device' name captured in the syshw data (e.g.
+    # 'ttyAMA0'); it already encodes both the console prefix and the correct
+    # index. Fall back to the ipinfo console prefix plus the index taken from
+    # the serial alias when the syshw data does not provide it.
+    tty_device = str(serial_data.get('tty_device', '') or '')
+    if not tty_device:
+        index_digits = re.findall('[0-9]+', serial_alias)
+        serial_index = index_digits[-1] if index_digits else '0'
+        tty_device = '%s%s' % (tty_prefix, serial_index)
     # Single console definition reused by stdout-path and bootargs so every
     # chosen property stays in sync with the selected UART.
-    console = 'console=%s%s,%s' % (tty_prefix, serial_index, baudrate)
+    console = 'console=%s,%s' % (tty_device, baudrate)
 
     chosen_lines = ['/ {', '\tchosen {',
                     '\t\tstdout-path = "%s:%sn8";' % (serial_alias, baudrate)]

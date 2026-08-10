@@ -305,7 +305,7 @@ def GenSerialDomainsKconfig(syshw_file, proc_type, bbmctargets):
         ipinfo_file = os.path.join(
             project_config.GenMachineScriptsPath(), 'data', 'sdt_ipinfo.yaml')
         ipinfodata = yaml_utils.ReadYaml(ipinfo_file)
-    hwyamldata = yaml_utils.ReadYaml(syshw_file)
+    hwyamldata = common_utils.GetSyshwData(syshw_file)
     procdata = hwyamldata.get('processor', {})
     if proc_type not in procdata:
         return ''
@@ -549,7 +549,7 @@ def GenKconfigSysHW(hwyamlinfile, ipinfofile, outfile):
     ''' Read Input Yaml(sys HW data) and convert into
     Kconfig for described device types'''
     global hwyamldata, ipinfodata
-    hwyamldata = yaml_utils.ReadYaml(hwyamlinfile)
+    hwyamldata = common_utils.GetSyshwData(hwyamlinfile)
     ipinfodata = yaml_utils.ReadYaml(ipinfofile)
     procdata = hwyamldata.get('processor')
     KconfStr = 'menu "Subsystem Hardware Settings"\n'

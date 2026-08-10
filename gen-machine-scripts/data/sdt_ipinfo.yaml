@@ -106,13 +106,25 @@ axi_uartlite:
     device_type: serial
     earlycon: uartlite,mmio32
     console_prefix: ttyUL
-    linux_console_file_name: ttyUL0
 
 axi_uart16550:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - xlnx,axi-uart16550-2.0
+              - ns16550a
     device_type: serial
     console_prefix: ttyS
 
 mdm:
+    properties:
+      compatible:
+        OneOf:
+          - items:
+            - enum:
+              - xlnx,mdm-2.00.b
     device_type: serial
     console_prefix: ttyUL
 
