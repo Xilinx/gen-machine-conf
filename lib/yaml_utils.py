@@ -371,6 +371,95 @@ def MergeDomainConfigs(domain_files):
     return merged_domains
 
 
+def MergeYamlConfigs(domain_files):
+    """Read and merge complete domain YAML documents."""
+    if not domain_files or not domain_files.strip():
+        return {}
+
+    merged_config = {}
+    for yaml_file in domain_files.split():
+        yaml_content = ReadYaml(yaml_file) or {}
+        if not isinstance(yaml_content, dict):
+            continue
+        _MergeTwoDomainDicts(merged_config, yaml_content)
+    return merged_config
+
+
+def GetMergedDomainConfig(cpuname, cpu, os_hint, domain_files):
+    """Return the matching domain and complete merged YAML document."""
+    merged_config = MergeYamlConfigs(domain_files)
+    merged_domains = merged_config.get('domains', {})
+    domain_name = _FindMatchingDomainInSchema(
+        cpuname, cpu, os_hint, merged_domains)
+    if not domain_name:
+        return '', {}, merged_config
+    return domain_name, merged_domains[domain_name], merged_config
+
+
+def _HasZephyrMpuPolicy(memory):
+    """Return whether a memory has an effective Zephyr MPU policy."""
+    if not isinstance(memory, dict):
+        return False
+    for key in memory:
+        if key.split('!', 1)[0] != 'mpu-policy':
+            continue
+        if '!' not in key or '!zephyr!' in key:
+            return True
+    return False
+
+
+def _MemoryReferenceName(reference):
+    """Return the node name from a domain memory reference."""
+    if isinstance(reference, dict):
+        reference = reference.get('dev')
+    if not isinstance(reference, str):
+        return ''
+    return reference.rsplit('/', 1)[-1]
+
+
+def _MemoryMatchesReference(node_name, memory, reference):
+    """Return whether a physical memory matches a domain reference."""
+    reference_name = _MemoryReferenceName(reference)
+    if not reference_name:
+        return False
+
+    candidates = [node_name]
+    if isinstance(memory, dict) and isinstance(memory.get('label'), str):
+        candidates.append(memory['label'])
+    reference_base = reference_name.split('@', 1)[0]
+    for candidate in candidates:
+        if reference_name == candidate:
+            return True
+        if ('@' not in reference_name or '@' not in candidate) and \
+                reference_base == candidate.split('@', 1)[0]:
+            return True
+    return False
+
+
+def DomainHasZephyrMpuPolicy(domain_config, merged_config):
+    """Return whether a domain owns a memory with Zephyr MPU policy."""
+    if not isinstance(domain_config, dict) or \
+            not isinstance(merged_config, dict):
+        return False
+
+    references = []
+    for property_name in ('sram', 'reserved-memory'):
+        value = domain_config.get(property_name, [])
+        references.extend(value if isinstance(value, list) else [value])
+
+    for container_name in ('axi', 'reserved-memory'):
+        container = merged_config.get(container_name, {})
+        if not isinstance(container, dict):
+            continue
+        for node_name, memory in container.items():
+            if _HasZephyrMpuPolicy(memory) and any(
+                    _MemoryMatchesReference(
+                        node_name, memory, reference)
+                    for reference in references):
+                return True
+    return False
+
+
 def IsOpenampEnabledInDomains(cpuname, cpu, os_hint, domain_files):
     """
     Check if OpenAMP is enabled for a given CPU by merging domain YAML files.
