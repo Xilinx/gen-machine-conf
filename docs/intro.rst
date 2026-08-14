@@ -147,7 +147,7 @@ configurations.
 
 Example use cases:
 
-- Custom Zynq-7000, ZynqMP, Versal, or versal-2ve-2vm board designs
+- Custom Zynq-7000, ZynqMP, Versal, versal-2ve-2vm, or versal-2vp board designs
 - FPGA designs with custom IP blocks and peripherals
 - Custom memory maps and device configurations
 
@@ -162,6 +162,7 @@ Example configurations:
 - **ZynqMP**: Cortex-A53 running Linux + Cortex-R5 running FreeRTOS
 - **Versal**: Cortex-A72 running Linux + Cortex-R5 running bare-metal + PLM firmware
 - **versal-2ve-2vm**: Cortex-A78 running Linux + Cortex-R52 running Zephyr RTOS
+- **versal-2vp**: Cortex-A72 running Linux + Cortex-R5 running bare-metal + PLM firmware
 
 The tool generates multiconfig targets for each domain automatically.
 
