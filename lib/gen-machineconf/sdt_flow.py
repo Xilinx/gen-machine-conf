@@ -22,6 +22,107 @@ import lopper_utils
 logger = logging.getLogger('Gen-Machineconf')
 
 class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
+    def GenZephyrPolicyDts(self, dts_file):
+        """Generate optional Zephyr linker and MPU policy artifacts."""
+        self.zephyr_linker_script = ''
+        if not self.os_hint.startswith('zephyr'):
+            return dts_file
+
+        domain_name, domain_config, merged_config = \
+            yaml_utils.GetMergedDomainConfig(
+                self.cpuname, self.cpu, self.os_hint,
+                self.args.domain_file)
+        if not domain_name:
+            return dts_file
+
+        linker_config = domain_config.get('linker')
+        has_mpu_policy = yaml_utils.DomainHasZephyrMpuPolicy(
+            domain_config, merged_config)
+        if linker_config is None and not has_mpu_policy:
+            return dts_file
+
+        zephyr_version = domain_config.get('zephyr-version')
+        if not zephyr_version:
+            raise Exception(
+                f'Zephyr domain {domain_name} has policy data without '
+                'zephyr-version')
+
+        domain_path = f'/domains/{domain_name}'
+        assist_args = (f'--domain={domain_path} '
+                       f'--zephyr-version={zephyr_version}')
+
+        # The linker assist must consume the policy before the MPU assist
+        # removes transformation-only mpu-policy properties from its output.
+        if linker_config is not None:
+            if not isinstance(linker_config, dict):
+                raise Exception(
+                    f'Invalid linker configuration for Zephyr domain '
+                    f'{domain_name}')
+
+            linker_name = linker_config.get('linker_file_output_name', '')
+            if not linker_name:
+                raise Exception(
+                    f'Zephyr domain {domain_name} has linker configuration '
+                    'without linker_file_output_name')
+            if os.path.isabs(linker_name):
+                raise Exception(
+                    f'Absolute linker_file_output_name is not supported: '
+                    f'{linker_name}')
+
+            linker_dir = os.path.realpath(
+                os.path.join(self.args.dts_path, 'linker-files'))
+            linker_file = os.path.realpath(
+                os.path.join(linker_dir, linker_name))
+            if os.path.commonpath([linker_dir, linker_file]) != linker_dir:
+                raise Exception(
+                    f'linker_file_output_name escapes linker-files: '
+                    f'{linker_name}')
+
+            common_utils.CreateDir(os.path.dirname(linker_file))
+            common_utils.RemoveFile(linker_file)
+            linker_dts = os.path.join(
+                self.args.work, f'{self.cpuname}-linker.dts')
+            logger.debug('Generating Zephyr linker file %s', linker_file)
+            result = lopper_utils.RunLopperUsingDomainFile(
+                [], self.args.work, self.args.dts_path, dts_file,
+                linker_dts, '', f'zephyr_linker {assist_args}',
+                run_dir=linker_dir)
+            if lopper_utils.LopperAssistFailed(result):
+                raise Exception(
+                    f'Zephyr linker assist failed for domain {domain_name}')
+            if not os.path.isfile(linker_file):
+                raise Exception(
+                    'Zephyr linker assist did not generate expected output: '
+                    f'{linker_file}')
+            self.zephyr_linker_script = linker_name
+
+        if has_mpu_policy:
+            mpu_dts = os.path.join(
+                self.args.work, f'{self.cpuname}-mpu.dts')
+            logger.debug('Generating Zephyr MPU policy for domain %s',
+                         domain_name)
+            result = lopper_utils.RunLopperUsingDomainFile(
+                [], self.args.work, self.args.dts_path, dts_file,
+                mpu_dts, '', f'zephyr_mpu {assist_args}')
+            if lopper_utils.LopperAssistFailed(result):
+                raise Exception(
+                    f'Zephyr MPU assist failed for domain {domain_name}')
+            if not os.path.isfile(mpu_dts):
+                raise Exception(
+                    'Zephyr MPU assist did not generate expected output: '
+                    f'{mpu_dts}')
+            return mpu_dts
+
+        return dts_file
+
+    def ZephyrLinkerConfig(self):
+        """Return the generated linker setting for a Zephyr config."""
+        linker_name = getattr(self, 'zephyr_linker_script', '')
+        if not linker_name:
+            return ''
+        return ('ZEPHYR_SDT_LINKER_SCRIPT = '
+                f'"${{CONFIG_DTFILE_DIR}}/linker-files/{linker_name}"\n')
+
     def GenOpenampDts(self, ps_dts_file, subcommand_args=''):
         """
         Generate OpenAMP device tree source file for the specified CPU.
@@ -106,6 +207,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         if self.os_hint.startswith('zephyr'):
             openamp_args = 'zephyr_dt'
         DTSFile = self.GenOpenampDts(DTSFile, openamp_args)
+        DTSFile = self.GenZephyrPolicyDts(DTSFile)
 
         lopper_utils.RunLopperUsingDomainFile(domain_files, self.args.work, self.args.dts_path,
                                 DTSFile, dts_file, lopper_args, subcommand_args)
@@ -272,6 +374,7 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         lopper_utils.IncludeCustomDtsi(self.args.work, self.mcname, ZephyrBoardDTS, self.system_conffile)
         # Update multiconfig with dt file
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
+        conf_file_str += self.ZephyrLinkerConfig()
         conf_file = os.path.join(self.args.config_dir,
                                  'multiconfig', '%s.conf' % mc_filename)
         common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')

@@ -226,14 +226,17 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
 
 
 def RunLopperUsingDomainFile(domain_files, outdir, dts_path, hw_file,
-                             dts_file='', lopper_args='', subcommand_args=''):
+                             dts_file='', lopper_args='', subcommand_args='',
+                             run_dir=''):
     """
     Generic lopper execution with domain files.
 
     Executes the lopper tool with specified domain files and optional subcommands. This is a
     flexible wrapper that handles both absolute and relative domain file paths, automatically
     resolving relative paths within the lopper lops directory. Supports enhanced mode with
-    device tree compiler flags and can execute additional lopper subcommands as needed.
+    device tree compiler flags and can execute additional lopper subcommands as needed. The
+    optional run_dir selects the command working directory for assists that emit relative
+    side artifacts; dts_path remains the default.
     """
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     domain_args = ''
@@ -249,8 +252,17 @@ def RunLopperUsingDomainFile(domain_files, outdir, dts_path, hw_file,
     if subcommand_args != '':
         cmd += ' -- %s' % (subcommand_args)
 
-    stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
+    stdout = common_utils.RunCmd(cmd, run_dir or dts_path, shell=True)
     return stdout
+
+
+def LopperAssistFailed(result):
+    """Return whether Lopper reported a failed assist with a zero exit code."""
+    if result is None:
+        return False
+    output = result if isinstance(result, (list, tuple)) else [result]
+    return any('the assist returned false' in str(item)
+               for item in output if item)
 
 
 def RunLopperGenLinuxDts(outdir, dts_path, domain_files, hw_file, dts_file, subcommand_args, lopper_args=''):
