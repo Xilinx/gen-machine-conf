@@ -63,16 +63,15 @@ class ParseMultiConfigFiles():
         pass
 
     def MicroblazeVSetup(self):
-        cpu = re.sub(r'^(xlnx|amd),', '', self.cpu).replace('.', '-')
+        # Detect the register width (XLEN) from the design. 64-bit MicroBlaze-V
+        # runs Linux, 32-bit runs Zephyr. Both are the actual machine (primary
+        # domain, empty mc_name), not a multiconfig target.
+        _m_arch, xlen = project_config.GetMBVXlen(self.args.work, os.getcwd(),
+                                                  self.args.hw_file)
+        os_hint = 'linux' if xlen == 64 else 'zephyr'
         if self.args.soc_family == 'microblaze-v':
             mc_name = ''
-            os_hint = 'linux'
             self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint};
-        # For Mb-v add zephyr as default MC
-        os_hint = 'zephyr'
-        mc_name = '%s-%s-%s' % (cpu, self.core, os_hint)
-        self.MultiConfFiles.append(mc_name)
-        self.MultiConfMap[mc_name] = { 'cpuname' : self.cpuname, 'cpu' : self.cpu, 'core' : self.core, 'domain' : self.domain, 'os_hint' : os_hint};
 
     def ParseCpuDict(self):
         for cpuname in self.cpu_info_dict.keys():
@@ -152,7 +151,6 @@ class GenerateMultiConfigFiles():
                      'pmu-microblaze' : 'microblaze-pmu',
                      'pmc-microblaze' : 'microblaze-pmc',
                      'psm-microblaze' : 'microblaze-psm',
-                     'xlnx,microblaze-riscv-1.0' : 'riscv32',
                      'xlnx,asu-microblaze_riscv' : 'microblaze-v-asu' }
 
         if not self.MultiConfUser or not self.MultiConfMap:
@@ -214,17 +212,12 @@ class GenerateMultiConfigFiles():
                     elif distro.startswith('freertos'):
                         distro = 'xilinx-freertos'
                     elif distro.startswith('zephyr'):
-                        if cpu.startswith('xlnx,microblaze-riscv'):
-                            McExtraVars += '#Risc-V Tune features\n'
-                            McExtraVars += 'require conf/machine/include/riscv/tune-riscv.inc\n'
-                            mc_target = 'microblaze-v'
-                        else:
-                            mc_target = self.args.soc_family
-                            if self.args.soc_family == 'versal' and self.args.soc_variant == 'net':
-                                mc_target += '-net'
-                            if cpu in ['arm,cortex-a53', 'arm,cortex-a72', 'arm,cortex-a78']:
-                                # Cortex-A APU uses the aarch64 *_apu Zephyr board.
-                                mc_target += '-apu'
+                        mc_target = self.args.soc_family
+                        if self.args.soc_family == 'versal' and self.args.soc_variant == 'net':
+                            mc_target += '-net'
+                        if cpu in ['arm,cortex-a53', 'arm,cortex-a72', 'arm,cortex-a78']:
+                            # Cortex-A APU uses the aarch64 *_apu Zephyr board.
+                            mc_target += '-apu'
                         distro, ExtraVars = self.ZephyrConfigurations(mc_target)
                         McExtraVars += ExtraVars
 
