@@ -14,6 +14,7 @@ import re
 import yaml
 import common_utils
 import yaml_utils
+import lopper_utils
 import logging
 import glob
 import multiconfigs
@@ -40,6 +41,14 @@ config SUBSYSTEM_VARIANT_{0}{1}
         bool
         default y
         help
+'''
+
+mbv_xlen_menu = '''
+config SUBSYSTEM_MICROBLAZE_V_XLEN_{0}
+        bool
+        default y
+        help
+          Auto-detected MicroBlaze-V register width (XLEN={0}).
 '''
 
 Kconfig_sdt = '''
@@ -109,6 +118,30 @@ def GenMachineScriptsPath():
     genscriptspath = os.path.join(os.path.dirname(scriptpath),
                                   'gen-machine-scripts')
     return genscriptspath
+
+_MBVXlenDone = False
+def GetMBVXlen(work, dts_path, hw_file):
+    '''Auto-detect the MicroBlaze-V RISC-V -march (tune features) and register
+    width (XLEN) from the design by running the microblaze-riscv lop and reading
+    cflags.yaml. Returns a tuple (m_arch, xlen): m_arch is the -march string
+    (e.g. "rv64imafdc", or '' if not found) and xlen is 32 or 64 (default 32).'''
+    global _MBVXlenDone
+    if not _MBVXlenDone:
+        lopper_utils.RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'],
+                                              work, dts_path, hw_file)
+        _MBVXlenDone = True
+    cflags_file = os.path.join(work, 'cflags.yaml')
+    if not os.path.isfile(cflags_file):
+        raise Exception('cflags file does not exist: %s, required to detect the '
+                        'MicroBlaze-V tune features and register width' % cflags_file)
+    cflags_data = yaml_utils.ReadYaml(cflags_file) or {}
+    march_match = re.search(r'-march=(\S+)', cflags_data.get('cflags', ''))
+    m_arch = march_match.group(1) if march_match else ''
+    xlen_match = re.match(r'rv(\d+)', m_arch)
+    if not xlen_match:
+        logger.warning('Unable to detect MicroBlaze-V -march, defaulting to 32-bit')
+        return m_arch, 32
+    return m_arch, int(xlen_match.group(1))
 
 
 def ConvertMCTargetsToKconfig(bbmctargets, multiconfig_min):
@@ -223,7 +256,11 @@ def GenKconfigProj(args, system_conffile, hw_info, MCObject=None):
         Kconfig_soc_variant = args.soc_variant.upper()
         Kconfig_str += socvariant_menu.format(
             Kconfig_soc_family, Kconfig_soc_variant)
-    if Kconfig_BBMCTargets:
+    if args.soc_family == 'microblaze-v':
+        _m_arch, mbv_xlen = GetMBVXlen(args.work, os.getcwd(), args.hw_file)
+        Kconfig_str += mbv_xlen_menu.format(mbv_xlen)
+    # Emit the SDT flow config if the user requested it (via --hw-flow sdt)
+    if getattr(args, 'hw_flow', '') == 'sdt':
         Kconfig_str += Kconfig_sdt
     Kconfig_str += '\nsource %s/Kconfig.main\n' % project_cfgdir
 
