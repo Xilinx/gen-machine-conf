@@ -499,12 +499,21 @@ BootModes_dict = {
             'UFS': 11, 'SD1 (v3.0)': 14
         },
         'def_bootmode': '8'
+    },
+    'versal-2vp': {
+        'bootmodes': {
+            'JTAG': '0','QSPI24': 1, 'QSPI32': 2, 'SD0 (v3.0)': 3,
+            'SD1 (v2.0)': 5, 'eMMC1 (v4.51)': 6,
+            'OSPI': 8, 'SD1 (v3.0)': 14
+        },
+        'def_bootmode': '8'
     }
 }
 
 
 def GenConf_bootmodes(proc):
-    soc_family = project_config.DetectSocFamily(proc)
+    soc_family = project_config.DetectSocFamily(
+                            proc, hwyamldata.get('device_id', ''))
     bootmode_info = BootModes_dict.get(soc_family, {})
     bootmodes = bootmode_info.get('bootmodes', {})
     default_bootmode = bootmode_info.get('def_bootmode', '')

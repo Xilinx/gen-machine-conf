@@ -205,7 +205,8 @@ def main():
                                default=yaml_utils.AddYamlDefaultValues('--hw-description'))
     optional_args.add_argument('--soc-family',
                                choices=['microblaze-v', 'zynq',
-                                        'zynqmp', 'versal', 'versal-2ve-2vm'],
+                                        'zynqmp', 'versal', 'versal-2ve-2vm',
+                                        'versal-2vp'],
                                default=yaml_utils.AddYamlDefaultValues('--soc-family'),
                                help='SOC family type from choice list (usually auto detected).')
     optional_args.add_argument('--soc-variant', default=yaml_utils.AddYamlDefaultValues('--soc-variant'),

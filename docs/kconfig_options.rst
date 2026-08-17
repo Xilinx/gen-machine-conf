@@ -782,6 +782,7 @@ YOCTO_MACHINE_NAME
     - ``versal-net-generic`` (for Versal NET)
     - ``versal-generic`` (for Versal)
     - ``versal-2ve-2vm-generic`` (for Versal 2VE/2VM)
+    - ``versal-2vp-generic`` (for Versal 2VP)
     - ``zynqmp-generic`` (for ZynqMP)
     - ``zynq-generic`` (for Zynq-7000)
     - ``microblaze-v-generic`` (for MicroBlaze-V)
@@ -1022,6 +1023,10 @@ Architecture-Specific Defaults
    * - Versal 2VE/2VM
      - AARCH64
      - versal-2ve-2vm-generic
+     - Image
+   * - Versal 2VP
+     - AARCH64
+     - versal-2vp-generic
      - Image
    * - MicroBlaze-V
      - MICROBLAZE-V

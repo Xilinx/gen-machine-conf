@@ -31,6 +31,8 @@ Machinefeatures_soc = {
     },
     'versal-2ve-2vm': {
         'common': 'vcu2 malig78ae'
+    },
+    'versal-2vp': {
     }
 }
 
@@ -433,7 +435,7 @@ def SerialConsoleSettings(system_conffile, soc_family=''):
             # login console instead of none. The tty prefix is SoC-determined.
             soc_tty = {'zynq': 'ttyPS0', 'zynqmp': 'ttyPS0',
                        'versal': 'ttyAMA0', 'versal-net': 'ttyAMA0',
-                       'versal-2ve-2vm': 'ttyAMA0',
+                       'versal-2ve-2vm': 'ttyAMA0', 'versal-2vp': 'ttyAMA0',
                        'microblaze-v': 'ttyUL0'}
             tty = soc_tty.get(soc_family, 'ttyPS0')
             baudrate = '115200'
@@ -550,7 +552,7 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
         fpga_image_type = 'pdi' if args.device_id.startswith('xcsu') else 'bit'
     elif args.soc_family in ['zynq', 'zynqmp']:
         fpga_image_type = 'bit'
-    elif args.soc_family in ['versal', 'versal-2ve-2vm']:
+    elif args.soc_family in ['versal', 'versal-2ve-2vm', 'versal-2vp']:
         fpga_image_type = 'pdi'
     else:
         fpga_image_type = ''
@@ -632,7 +634,8 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
 
 
 YoctoGenericMachines = ('microblaze-v-generic', 'zynq-generic',
-                        'zynqmp-generic','versal-generic', 'versal-net-generic', 'versal-2ve-2vm-generic')
+                        'zynqmp-generic','versal-generic', 'versal-net-generic', 'versal-2ve-2vm-generic',
+                        'versal-2vp-generic')
 
 def GenerateYoctoMachine(args, system_conffile, syshw_file, MultiConfDict=''):
     genmachine_scripts = project_config.GenMachineScriptsPath()

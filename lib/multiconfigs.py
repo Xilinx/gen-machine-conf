@@ -50,7 +50,7 @@ class ParseMultiConfigFiles():
             NonLinuxOS = [ 'baremetal', 'freertos' ]
             if self.cpu in ['arm,cortex-r52', 'arm,cortex-a53', 'arm,cortex-a72', 'arm,cortex-a78']:
                 NonLinuxOS.append('zephyr')
-            elif self.cpu == 'arm,cortex-r5' and self.args.soc_family in ['versal', 'zynqmp']:
+            elif self.cpu == 'arm,cortex-r5' and self.args.soc_family in ['versal', 'zynqmp', 'versal-2vp']:
                 NonLinuxOS.append('zephyr')
             for os_hint in NonLinuxOS:
                 mc_name = '%s-%s%s-%s' % (cpu, self.core, domain_suffix, os_hint)
@@ -126,10 +126,12 @@ class GenerateMultiConfigFiles():
             'versal' : { 'board' : 'versal_rpu'},
             'versal-net' : { 'board' : 'versalnet_rpu'},
             'versal-2ve-2vm' : { 'board' : 'versal2_rpu'},
+            'versal-2vp' : { 'board' : 'versal_rpu'},
             'zynqmp-apu' : { 'board' : 'zynqmp_apu'},
             'versal-apu' : { 'board' : 'versal_apu'},
             'versal-net-apu' : { 'board' : 'versalnet_apu'},
-            'versal-2ve-2vm-apu' : { 'board' : 'versal2_apu'}
+            'versal-2ve-2vm-apu' : { 'board' : 'versal2_apu'},
+            'versal-2vp-apu' : { 'board' : 'versal_apu'}
             }
         distro = 'amd-zephyr'
         ZephyrVars = '# Zephyr RTOS settings.\n'

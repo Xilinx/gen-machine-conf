@@ -1003,7 +1003,8 @@ def ParseSDT(args):
             logger.debug('Using the soc_family specified by user:%s' % args.soc_family)
             hw_info['soc_family'] = args.soc_family
         elif 'soc_family' not in hw_info:
-            hw_info['soc_family'] = project_config.DetectSocFamily(hw_info['proc_type'])
+            hw_info['soc_family'] = project_config.DetectSocFamily(
+                                        hw_info['proc_type'], hw_info.get('device_id', ''))
 
         if args.soc_variant:
             logger.debug('Using the soc_variant specified by user:%s' % args.soc_variant)
