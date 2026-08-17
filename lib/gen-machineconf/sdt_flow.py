@@ -661,15 +661,14 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         BoardKconfigDefconfig_S = os.path.join(self.args.work, 'board_Kconfig.defconfig')
         BoardKconfigDefconfig_D = os.path.join(self.args.dts_path, '%s-board_Kconfig.defconfig' % mc_filename)
         common_utils.CopyFile(BoardKconfigDefconfig_S, BoardKconfigDefconfig_D)
-        # Register the generated DT, board Kconfig and Zephyr board/distro so the
+        # Register the generated DT, board Kconfig and Zephyr board so the
         # machine conf (yocto_machine) can reference them. The tune features are
         # reused from the generated microblaze-v.inc (same as the Linux path).
-        distro, zephyr_vars = self.ZephyrConfigurations('microblaze-v')
+        _, zephyr_vars = self.ZephyrConfigurations('microblaze-v')
         board_match = re.search(r'ZEPHYR_BOARD = "([^"]+)"', zephyr_vars)
         self.MultiConfDict['ZephyrDT'] = Mbv32Dts
         self.MultiConfDict['ZephyrBoardKconfigDefconfig'] = BoardKconfigDefconfig_D
         self.MultiConfDict['ZephyrBoard'] = board_match.group(1) if board_match else ''
-        self.MultiConfDict['ZephyrDistro'] = distro
         self.MultiConfDict['ZephyrDefaultTune'] = 'microblaze-v'
         self.MultiConfDict['PrimaryOs'] = 'zephyr'
 
