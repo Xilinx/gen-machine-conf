@@ -519,7 +519,8 @@ def GenConf_bootmodes(proc):
     default_bootmode = bootmode_info.get('def_bootmode', '')
     if not bootmodes:
         return ''
-    confstr = '\nif SUBSYSTEM_SDT_FLOW\n'
+    # Boot mode is a boot/u-boot concept; hide it for 32-bit MicroBlaze-V (Zephyr).
+    confstr = '\nif SUBSYSTEM_SDT_FLOW && !SUBSYSTEM_MICROBLAZE_V_XLEN_32\n'
     confstr += '\nmenu "Boot Mode Settings"\n'
     confstr += '\nchoice\n'
     confstr += '\tprompt "Primary Boot Mode"\n'
