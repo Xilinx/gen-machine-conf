@@ -368,9 +368,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, lopdts)
 
         # Generate zephyr dt
+        hw_dir = pathlib.Path(self.args.hw_file).parent
         ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
         lopper_utils.RunLopperUsingDomainFile([], self.args.work, self.args.dts_path,
-                                 ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+                                 ZephyrImuxDTS, ZephyrBoardDTS, '', f'gen_domain_dts {self.cpuname} zephyr_dt {hw_dir}')
         lopper_utils.IncludeCustomDtsi(self.args.work, self.mcname, ZephyrBoardDTS, self.system_conffile)
         # Update multiconfig with dt file
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
@@ -650,8 +651,9 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Generate Domain specific dts file
         domain_dts_file = self.GenDomainDTS(DomainDTS, 'lop-microblaze-riscv.dts')
         # Generate zephyr dt
+        hw_dir = pathlib.Path(self.args.hw_file).parent
         lopper_utils.RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'], self.args.work, self.args.dts_path,
-                                 DomainDTS, BoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+                                 DomainDTS, BoardDTS, '', f'gen_domain_dts {self.cpuname} zephyr_dt {hw_dir}')
         # Generate zephyr mbv32 dt
         lopper_utils.RunLopperUsingDomainFile(['lop-mbv-zephyr-intc.dts'], self.args.work, self.args.dts_path,
                                  BoardDTS, Mbv32Dts)
