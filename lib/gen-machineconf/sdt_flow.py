@@ -368,9 +368,10 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         domain_dts_file = self.GenDomainDTS(ZephyrImuxDTS, lopdts)
 
         # Generate zephyr dt
+        hw_dir = pathlib.Path(self.args.hw_file).parent
         ZephyrBoardDTS = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
         lopper_utils.RunLopperUsingDomainFile([], self.args.work, self.args.dts_path,
-                                 ZephyrImuxDTS, ZephyrBoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+                                 ZephyrImuxDTS, ZephyrBoardDTS, '', f'gen_domain_dts {self.cpuname} zephyr_dt {hw_dir}')
         lopper_utils.IncludeCustomDtsi(self.args.work, self.mcname, ZephyrBoardDTS, self.system_conffile)
         # Update multiconfig with dt file
         conf_file_str  = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(ZephyrBoardDTS)
@@ -640,9 +641,8 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         lopper_utils.IncludeCustomDtsi(self.args.work, self.mcname, dts_file, self.system_conffile)
 
     def MBRiscVZephyr(self):
-        mc_filename = "%s-%s" % (self.args.machine, self.mcname)
-        conf_file = os.path.join(self.args.config_dir,
-                                     'multiconfig', '%s.conf' % mc_filename)
+        # Zephyr is the actual machine (primary domain) for 32-bit MB-V.
+        mc_filename = 'microblaze-riscv-zephyr'
         DomainDTS = os.path.join(self.args.dts_path, '%s-domain.dts' % mc_filename)
         BoardDTS = os.path.join(self.args.dts_path, '%s-board.dts' % mc_filename)
         Mbv32Dts = os.path.join(self.args.dts_path, '%s.dts' % mc_filename)
@@ -651,21 +651,28 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
         # Generate Domain specific dts file
         domain_dts_file = self.GenDomainDTS(DomainDTS, 'lop-microblaze-riscv.dts')
         # Generate zephyr dt
+        hw_dir = pathlib.Path(self.args.hw_file).parent
         lopper_utils.RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'], self.args.work, self.args.dts_path,
-                                 DomainDTS, BoardDTS, '', 'gen_domain_dts %s zephyr_dt' % self.cpuname)
+                                 DomainDTS, BoardDTS, '', f'gen_domain_dts {self.cpuname} zephyr_dt {hw_dir}')
         # Generate zephyr mbv32 dt
         lopper_utils.RunLopperUsingDomainFile(['lop-mbv-zephyr-intc.dts'], self.args.work, self.args.dts_path,
                                  BoardDTS, Mbv32Dts)
         lopper_utils.IncludeCustomDtsi(self.args.work, self.mcname, Mbv32Dts, self.system_conffile)
-        # Lopper generates a single board_Kconfig.defconfig file, copy it next
-        # to the dts and point the multiconfig at it via the board variable.
+        # Lopper generates a single board_Kconfig.defconfig file, copy it next to
+        # the dts so the machine conf can reference it.
         BoardKconfigDefconfig_S = os.path.join(self.args.work, 'board_Kconfig.defconfig')
         BoardKconfigDefconfig_D = os.path.join(self.args.dts_path, '%s-board_Kconfig.defconfig' % mc_filename)
         common_utils.CopyFile(BoardKconfigDefconfig_S, BoardKconfigDefconfig_D)
-        if conf_file:
-            conf_file_str = 'CONFIG_DTFILE = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(Mbv32Dts)
-            conf_file_str += 'ZEPHYR_SDT_BOARD_KCONFIG_DEFCONFIG  = "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(BoardKconfigDefconfig_D)
-            common_utils.AddStrToFile(conf_file, conf_file_str, mode='a+')
+        # Register the generated DT, board Kconfig and Zephyr board so the
+        # machine conf (yocto_machine) can reference them. The tune features are
+        # reused from the generated microblaze-v.inc (same as the Linux path).
+        _, zephyr_vars = self.ZephyrConfigurations('microblaze-v')
+        board_match = re.search(r'ZEPHYR_BOARD = "([^"]+)"', zephyr_vars)
+        self.MultiConfDict['ZephyrDT'] = Mbv32Dts
+        self.MultiConfDict['ZephyrBoardKconfigDefconfig'] = BoardKconfigDefconfig_D
+        self.MultiConfDict['ZephyrBoard'] = board_match.group(1) if board_match else ''
+        self.MultiConfDict['ZephyrDefaultTune'] = 'microblaze-v'
+        self.MultiConfDict['PrimaryOs'] = 'zephyr'
 
     def MBTuneFeatures(self):
         if self.MBTunesDone:
@@ -680,39 +687,27 @@ class sdtGenerateMultiConfigFiles(multiconfigs.GenerateMultiConfigFiles):
                                   mode='a+')
         self.MBTunesDone = True
 
-    def GetRiscVTuneFeatures(self):
-        lopper_utils.RunLopperUsingDomainFile(['lop-microblaze-riscv.dts'],
-                                 self.args.work, os.getcwd(), self.args.hw_file)
-        cflags_file = os.path.join(self.args.work, 'cflags.yaml')
-        if not os.path.isfile(cflags_file):
-            raise Exception('cflags file does not exist: %s, required to generate the mb-v tune features' % cflags_file)
-        cflags_data = yaml_utils.ReadYaml(cflags_file) or {}
-        m_arch = ''
-        microblaze_riscv_inc = ''
-        if 'cflags' in cflags_data:
-            cflags_str = cflags_data['cflags']
-            # Extract -march value
-            march_match = re.search(r'-march=(\S+)', cflags_str)
-            if march_match:
-                m_arch = march_match.group(1)
-
-        # Check if m_arch has 64-bit with 'f' but without 'd' extension
-        if m_arch and '64' in m_arch and 'f' in m_arch and 'd' not in m_arch:
-            logger.warning(f'MicroBlaze-V Tunes ({m_arch}) specifies single-precision '
-                         f'floating-point (f) without double-precision (d) extension. '
-                         f'This configuration is not supported by Glibc and may cause build failures.')
-
-        return m_arch
-
     def MBRiscVTuneFeatures(self):
         if self.MBVTunesDone:
             return
         logger.info('Generating microblaze riscv processor tunes')
-        m_arch = self.GetRiscVTuneFeatures()
+        m_arch, xlen = project_config.GetMBVXlen(self.args.work, os.getcwd(),
+                                                 self.args.hw_file)
+        # Check if m_arch has 64-bit with 'f' but without 'd' extension
+        if xlen == 64 and 'f' in m_arch and 'd' not in m_arch:
+            logger.warning(f'MicroBlaze-V Tunes ({m_arch}) specifies single-precision '
+                         f'floating-point (f) without double-precision (d) extension. '
+                         f'This configuration is not supported by Glibc and may cause build failures.')
+
         microblaze_riscv_inc = os.path.join(self.args.bbconf_dir, 'microblaze-v.inc')
         if m_arch:
             if self.args.soc_family == 'microblaze-v':
-                MBV_variables = '\n# compatible = "xlnx,microblaze_v";\n'
+                MBV_variables = ''
+                # 32-bit MB-V is a primary Zephyr machine that does not require
+                # the generic machine conf, so pull in the base tune definitions
+                if xlen == 32:
+                    MBV_variables += '\nrequire conf/machine/include/xilinx-microblaze-v.inc\n'
+                MBV_variables += '\n# compatible = "xlnx,microblaze_v";\n'
                 MBV_variables += f'TUNE_FEATURES:tune-microblaze-v = "${{@oe.tune.riscv_isa_to_tune("{m_arch}")}}"\n'
             else:
                 MBV_variables = '\nrequire conf/machine/include/xilinx-microblaze-v.inc\n'

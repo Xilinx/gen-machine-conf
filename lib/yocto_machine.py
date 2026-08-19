@@ -459,31 +459,110 @@ def SerialConsoleSettings(system_conffile, soc_family=''):
     return serial_console, baudrate
 
 
+def YoctoSdtZephyrConfigs(MultiConfDict, machine):
+    """Zephyr primary-domain machine settings (e.g. 32-bit MicroBlaze-V).
+    Returns the board block that precedes the shared CONFIG_DTFILE
+    settings. The tune features are reused from the generated microblaze-v.inc
+    (required in YoctoSdtConfigs, same as the Linux path). Kept separate from
+    the Linux path for now; to be consolidated later.
+    """
+    board = MultiConfDict.get('ZephyrBoard', '')
+    machine_override_string  = ''
+    if board:
+        machine_override_string += '\n# Zephyr RTOS settings\n'
+        machine_override_string += 'ZEPHYR_BOARD = "%s"\n' % board
+        machine_override_string += 'ARCH = "riscv32"\n'
+    machine_override_string += '\n# Warn if this machine is used with a non-Zephyr DISTRO\n'
+    # The generic machine include (which inherits xilinx-deprecated in
+    # meta-xilinx) is skipped for the Zephyr domain, so inherit it here to
+    # activate the XILINX_DEPRECATED warning below.
+    machine_override_string += 'INHERIT += "xilinx-deprecated"\n'
+    machine_override_string += ('XILINX_DEPRECATED[%s] = "${@\'This configuration is only '
+                                'intended for use with DISTRO set to amd-zephyr.  It will '
+                                'likely fail with other configurations.\' '
+                                'if (d.getVar(\'DISTRO\') != \'amd-zephyr\') else \'\'}"\n'
+                                % machine)
+    return machine_override_string
+
+
+def GetSdtDomainConfig(args, MultiConfDict, machine):
+    """Return the domain-specific machine settings, selected by the
+    authoritative 'PrimaryOs' key (defaults to Linux when unset). Carries the
+    device-tree data plus 'emits_*' capability flags gating optional blocks.
+    """
+    if MultiConfDict.get('PrimaryOs') == 'zephyr':
+        board_kconfig = MultiConfDict.get('ZephyrBoardKconfigDefconfig', '')
+        post_dtfile = ''
+        if board_kconfig:
+            post_dtfile = ('ZEPHYR_SDT_BOARD_KCONFIG_DEFCONFIG = '
+                           '"${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(board_kconfig))
+        return {
+            'primary_os': 'zephyr',
+            'dtfile': MultiConfDict.get('ZephyrDT', ''),
+            'pre_dtfile': YoctoSdtZephyrConfigs(MultiConfDict, machine),
+            'post_dtfile': post_dtfile,
+            'defaulttune': MultiConfDict.get('ZephyrDefaultTune', ''),
+            'emits_dtb_path': False,
+            'emits_serial': False,
+            'emits_uboot_kernel': False,
+            'emits_generic_require': False,
+            'emits_bootfw': False,
+            'opensbi': False,
+        }
+    return {
+        'primary_os': 'linux',
+        'dtfile': MultiConfDict.get('LinuxDT', ''),
+        'pre_dtfile': '',
+        'post_dtfile': '',
+        'defaulttune': '',
+        'emits_dtb_path': True,
+        'emits_serial': True,
+        'emits_uboot_kernel': True,
+        'emits_generic_require': True,
+        'emits_bootfw': True,
+        'opensbi': args.soc_family == 'microblaze-v',
+    }
+
+
 def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
-                    MultiConfDict, machine_override_string):
+                    MultiConfDict, machine_override_string, machine):
+
+    domain_config = GetSdtDomainConfig(args, MultiConfDict, machine)
 
     if args.soc_family == 'microblaze-v':
         machine_override_string += '\n# MicroBlaze V Tune features Settings\n'
+        # Set DEFAULTTUNE before the tune include so it selects the right tune.
+        if domain_config.get('defaulttune'):
+            machine_override_string += 'DEFAULTTUNE = "%s"\n' % domain_config['defaulttune']
         machine_override_string += f'require {os.path.join("conf", "machine", "include", args.machine, "microblaze-v.inc")}\n'
 
-    config_dtfile = MultiConfDict.get('LinuxDT', '')
+    machine_override_string += domain_config.get('pre_dtfile', '')
+
+    config_dtfile = domain_config.get('dtfile', '')
     config_dtfile_dir = os.path.relpath(args.dts_path, start=args.config_dir)
 
-    machine_override_string += '\n# Set the default (linux) domain device tree\n'
+    machine_override_string += '\n# Set the default (%s) domain device tree\n' % domain_config.get('primary_os', 'linux')
     machine_override_string += 'CONFIG_DTFILE_DIR := "${@bb.utils.which(d.getVar(\'BBPATH\'), \'conf/%s\')}"\n' % config_dtfile_dir
     if config_dtfile:
         machine_override_string += 'CONFIG_DTFILE ?= "${CONFIG_DTFILE_DIR}/%s"\n' % os.path.basename(config_dtfile)
     machine_override_string += 'CONFIG_DTFILE[vardepsexclude] += "CONFIG_DTFILE_DIR"\n'
 
-    machine_override_string += '\nDTB_FILE_PATH ?= "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
+    machine_override_string += domain_config.get('post_dtfile', '')
 
-    serial_console, baudrate = SerialConsoleSettings(system_conffile,
-                                                     soc_family=args.soc_family)
-    if serial_console:
-        machine_override_string += '\n# Serial Console Settings\n'
-        machine_override_string += 'SERIAL_CONSOLES ?= "%s"\n' % serial_console
+    # The device tree blob, serial getty and the u-boot/kernel variables below
+    # are Linux/u-boot specific; each is gated by its domain capability flag.
+    if domain_config.get('emits_dtb_path'):
+        machine_override_string += '\nDTB_FILE_PATH ?= "${RECIPE_SYSROOT}/boot/devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
 
-    machine_override_string += YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict)
+    if domain_config.get('emits_serial'):
+        serial_console, baudrate = SerialConsoleSettings(system_conffile,
+                                                         soc_family=args.soc_family)
+        if serial_console:
+            machine_override_string += '\n# Serial Console Settings\n'
+            machine_override_string += 'SERIAL_CONSOLES ?= "%s"\n' % serial_console
+
+    if domain_config.get('emits_uboot_kernel'):
+        machine_override_string += YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict)
 
     # Add YAML pre yocto configs
     machine_override_string = UpdateYamlConfigs('pre', machine_override_string)
@@ -491,9 +570,12 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
     # Variables that changes based on hw design or board specific requirement must be
     # defined before calling the required inclusion file else pre-expansion value
     # defined in respective generic machine conf will be set.
-    machine_override_string += '\n# Required generic machine inclusion\n'
-    machine_override_string += 'require conf/machine/%s\n' % \
-        req_conf_file
+    # The generic machine include is Linux/u-boot oriented and is gated by the
+    # domain capability flag.
+    if domain_config.get('emits_generic_require'):
+        machine_override_string += '\n# Required generic machine inclusion\n'
+        machine_override_string += 'require conf/machine/%s\n' % \
+            req_conf_file
 
     # Add QEMU memory configuration if applicable
     qemu_memory = GetQemuMemCfg(args.work, args.dts_path, args.hw_file)
@@ -504,7 +586,7 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
     # Add YAML post yocto configs
     machine_override_string = UpdateYamlConfigs('post', machine_override_string)
 
-    if args.soc_family == 'microblaze-v':
+    if domain_config.get('opensbi'):
         machine_override_string += '\n# Yocto Riscv OPENSBI variables\n'
         ddr_baseaddr = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_', system_conffile,
                                                    'asterisk', '_BASEADDR=')
@@ -535,11 +617,12 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
     # Generally this means that the path will be EMPTY or a 'short' value for a directory
     system_dt_file = ("${RECIPE_SYSROOT}${datadir}/sdt/${MACHINE}/%s" % '').rstrip('/')
 
-    machine_override_string += '\n# Set the system device trees\n'
-    machine_override_string += 'SYSTEM_DTFILE_DEPENDS = "sdt-artifacts"\n'
-    machine_override_string += 'SYSTEM_DTFILE_DIR = "%s"\n' % system_dt_file
-    machine_override_string += 'SYSTEM_DTFILE = "${SYSTEM_DTFILE_DIR}/%s"\n' % \
-                               os.path.basename(args.hw_file)
+    if domain_config.get('emits_dtb_path'):
+        machine_override_string += '\n# Set the system device trees\n'
+        machine_override_string += 'SYSTEM_DTFILE_DEPENDS = "sdt-artifacts"\n'
+        machine_override_string += 'SYSTEM_DTFILE_DIR = "%s"\n' % system_dt_file
+        machine_override_string += 'SYSTEM_DTFILE = "${SYSTEM_DTFILE_DIR}/%s"\n' % \
+                                   os.path.basename(args.hw_file)
 
     if args.soc_family != 'microblaze-v':
         machine_override_string += '\n# Load the dynamic machine features\n'
@@ -617,18 +700,21 @@ def YoctoSdtConfigs(args, arch, system_conffile, req_conf_file,
             machine_override_string += 'BITSTREAM_PATH_DIR = "%s"\n' % bitstream_path_dir
             machine_override_string += 'BITSTREAM_PATH = "${BITSTREAM_PATH_DIR}/%s"\n' % \
                                        os.path.basename(args.pl)
-    bootmode_value = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_BOOTMODE_',
-                                                    system_conffile, 'choice', '=y')
-    # For JTAG bootmode, we want to set the default to empty.
-    if bootmode_value == '0':
-        bootmode_value = ''
-    machine_override_string += '\n# Primary Bootmode value\n'
-    machine_override_string += 'DEFAULT_HW_BOOT_MODE = "%s"\n' % bootmode_value
+    # Bootmode, Boot.bin device tree and boot file remapping are Linux/u-boot
+    # boot concepts, gated by the domain capability flag.
+    if domain_config.get('emits_bootfw'):
+        bootmode_value = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_BOOTMODE_',
+                                                        system_conffile, 'choice', '=y')
+        # For JTAG bootmode, we want to set the default to empty.
+        if bootmode_value == '0':
+            bootmode_value = ''
+        machine_override_string += '\n# Primary Bootmode value\n'
+        machine_override_string += 'DEFAULT_HW_BOOT_MODE = "%s"\n' % bootmode_value
 
-    machine_override_string += '\n# Update bootbin to use proper device tree\n'
-    machine_override_string += 'BIF_PARTITION_IMAGE[device-tree] = "${DTB_FILE_PATH}"\n'
-    machine_override_string += '\n# Remap boot files to ensure the right device tree is listed first\n'
-    machine_override_string += 'IMAGE_BOOT_FILES =+ "devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
+        machine_override_string += '\n# Update bootbin to use proper device tree\n'
+        machine_override_string += 'BIF_PARTITION_IMAGE[device-tree] = "${DTB_FILE_PATH}"\n'
+        machine_override_string += '\n# Remap boot files to ensure the right device tree is listed first\n'
+        machine_override_string += 'IMAGE_BOOT_FILES =+ "devicetree/${@os.path.basename(d.getVar(\'CONFIG_DTFILE\').replace(\'.dts\', \'.dtb\'))}"\n'
 
     return machine_override_string
 
@@ -741,7 +827,8 @@ def GenerateYoctoMachine(args, system_conffile, syshw_file, MultiConfDict=''):
     if args.hw_flow == 'sdt':
         machine_override_string = YoctoSdtConfigs(args, arch,
                                                   system_conffile, req_conf_file,
-                                                  MultiConfDict, machine_override_string)
+                                                  MultiConfDict, machine_override_string,
+                                                  machine_conf_file)
     # Add PACKAGE_EXTRA_ARCHS for inherit machine overrides
     if inherit_overrides:
         package_archs = inherit_overrides.replace('-', '_')
