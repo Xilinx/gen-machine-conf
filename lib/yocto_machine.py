@@ -206,7 +206,7 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
         atf_debug = common_utils.GetConfigValue(
                 'CONFIG_SUBSYSTEM_TF-A_DEBUG', system_conffile)
         if atf_debug:
-            machine_override_string += 'DEBUG_ATF = "1"\n'
+            machine_override_string += 'TFA_DEBUG = "1"\n'
 
         optee_serial_ip_name = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_SERIAL_OP-TEE_IP_NAME',
                                                         system_conffile)
