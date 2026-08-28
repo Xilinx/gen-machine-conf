@@ -91,6 +91,8 @@ psu_uart:
     baudrate_editable: y
     earlycon: cdns,mmio32
     console_prefix: ttyPS
+    ip_name_aliases:
+        - ps7_uart
     firmware_console_alias:
         '0': cadence
         '1': cadence1
