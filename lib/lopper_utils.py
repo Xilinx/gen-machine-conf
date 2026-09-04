@@ -15,6 +15,11 @@ import yaml_utils
 
 logger = logging.getLogger('Gen-Machineconf')
 
+# Tracks whether the all-devices YAML (sdt_all_devices.yaml) has been generated
+# in this run. RunLopperGenDomainDTS runs per domain, so generate it once and
+# reuse it for the remaining domains.
+_sdt_devices_generated = False
+
 
 def _GetSerialConsoleInfo(ip_name, ipinfo_file):
     ''' Return (earlycon, tty_prefix) for a serial IP from sdt_ipinfo.yaml.
@@ -177,8 +182,11 @@ def IncludeCustomDtsi(outdir, mcname, dts_file, system_conffile):
         common_utils.AddStrToFile(dts_file, f'#include "{domain_dtsi_path}"\n', mode='a+')
     if dtsi_files:
         logger.debug(f'Generating {dts_file} including {dtsi_files}')
+    # Prune the /domains node from the final linux dts
+    if mcname == 'linux':
+        RunLopperUsingDomainFile(['lop-prune-domains.dts'], outdir, outdir, dts_file, dts_file)
+    else:
         RunLopperUsingDomainFile([], outdir, outdir, dts_file, dts_file)
-
 
 def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
                           domain_yamls, system_conffile):
@@ -197,24 +205,38 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
     lopper, lopper_dir, lops_dir, embeddedsw = common_utils.GetLopperUtilsPath()
     domain_yamls_str = ' -i '.join(domain_yamls)
     domain_args = '--auto'
+    # Run domain_access if config domain_access is enabled
+    domain_access_enabled = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_DOMAIN_ACCESS',
+                                                         system_conffile)
+    if domain_access_enabled:
+        # Generate the all-devices YAML from the SDT and merge it alongside the
+        # domain files so domain_access can resolve device references against
+        # the full device inventory. Generate it once per run and reuse it.
+        global _sdt_devices_generated
+        sdt_devices_yaml = os.path.join(outdir, 'sdt_all_devices.yaml')
+        if not _sdt_devices_generated or not os.path.isfile(sdt_devices_yaml):
+            logger.debug(f'Generating SDT all-devices YAML {sdt_devices_yaml}')
+            cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
+                    {hw_file} - -- sdt_devices -o {sdt_devices_yaml}'
+            common_utils.RunCmd(cmd, dts_path, shell=True)
+        # Merge the all-devices YAML first, ahead of the domain files.
+        domain_yamls_str = f'{sdt_devices_yaml} -i {domain_yamls_str}'
+        _sdt_devices_generated = True
     # Append all the yaml files to SDT
     yaml_dts_file = dts_file.replace('.dts', '-yaml.dts')
     logger.debug(f'Generating DTS {yaml_dts_file} with specified yaml files {domain_yamls}')
-    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
+    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced --emit-embedded-overlays \
             {domain_args} -i {domain_yamls_str} {hw_file} {yaml_dts_file}'
     common_utils.RunCmd(cmd, dts_path, shell=True)
 
     # Update chosen node from /domains to /root
     yaml_chosen_dts_file = dts_file.replace('.dts', '-chosen.dts')
     logger.debug(f'Generating DTS {yaml_chosen_dts_file} to update chosen node')
-    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
+    cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced --emit-embedded-overlays \
             -i lop-domain-chosen.dts -t {domain_name} {yaml_dts_file} {yaml_chosen_dts_file}'
     common_utils.RunCmd(cmd, dts_path, shell=True)
     yaml_dts_file = yaml_chosen_dts_file
 
-    # Run domain_access if config domain_access is enabled
-    domain_access_enabled = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_DT_DOMAIN_ACCESS',
-                                                         system_conffile)
     if domain_access_enabled:
         logger.debug(f'Generating DTS {dts_file} with {yaml_dts_file} using domain_access')
         cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
