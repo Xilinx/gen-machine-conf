@@ -301,10 +301,18 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
         machine_override_string += '\n# Yocto MACHINE_FEATURES Variable\n'
         machine_override_string += 'MACHINE_FEATURES += "%s"\n' % (machine_features)
 
-    if args.soc_variant == 'ev' and args.soc_family == 'zynqmp':
-        machine_override_string += '\n# Yocto IMAGE_FEATURES Variable\n'
-        machine_override_string += 'MACHINE_HWCODECS = "libvcu-omxil"\n'
-        machine_override_string += 'IMAGE_FEATURES += "hwcodecs"\n'
+    is_hwcodecs = common_utils.GetConfigValue(
+        'CONFIG_YOCTO_MACHINE_HWCODECS', system_conffile)
+    if is_hwcodecs == 'y':
+        hwcodecs_value = common_utils.GetConfigValue(
+            'CONFIG_YOCTO_MACHINE_HWCODECS_ENGINE_', system_conffile,
+            'choicelist', '=y').lower()
+        hwcodecs_extra = common_utils.GetConfigValue(
+            'CONFIG_YOCTO_MACHINE_HWCODECS_EXTRA', system_conffile)
+        hwcodecs_value = ' '.join((hwcodecs_value + ' ' + hwcodecs_extra).split())
+        if hwcodecs_value:
+            machine_override_string += '\n# Yocto MACHINE_HWCODECS Variable\n'
+            machine_override_string += 'MACHINE_HWCODECS ?= "%s"\n' % hwcodecs_value
 
     return machine_override_string
 

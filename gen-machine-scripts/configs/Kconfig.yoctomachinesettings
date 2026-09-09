@@ -41,6 +41,31 @@ config YOCTO_MACHINE_FEATURE_EFI
           System Partition, providing flexible and reliable UEFI-based system startup.
 endif
 
+if SUBSYSTEM_VARIANT_ZYNQMPEV
+menuconfig YOCTO_MACHINE_HWCODECS
+        bool "Hardware codecs (MACHINE_HWCODECS)"
+        default y
+        help
+          Enable and select the hardware codec engines assigned to
+          MACHINE_HWCODECS in the generated machine conf.
+
+if YOCTO_MACHINE_HWCODECS
+config YOCTO_MACHINE_HWCODECS_ENGINE_LIBVCU-OMXIL
+        bool "libvcu-omxil"
+        depends on SUBSYSTEM_VARIANT_ZYNQMPEV
+        default y
+        help
+          Use the libvcu-omxil OpenMAX IL hardware codec engine.
+
+config YOCTO_MACHINE_HWCODECS_EXTRA
+        string "Additional (user-defined) hardware codecs"
+        default ""
+        help
+          Specify additional hardware codec entries to append to
+          MACHINE_HWCODECS. Separate multiple values with spaces.
+endif
+endif
+
 @@multiconfigmenustr@@
 
 config YOCTO_MC_DOMAIN_FILEPATH
