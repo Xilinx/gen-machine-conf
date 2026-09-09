@@ -85,7 +85,8 @@ def GenConf_memory(IpsToAdd, slavesdict, proc_ipname, arch):
         confstr += '\nconfig %s_SELECT\n' % memKconf
         confstr += '\tbool "%s"\n' % slave
         # Check each IP baseaddr and use the lower one as default
-        if not DefaultBaseAddr or DefaultBaseAddr > baseaddr:
+        if not DefaultBaseAddr or \
+                int(DefaultBaseAddr, base=16) > int(baseaddr, base=16):
             DefaultBaseAddr = baseaddr
             DefaultBank = 'default %s_SELECT\n' % memKconf
 

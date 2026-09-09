@@ -241,6 +241,15 @@ def YoctoCommonConfigs(args, arch, system_conffile, MultiConfDict):
     if uboot_spl_type:
         machine_override_string += f'SPL_BINARY ?= "{uboot_spl_type}"\n'
 
+    memory = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_', system_conffile,
+                                         'choice', '_SELECT=y')
+    uboot_textbase = common_utils.GetConfigValue(
+        'CONFIG_SUBSYSTEM_MEMORY_%s_U__BOOT_TEXTBASE_OFFSET' % memory,
+        system_conffile)
+    if uboot_textbase:
+        machine_override_string += \
+            'UBOOT_USER_SPECIFIED_TEXT_BASE ?= "%s"\n' % uboot_textbase
+
     ddr_baseaddr = common_utils.GetConfigValue('CONFIG_SUBSYSTEM_MEMORY_', system_conffile,
                                                'asterisk', '_BASEADDR=')
     if not ddr_baseaddr:
