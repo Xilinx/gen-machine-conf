@@ -595,6 +595,25 @@ different processor domains (e.g., Linux, baremetal, FreeRTOS, Zephyr).
 
 These domain-files can be used to enable the multi-config targets based on the os,type and cpu fields.
 
+CPU masks are relative to the CPU children of the referenced SDT cluster.
+For example, a cluster containing only ``cortexr52_6`` selects that core with
+bit 0:
+
+.. code-block:: yaml
+
+    domains:
+      RPU_6_BM:
+        compatible: openamp,domain-v1
+        cpus:
+          - cluster: cpus_r52_6
+            cpumask: 0x1
+        os,type: baremetal
+
+Numbered clusters such as ``cpus_r52_6`` are treated as single-CPU containers.
+Matching uses the existing CPU/OS multiconfig list. The same helper is used
+for multiconfig defaults, domain DTS generation, OpenAMP and Zephyr policies.
+
+
 **Usage Example**
 
 .. code-block:: console
