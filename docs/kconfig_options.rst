@@ -571,6 +571,31 @@ SUBSYSTEM_DT_DOMAIN_ACCESS
     YOCTO_MC_DOMAIN_FILEPATH configuration.
 
 
+SUBSYSTEM_DT_INCLUDE_INFRASTRUCTURE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: string
+:Default: "all"
+:Dependencies: SUBSYSTEM_DT_DOMAIN_ACCESS
+:Description:
+
+    Infrastructure categories passed to lopper ``sdt_devices`` using
+    ``--include-infrastructure``. The default makes all discoverable
+    infrastructure categories available to domain access globs, including
+    Linux's ``dev: "*"``. Domain assignment rules still apply.
+
+    Set a comma-separated list to restrict the categories, for example::
+
+        CONFIG_SUBSYSTEM_DT_INCLUDE_INFRASTRUCTURE="protection,interconnect,slcr"
+
+    An unset or empty value uses ``all``. Use ``sdt_devices
+    --list-infrastructure`` to list the categories supported by the installed
+    lopper version. This setting does not bypass discovery requirements such
+    as the compatible-property check, and does not enable the separate
+    ``--include-clocks`` option. USB/GPU nodes omitted by discovery still
+    require explicit domain access entries or a lopper discovery fix.
+
+
 FPGA Manager
 ============
 
