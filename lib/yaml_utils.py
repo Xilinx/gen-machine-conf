@@ -212,36 +212,44 @@ def GenCPUNames(cluster: str, cpu: str, cpumask_hex: str):
         list[str]: A list of CPU names for each core enabled in the mask.
         Returns an empty list if the cluster name does not match or is incompatible with the cpu string.
     """
-    match = re.match(r'cpus_(\w+?)(?:_\d+)?$', cluster)
+    match = re.fullmatch(r'cpus_(\w+?)(?:_([0-9]+))?', cluster)
     if not match:
         return []
+    cpu_type, cluster_index = match.groups()
     cpu_split = cpu.split(',')
-    cpu_type = match.group(1)
     if len(cpu_split) > 1:
         cpu_prefix = cpu_split[1].split('-')[0]
+        label_prefix = f'{cpu_prefix}{cpu_type}'
+        if label_prefix != cpu_split[1].replace('-', ''):
+            return []
     else:
-        # For non-comma CPUs (e.g. pmc-microblaze), validate that the
-        # cluster cpu_type is part of the cpu string to avoid matching
-        # unrelated clusters (e.g. cpus_a78 for pmc-microblaze)
         cpu_parts = cpu_split[0].split('-')
         if cpu_type not in cpu_parts:
             return []
-        cpu_prefix = cpu_parts[0]
-    if not cpumask_hex and cpumask_hex != 0:
+        label_prefix = cpu_parts[0]
+    if cpumask_hex is None or cpumask_hex == '':
         return []
-    if isinstance(cpumask_hex, int):
-        cpumask = cpumask_hex
-    else:
-        cpumask = int(str(cpumask_hex), 16)
-    bit_positions = [i for i in range(cpumask.bit_length()) if cpumask & (1 << i)]
-    # For comma-separated CPUs (e.g. arm,cortex-a78): cortexa78_0
-    # For non-comma CPUs (e.g. pmc-microblaze): pmc_0
-    if len(cpu_split) > 1:
-        cpunames = [f"{cpu_prefix}{cpu_type}_{i}" for i in bit_positions]
-    else:
-        cpunames = [f"{cpu_prefix}_{i}" for i in bit_positions]
+    try:
+        cpumask = (cpumask_hex if isinstance(cpumask_hex, int)
+                   else int(str(cpumask_hex), 16))
+    except (TypeError, ValueError):
+        raise ValueError(f'Invalid cpumask {cpumask_hex!r} for {cluster}') from None
+    if cpumask < 0:
+        raise ValueError(f'Negative cpumask for {cluster}')
+    if cpumask == 0:
+        return []
 
-    return cpunames
+    if cluster_index is not None:
+        if cpumask != 0x1:
+            raise ValueError(
+                f'cpumask {cpumask:#x} is invalid for '
+                f'single-CPU cluster {cluster}; use 0x1'
+            )
+        core_indices = [int(cluster_index)]
+    else:
+        core_indices = [i for i in range(cpumask.bit_length()) if cpumask & (1 << i)]
+    return [f'{label_prefix}_{i}' for i in core_indices]
+
 
 
 def _FindMatchingDomainInSchema(proc_name: str, cpu: str, os_hint: str, domains_schema: dict):

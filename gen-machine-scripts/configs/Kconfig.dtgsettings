@@ -18,6 +18,18 @@ config SUBSYSTEM_DT_DOMAIN_ACCESS
 	  DTS files from the specified YAML files specified in the
 	  YOCTO_MC_DOMAIN_FILEPATH configuration
 
+config SUBSYSTEM_DT_INCLUDE_INFRASTRUCTURE
+	string "Infrastructure categories for domain device inventory"
+	default "all"
+	depends on SUBSYSTEM_DT_DOMAIN_ACCESS
+	help
+	  Infrastructure categories passed to lopper sdt_devices through
+	  --include-infrastructure. Use all (the default) or a comma-separated
+	  list, such as protection,interconnect,slcr. An empty value uses all.
+	  Use sdt_devices --list-infrastructure to list supported categories.
+	  Domain wildcards select from this inventory. This option does not
+	  bypass device discovery requirements or include clocks separately.
+
 endmenu
 
 if !SUBSYSTEM_ARCH_MICROBLAZE-V

@@ -10,6 +10,7 @@
 import logging
 import os
 import re
+import shlex
 import common_utils
 import yaml_utils
 
@@ -216,8 +217,13 @@ def RunLopperGenDomainDTS(outdir, dts_path, hw_file, dts_file, domain_name,
         sdt_devices_yaml = os.path.join(outdir, 'sdt_all_devices.yaml')
         if not _sdt_devices_generated or not os.path.isfile(sdt_devices_yaml):
             logger.debug(f'Generating SDT all-devices YAML {sdt_devices_yaml}')
+            # Make infrastructure available to domain globs by default, while
+            # allowing projects to restrict the included categories.
+            infrastructure = common_utils.GetConfigValue(
+                'CONFIG_SUBSYSTEM_DT_INCLUDE_INFRASTRUCTURE', system_conffile).strip() or 'all'
             cmd = f'LOPPER_DTC_FLAGS="-b 0 -@" {lopper} -O {outdir} -f --enhanced \
-                    {hw_file} - -- sdt_devices -o {sdt_devices_yaml}'
+                    {hw_file} - -- sdt_devices \
+                    --include-infrastructure {shlex.quote(infrastructure)} -o {sdt_devices_yaml}'
             common_utils.RunCmd(cmd, dts_path, shell=True)
         # Merge the all-devices YAML first, ahead of the domain files.
         domain_yamls_str = f'{sdt_devices_yaml} -i {domain_yamls_str}'
