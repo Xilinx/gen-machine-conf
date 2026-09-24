@@ -293,6 +293,30 @@ def LopperAssistFailed(result):
                for item in output if item)
 
 
+def ReportInvalidPhandles(result, dts_file):
+    """Re-emit captured lopper invalid-phandle warnings."""
+    if result is None:
+        return 0
+
+    output = result if isinstance(result, (list, tuple)) else [result]
+    warnings = [line.strip() for item in output if item
+                for line in str(item).splitlines()
+                if 'invalid_phandle' in line]
+    for warning in dict.fromkeys(warnings):
+        logger.warning('%s' % warning)
+    references = set()
+    for warning in warnings:
+        match = re.search(r'invalid_phandle: property:? (\S+)(?: \(([^)]+)\)| in (\S+))',
+                          warning)
+        references.add((match.group(1), match.group(2) or match.group(3))
+                       if match else warning)
+    if references:
+        logger.warning('%d invalid phandle reference(s) detected while generating %s; '
+                       'fix the dangling references in the input SDT.' %
+                       (len(references), dts_file))
+    return len(references)
+
+
 def RunLopperGenLinuxDts(outdir, dts_path, domain_files, hw_file, dts_file, subcommand_args, lopper_args=''):
     """
     Generate Linux device tree source files using lopper.
@@ -308,9 +332,10 @@ def RunLopperGenLinuxDts(outdir, dts_path, domain_files, hw_file, dts_file, subc
             domain_args += ' -i %s' % os.path.join(lops_dir, domain)
         else:
             domain_args += ' -i %s' % domain
-    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -O %s %s %s %s %s -- %s' % (
+    cmd = 'LOPPER_DTC_FLAGS="-b 0 -@" %s --enhanced -W invalid_phandle --symbols -O %s %s %s %s %s -- %s' % (
         lopper, outdir, lopper_args, domain_args, hw_file, dts_file, subcommand_args)
     stdout = common_utils.RunCmd(cmd, dts_path, shell=True)
+    ReportInvalidPhandles(stdout, dts_file)
     return stdout
 
 
